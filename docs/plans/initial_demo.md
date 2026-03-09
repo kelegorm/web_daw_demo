@@ -24,12 +24,12 @@ Architecture ownership:
 - [x] Mark completed
 
 ### Task 2: WASM stub module
-- [ ] Create `src/wasm/synth.cpp` exporting: `process(float* out, int blockSize)`, `noteOn(int midiNote)`, `noteOff()`, `panic()`, `setFilterCutoff(float)`, `setVoiceSpread(float)`, `setReverbMix(float)`
-- [ ] `process()` fills buffer with sine wave at gain 0.3, frequency from last `noteOn`
-- [ ] Compile via Emscripten to `public/synth.wasm` + `public/synth.js`
-- [ ] Write Vitest test: load WASM, call `noteOn(69)`, call `process()`, verify output buffer is non-zero
-- [ ] Write Vitest test: call `noteOff()`, call `process()`, verify output buffer is silent (all zeros)
-- [ ] Mark completed
+- [x] Create `src/wasm/synth.cpp` exporting: `process(float* out, int blockSize)`, `noteOn(int midiNote)`, `noteOff()`, `panic()`, `setFilterCutoff(float)`, `setVoiceSpread(float)`, `setReverbMix(float)`
+- [x] `process()` fills buffer with sine wave at gain 0.3, frequency from last `noteOn`
+- [x] Compile via Emscripten to `public/synth.wasm` + `public/synth.js`
+- [x] Write Vitest test: load WASM, call `noteOn(69)`, call `process()`, verify output buffer is non-zero
+- [x] Write Vitest test: call `noteOff()`, call `process()`, verify output buffer is silent (all zeros)
+- [x] Mark completed
 
 ### Task 3: AudioWorklet processor
 - [ ] Create `src/worklets/synth-processor.js`
