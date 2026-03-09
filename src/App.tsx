@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import PianoKeyboard from './components/PianoKeyboard'
 import Transport from './components/Transport'
 import SequencerDisplay from './components/SequencerDisplay'
+import ParameterPanel from './components/ParameterPanel'
 import { useAudioEngine } from './hooks/useAudioEngine'
 import { useSequencer } from './hooks/useSequencer'
 
@@ -12,6 +13,7 @@ declare global {
     __lastNoteOff?: number
     __panicCount?: number
     __activeSteps?: number[]
+    __lastSetParam?: { name: string; value: number }
   }
 }
 
@@ -44,9 +46,15 @@ function App() {
     window.__panicCount = (window.__panicCount ?? 0) + 1
   }, [audioEngine])
 
+  const handleSetParam = useCallback((name: string, value: number) => {
+    window.__lastSetParam = { name, value }
+    audioEngine.setParam(name, value)
+  }, [audioEngine])
+
   useEffect(() => {
     window.__panicCount = 0
     window.__activeSteps = []
+    window.__lastSetParam = undefined
   }, [])
 
   useEffect(() => {
@@ -58,6 +66,7 @@ function App() {
   return (
     <div id="app">
       <h1>Web DAW Demo</h1>
+      <ParameterPanel setParam={handleSetParam} />
       <Transport
         isPlaying={sequencer.isPlaying}
         onTogglePlay={handleTogglePlay}

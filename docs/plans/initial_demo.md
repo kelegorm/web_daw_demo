@@ -82,12 +82,12 @@ Architecture ownership:
 - [x] Mark completed
 
 ### Task 8: Parameter knobs
-- [ ] Create `src/components/Knob.tsx`: rotary knob, drag up/down changes value, label + value display
-- [ ] Create `src/components/ParameterPanel.tsx`: three knobs — Filter Cutoff (20–20000 Hz), Voice Spread (0–1), Reverb Mix (0–1)
-- [ ] Knobs call `setParam()` via `useAudioEngine` on change
-- [ ] Write Playwright test: drag Filter Cutoff knob upward, verify displayed value increases
-- [ ] Write Playwright test: drag Reverb Mix knob, verify `setParam('reverbMix', value)` called with value in range 0–1 (spy)
-- [ ] Mark completed
+- [x] Create `src/components/Knob.tsx`: rotary knob, drag up/down changes value, label + value display
+- [x] Create `src/components/ParameterPanel.tsx`: three knobs — Filter Cutoff (20–20000 Hz), Voice Spread (0–1), Reverb Mix (0–1)
+- [x] Knobs call `setParam()` via `useAudioEngine` on change
+- [x] Write Playwright test: drag Filter Cutoff knob upward, verify displayed value increases
+- [x] Write Playwright test: drag Reverb Mix knob, verify `setParam('reverbMix', value)` called with value in range 0–1 (spy)
+- [x] Mark completed
 
 ### Task 9: VU meter
 - [ ] Create `src/components/VUMeter.tsx`
