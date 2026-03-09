@@ -4,6 +4,7 @@ import Transport from './components/Transport'
 import Toolbar from './components/Toolbar'
 import TrackZone from './components/TrackZone'
 import DevicePanel from './components/DevicePanel'
+import MidiKeyboard from './components/MidiKeyboard'
 import SequencerDisplay from './components/SequencerDisplay'
 import ParameterPanel from './components/ParameterPanel'
 import VUMeter from './components/VUMeter'
@@ -93,6 +94,7 @@ function App() {
         onMuteToggle={transport.setTrackMute}
       />
       <DevicePanel synth={toneSynth} panner={panner} />
+      <MidiKeyboard synth={toneSynth} />
       <div className="app-header">
         <h1 className="app-header-title">Web DAW Demo</h1>
         <VUMeter getAnalyserNode={audioEngine.getAnalyserNode} />

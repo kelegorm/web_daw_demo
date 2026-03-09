@@ -137,16 +137,16 @@ Layout (top to bottom):
 - [x] Mark completed
 
 ### Task 9: MIDI keyboard strip
-- [ ] Create `src/components/MidiKeyboard.tsx`
-- [ ] Horizontal strip at bottom, full width, height ~100px
-- [ ] 2 octaves C3–B4 (MIDI 48–71), white and black keys
-- [ ] Mouse down → `useToneSynth.noteOn(midi, 100)`, mouse up / mouse leave → `useToneSynth.noteOff(midi)`
-- [ ] Visual pressed state per key
-- [ ] Polyphonic: multiple keys can be pressed simultaneously
-- [ ] Write Playwright test: mousedown on C3, verify key gets `pressed` CSS class
-- [ ] Write Playwright test: mousedown on C3 and E3 simultaneously, verify both show pressed state
-- [ ] Write Playwright test: mouseup on C3, verify C3 loses pressed class, E3 retains it
-- [ ] Mark completed
+- [x] Create `src/components/MidiKeyboard.tsx`
+- [x] Horizontal strip at bottom, full width, height ~100px
+- [x] 2 octaves C3–B4 (MIDI 48–71), white and black keys
+- [x] Mouse down → `useToneSynth.noteOn(midi, 100)`, mouse up / mouse leave → `useToneSynth.noteOff(midi)`
+- [x] Visual pressed state per key
+- [x] Polyphonic: multiple keys can be pressed simultaneously
+- [x] Write Playwright test: mousedown on C3, verify key gets `pressed` CSS class
+- [x] Write Playwright test: mousedown on C3 and E3 simultaneously, verify both show pressed state
+- [x] Write Playwright test: mouseup on C3, verify C3 loses pressed class, E3 retains it
+- [x] Mark completed
 
 ### Task 10: VU meter on track header
 - [ ] Create `src/components/VUMeter.tsx`
