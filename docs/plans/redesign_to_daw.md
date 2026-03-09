@@ -70,15 +70,15 @@ Layout (top to bottom):
 - [x] Mark completed
 
 ### Task 5: Panner effect node
-- [ ] Create `src/hooks/usePanner.ts`
-- [ ] Instantiate `StereoPannerNode` via raw Web Audio API: `audioContext.createStereoPanner()`
-- [ ] Define and implement explicit graph: `Tone.PolySynth output -> StereoPannerNode -> GainNode (track mute) -> AnalyserNode -> AudioContext.destination`
-- [ ] Expose: `setPan(value)` (-1 left, 0 center, +1 right), `setEnabled(bool)`, `isEnabled: boolean`
-- [ ] `setEnabled(false)` bypasses panner while keeping `GainNode -> AnalyserNode` chain intact
-- [ ] Write Vitest test: `setPan(-1)` sets `pannerNode.pan.value` to -1
-- [ ] Write Vitest test: `setPan(0.5)` sets `pannerNode.pan.value` to 0.5
-- [ ] Write Playwright test: open app, verify no AudioContext errors in console
-- [ ] Mark completed
+- [x] Create `src/hooks/usePanner.ts`
+- [x] Instantiate `StereoPannerNode` via raw Web Audio API: `audioContext.createStereoPanner()`
+- [x] Define and implement explicit graph: `Tone.PolySynth output -> StereoPannerNode -> GainNode (track mute) -> AnalyserNode -> AudioContext.destination`
+- [x] Expose: `setPan(value)` (-1 left, 0 center, +1 right), `setEnabled(bool)`, `isEnabled: boolean`
+- [x] `setEnabled(false)` bypasses panner while keeping `GainNode -> AnalyserNode` chain intact
+- [x] Write Vitest test: `setPan(-1)` sets `pannerNode.pan.value` to -1
+- [x] Write Vitest test: `setPan(0.5)` sets `pannerNode.pan.value` to 0.5
+- [x] Write Playwright test: open app, verify no AudioContext errors in console
+- [x] Mark completed
 
 ### Task 6: Device panel
 - [ ] Create `src/components/DevicePanel.tsx`
