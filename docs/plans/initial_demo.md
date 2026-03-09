@@ -41,14 +41,14 @@ Architecture ownership:
 - [x] Mark completed
 
 ### Task 4: useAudioEngine hook
-- [ ] Create `src/hooks/useAudioEngine.ts`
-- [ ] Creates AudioContext on first user interaction
-- [ ] Loads AudioWorklet module, connects to destination
-- [ ] Exposes: `noteOn(midi)`, `noteOff(midi)`, `panic()`, `setParam(name, value)`, `analyserNode`
-- [ ] Write Vitest test: `noteOn(60)` sends message `{ type: 'noteOn', note: 60 }` to worklet port (mock port)
-- [ ] Write Vitest test: `setParam('filterCutoff', 1000)` sets correct AudioParam value
-- [ ] Write Vitest test: `panic()` sends message `{ type: 'panic' }` to worklet port
-- [ ] Mark completed
+- [x] Create `src/hooks/useAudioEngine.ts`
+- [x] Creates AudioContext on first user interaction
+- [x] Loads AudioWorklet module, connects to destination
+- [x] Exposes: `noteOn(midi)`, `noteOff(midi)`, `panic()`, `setParam(name, value)`, `analyserNode`
+- [x] Write Vitest test: `noteOn(60)` sends message `{ type: 'noteOn', note: 60 }` to worklet port (mock port)
+- [x] Write Vitest test: `setParam('filterCutoff', 1000)` sets correct AudioParam value
+- [x] Write Vitest test: `panic()` sends message `{ type: 'panic' }` to worklet port
+- [x] Mark completed
 
 ### Task 5: Piano keyboard component
 - [ ] Create `src/components/PianoKeyboard.tsx`
