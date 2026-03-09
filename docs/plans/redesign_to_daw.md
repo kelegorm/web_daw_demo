@@ -105,19 +105,19 @@ Layout (top to bottom):
 - [x] Mark completed
 
 ### Task 7: Update sequencer to use Tone.js
-- [ ] Update `src/hooks/useSequencer.ts`
-- [ ] Replace raw `audioContext.currentTime` scheduler with `Tone.Transport` and `Tone.Part`
-- [ ] Sequence: notes [60, 62, 64, 65, 67, 69, 71, 72], one note per 8th note at current BPM
-- [ ] Each step calls `useToneSynth.noteOn()` and schedules `noteOff()` after 80% of step duration
-- [ ] Transport semantics:
-  - [ ] Pause = temporary transport halt without resetting current step
-  - [ ] Stop = transport stop + step reset to 0 + `panic()/releaseAll()` to avoid hanging notes
-- [ ] Loop button toggles `Tone.Transport.loop`
-- [ ] Current step index exposed for SequencerDisplay and playhead in TrackZone
-- [ ] Write Vitest test: sequence fires exactly [60, 62, 64, 65, 67, 69, 71, 72] in order (mock Tone.Transport)
-- [ ] Write Vitest test: stop mid-sequence, verify no further notes fired after stop
-- [ ] Write Playwright test: click Play, wait 1000ms at 120 BPM, verify at least 2 different step indicators highlighted
-- [ ] Mark completed
+- [x] Update `src/hooks/useSequencer.ts`
+- [x] Replace raw `audioContext.currentTime` scheduler with `Tone.Transport` and `Tone.Part`
+- [x] Sequence: notes [60, 62, 64, 65, 67, 69, 71, 72], one note per 8th note at current BPM
+- [x] Each step calls `useToneSynth.noteOn()` and schedules `noteOff()` after 80% of step duration
+- [x] Transport semantics:
+  - [x] Pause = temporary transport halt without resetting current step
+  - [x] Stop = transport stop + step reset to 0 + `panic()/releaseAll()` to avoid hanging notes
+- [x] Loop button toggles `Tone.Transport.loop`
+- [x] Current step index exposed for SequencerDisplay and playhead in TrackZone
+- [x] Write Vitest test: sequence fires exactly [60, 62, 64, 65, 67, 69, 71, 72] in order (mock Tone.Transport)
+- [x] Write Vitest test: stop mid-sequence, verify no further notes fired after stop
+- [x] Write Playwright test: click Play, wait 1000ms at 120 BPM, verify at least 2 different step indicators highlighted
+- [x] Mark completed
 
 ### Task 8: Transport and mute business logic
 - [ ] Create `src/hooks/useTransportController.ts` as the single owner of transport + mute transitions

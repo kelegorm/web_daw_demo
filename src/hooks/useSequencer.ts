@@ -1,82 +1,84 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
+import * as Tone from 'tone';
 
 export const SEQUENCER_NOTES = [60, 62, 64, 65, 67, 69, 71, 72];
 
-const BPM = 120;
-const BEAT_DURATION = 60 / BPM; // 0.5s per beat
-const LOOKAHEAD = 0.1; // 100ms ahead
-const SCHEDULE_INTERVAL = 25; // ms
+interface StepEvent {
+  note: number;
+  step: number;
+}
 
 export interface Sequencer {
   isPlaying: () => boolean;
   currentStep: () => number;
   start: () => void;
+  pause: () => void;
   stop: () => void;
 }
 
 export function createSequencer(
-  noteOn: (midi: number) => void,
+  noteOn: (midi: number, velocity: number) => void,
   noteOff: (midi: number) => void,
-  getClock: () => number,
+  panic: () => void,
   onStepChange?: (step: number) => void,
 ): Sequencer {
-  let playing = false;
-  let nextNoteTime = 0;
-  let stepIndex = 0;
-  let schedulerTimer: ReturnType<typeof setInterval> | null = null;
-  const pendingTimeouts: ReturnType<typeof setTimeout>[] = [];
   let _currentStep = -1;
+  let _isPlaying = false;
+  let _active = false;
+  let _partStarted = false;
 
-  function schedule() {
-    if (!playing) return;
-    const now = getClock();
-    while (nextNoteTime < now + LOOKAHEAD) {
-      const step = stepIndex;
-      const midi = SEQUENCER_NOTES[step];
-      const delay = Math.max(0, (nextNoteTime - now) * 1000);
+  const events: [string, StepEvent][] = SEQUENCER_NOTES.map((note, i) => {
+    const beat = Math.floor(i / 2);
+    const sixteenth = (i % 2) * 2;
+    return [`0:${beat}:${sixteenth}`, { note, step: i }];
+  });
 
-      const t1 = setTimeout(() => {
-        if (!playing) return;
-        noteOn(midi);
-        _currentStep = step;
-        onStepChange?.(step);
-      }, delay);
+  const part = new Tone.Part<StepEvent>((_time, { note, step }) => {
+    if (!_active) return;
+    noteOn(note, 100);
+    _currentStep = step;
+    onStepChange?.(step);
+    const delayMs = Tone.Time('8n').toSeconds() * 0.8 * 1000;
+    setTimeout(() => {
+      if (_active) noteOff(note);
+    }, delayMs);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }, events as any);
 
-      const t2 = setTimeout(() => {
-        if (!playing) return;
-        noteOff(midi);
-      }, delay + BEAT_DURATION * 1000 * 0.9);
-
-      pendingTimeouts.push(t1, t2);
-      nextNoteTime += BEAT_DURATION;
-      stepIndex = (step + 1) % SEQUENCER_NOTES.length;
-    }
-  }
+  part.loop = true;
+  part.loopEnd = '1m';
 
   function start() {
-    if (playing) return;
-    playing = true;
-    stepIndex = 0;
-    nextNoteTime = getClock() + 0.05;
-    schedule();
-    schedulerTimer = setInterval(schedule, SCHEDULE_INTERVAL);
+    _active = true;
+    _isPlaying = true;
+    if (!_partStarted) {
+      part.start(0);
+      _partStarted = true;
+    }
+    Tone.getTransport().start();
+  }
+
+  function pause() {
+    _isPlaying = false;
+    Tone.getTransport().pause();
   }
 
   function stop() {
-    playing = false;
+    _active = false;
+    _isPlaying = false;
     _currentStep = -1;
-    if (schedulerTimer !== null) {
-      clearInterval(schedulerTimer);
-      schedulerTimer = null;
-    }
-    for (const t of pendingTimeouts) clearTimeout(t);
-    pendingTimeouts.length = 0;
+    _partStarted = false;
+    part.stop();
+    Tone.getTransport().stop();
+    panic();
+    onStepChange?.(-1);
   }
 
   return {
-    isPlaying: () => playing,
+    isPlaying: () => _isPlaying,
     currentStep: () => _currentStep,
     start,
+    pause,
     stop,
   };
 }
@@ -85,40 +87,47 @@ export interface SequencerHook {
   isPlaying: boolean;
   currentStep: number;
   start: () => void;
+  pause: () => void;
   stop: () => void;
   toggle: () => void;
+  setLoop: (loop: boolean) => void;
 }
 
 export function useSequencer(
-  noteOn: (midi: number) => void,
+  noteOn: (midi: number, velocity?: number) => void,
   noteOff: (midi: number) => void,
-  getAudioContext: () => { currentTime: number } | null,
+  panic: () => void,
 ): SequencerHook {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
 
   const noteOnRef = useRef(noteOn);
   const noteOffRef = useRef(noteOff);
-  const getAudioContextRef = useRef(getAudioContext);
+  const panicRef = useRef(panic);
   noteOnRef.current = noteOn;
   noteOffRef.current = noteOff;
-  getAudioContextRef.current = getAudioContext;
+  panicRef.current = panic;
 
   const sequencerRef = useRef<Sequencer | null>(null);
 
   if (!sequencerRef.current) {
     sequencerRef.current = createSequencer(
-      (midi) => noteOnRef.current(midi),
+      (midi, velocity) => noteOnRef.current(midi, velocity),
       (midi) => noteOffRef.current(midi),
-      () => getAudioContextRef.current()?.currentTime ?? performance.now() / 1000,
+      () => panicRef.current(),
       (step) => setCurrentStep(step),
     );
   }
 
-  const start = useCallback(() => {
+  const start = useCallback(async () => {
+    await Tone.start();
     sequencerRef.current!.start();
     setIsPlaying(true);
-    setCurrentStep(-1);
+  }, []);
+
+  const pause = useCallback(() => {
+    sequencerRef.current!.pause();
+    setIsPlaying(false);
   }, []);
 
   const stop = useCallback(() => {
@@ -127,13 +136,17 @@ export function useSequencer(
     setCurrentStep(-1);
   }, []);
 
-  const toggle = useCallback(() => {
+  const toggle = useCallback(async () => {
     if (sequencerRef.current!.isPlaying()) {
-      stop();
+      pause();
     } else {
-      start();
+      await start();
     }
-  }, [start, stop]);
+  }, [start, pause]);
+
+  const setLoop = useCallback((loop: boolean) => {
+    Tone.getTransport().loop = loop;
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -141,5 +154,5 @@ export function useSequencer(
     };
   }, []);
 
-  return { isPlaying, currentStep, start, stop, toggle };
+  return { isPlaying, currentStep, start, pause, stop, toggle, setLoop };
 }

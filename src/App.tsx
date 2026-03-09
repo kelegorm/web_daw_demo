@@ -45,12 +45,10 @@ function App() {
     audioEngine.noteOff(midi)
   }, [audioEngine])
 
-  const sequencer = useSequencer(noteOn, noteOff, audioEngine.getAudioContext)
+  const sequencer = useSequencer(toneSynth.noteOn, toneSynth.noteOff, toneSynth.panic)
 
   const handleTogglePlay = useCallback(async () => {
-    if (!sequencer.isPlaying) {
-      await audioEngine.initAudio()
-    }
+    await audioEngine.initAudio()
     sequencer.toggle()
   }, [audioEngine, sequencer])
 
@@ -73,10 +71,10 @@ function App() {
   const handleLoopToggle = useCallback(() => {
     setLoop((prev) => {
       const next = !prev
-      try { getTransport().loop = next } catch { /* not ready */ }
+      sequencer.setLoop(next)
       return next
     })
-  }, [])
+  }, [sequencer])
 
   const handleStop = useCallback(() => {
     sequencer.stop()
