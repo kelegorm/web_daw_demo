@@ -16,12 +16,12 @@ Architecture ownership:
 ---
 
 ### Task 1: Project scaffold
-- [ ] Set up Vite + React + TypeScript project
-- [ ] Create folder structure: `src/worklets`, `src/wasm`, `src/hooks`, `src/components`
-- [ ] Add Vitest and Playwright to dev dependencies
-- [ ] Add `test` and `test:e2e` scripts to package.json
-- [ ] Write smoke test: app mounts without errors (Playwright opens localhost, checks `<div id="root">` is present)
-- [ ] Mark completed
+- [x] Set up Vite + React + TypeScript project
+- [x] Create folder structure: `src/worklets`, `src/wasm`, `src/hooks`, `src/components`
+- [x] Add Vitest and Playwright to dev dependencies
+- [x] Add `test` and `test:e2e` scripts to package.json
+- [x] Write smoke test: app mounts without errors (Playwright opens localhost, checks `<div id="root">` is present)
+- [x] Mark completed
 
 ### Task 2: WASM stub module
 - [ ] Create `src/wasm/synth.cpp` exporting: `process(float* out, int blockSize)`, `noteOn(int midiNote)`, `noteOff()`, `panic()`, `setFilterCutoff(float)`, `setVoiceSpread(float)`, `setReverbMix(float)`
