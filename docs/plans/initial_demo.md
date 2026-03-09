@@ -51,13 +51,13 @@ Architecture ownership:
 - [x] Mark completed
 
 ### Task 5: Piano keyboard component
-- [ ] Create `src/components/PianoKeyboard.tsx`
-- [ ] 2 octaves C3–B4, white and black keys rendered correctly
-- [ ] Mouse down → `noteOn`, mouse up / mouse leave → `noteOff`
-- [ ] Visual pressed state per key
-- [ ] Write Playwright test: click middle C key, verify key gets `pressed` CSS class
-- [ ] Write Playwright test: mousedown on C3, verify `noteOn(48)` called (spy on hook); mouseup, verify `noteOff(48)` called
-- [ ] Mark completed
+- [x] Create `src/components/PianoKeyboard.tsx`
+- [x] 2 octaves C3–B4, white and black keys rendered correctly
+- [x] Mouse down → `noteOn`, mouse up / mouse leave → `noteOff`
+- [x] Visual pressed state per key
+- [x] Write Playwright test: click middle C key, verify key gets `pressed` CSS class
+- [x] Write Playwright test: mousedown on C3, verify `noteOn(48)` called (spy on hook); mouseup, verify `noteOff(48)` called
+- [x] Mark completed
 
 ### Task 6: Transport controls
 - [ ] Create `src/components/Transport.tsx`
