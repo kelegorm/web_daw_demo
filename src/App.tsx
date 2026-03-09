@@ -3,11 +3,14 @@ import PianoKeyboard from './components/PianoKeyboard'
 import Transport from './components/Transport'
 import Toolbar from './components/Toolbar'
 import TrackZone from './components/TrackZone'
+import DevicePanel from './components/DevicePanel'
 import SequencerDisplay from './components/SequencerDisplay'
 import ParameterPanel from './components/ParameterPanel'
 import VUMeter from './components/VUMeter'
 import { useAudioEngine } from './hooks/useAudioEngine'
 import { useSequencer } from './hooks/useSequencer'
+import { useToneSynth } from './hooks/useToneSynth'
+import { usePanner } from './hooks/usePanner'
 import { getTransport } from 'tone'
 import './App.css'
 
@@ -24,6 +27,8 @@ declare global {
 
 function App() {
   const audioEngine = useAudioEngine()
+  const toneSynth = useToneSynth()
+  const panner = usePanner()
   const [panicSignal, setPanicSignal] = useState(0)
   const [bpm, setBpm] = useState(120)
   const [loop, setLoop] = useState(false)
@@ -102,6 +107,7 @@ function App() {
         onLoopToggle={handleLoopToggle}
       />
       <TrackZone isPlaying={sequencer.isPlaying} bpm={bpm} />
+      <DevicePanel synth={toneSynth} panner={panner} />
       <div className="app-header">
         <h1 className="app-header-title">Web DAW Demo</h1>
         <VUMeter getAnalyserNode={audioEngine.getAnalyserNode} />

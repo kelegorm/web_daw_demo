@@ -81,28 +81,28 @@ Layout (top to bottom):
 - [x] Mark completed
 
 ### Task 6: Device panel
-- [ ] Create `src/components/DevicePanel.tsx`
-- [ ] Horizontal strip below track zone, full width, height ~140px
-- [ ] Two device sections side by side, separated by divider
+- [x] Create `src/components/DevicePanel.tsx`
+- [x] Horizontal strip below track zone, full width, height ~140px
+- [x] Two device sections side by side, separated by divider
 
-- [ ] **Synth section** (`src/components/SynthDevice.tsx`):
-    - [ ] Enable/disable toggle in top-left corner
-    - [ ] Label "Polysynth"
-    - [ ] Three knobs: Filter Cutoff (20–20000 Hz, log scale display), Voice Spread (0–1), Volume (-60–0 dB)
-    - [ ] Knobs call `useToneSynth` setters on change
-    - [ ] Disable toggle calls `useToneSynth.setEnabled(bool)`
+- [x] **Synth section** (`src/components/SynthDevice.tsx`):
+    - [x] Enable/disable toggle in top-left corner
+    - [x] Label "Polysynth"
+    - [x] Three knobs: Filter Cutoff (20–20000 Hz, log scale display), Voice Spread (0–1), Volume (-60–0 dB)
+    - [x] Knobs call `useToneSynth` setters on change
+    - [x] Disable toggle calls `useToneSynth.setEnabled(bool)`
 
-- [ ] **Panner section** (`src/components/PannerDevice.tsx`):
-    - [ ] Enable/disable toggle in top-left corner
-    - [ ] Label "Panner"
-    - [ ] One knob: Pan (-1 to +1, center detent at 0)
-    - [ ] Knob calls `usePanner.setPan()` on change
-    - [ ] Disable toggle calls `usePanner.setEnabled(bool)`
+- [x] **Panner section** (`src/components/PannerDevice.tsx`):
+    - [x] Enable/disable toggle in top-left corner
+    - [x] Label "Panner"
+    - [x] One knob: Pan (-1 to +1, center detent at 0)
+    - [x] Knob calls `usePanner.setPan()` on change
+    - [x] Disable toggle calls `usePanner.setEnabled(bool)`
 
-- [ ] Write Playwright test: verify "Polysynth" and "Panner" labels are visible
-- [ ] Write Playwright test: click Synth section disable toggle, verify aria-pressed="false"
-- [ ] Write Playwright test: drag Pan knob right, verify displayed pan value increases
-- [ ] Mark completed
+- [x] Write Playwright test: verify "Polysynth" and "Panner" labels are visible
+- [x] Write Playwright test: click Synth section disable toggle, verify aria-pressed="false"
+- [x] Write Playwright test: drag Pan knob right, verify displayed pan value increases
+- [x] Mark completed
 
 ### Task 7: Update sequencer to use Tone.js
 - [ ] Update `src/hooks/useSequencer.ts`
