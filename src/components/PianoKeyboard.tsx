@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface Props {
   noteOn: (midi: number) => void
   noteOff: (midi: number) => void
+  panicSignal?: number
 }
 
 // 2 octaves: C3 (48) through B4 (71)
@@ -55,8 +56,14 @@ const WHITE_KEY_HEIGHT = 140
 const BLACK_KEY_WIDTH = 26
 const BLACK_KEY_HEIGHT = 88
 
-export default function PianoKeyboard({ noteOn, noteOff }: Props) {
+export default function PianoKeyboard({ noteOn, noteOff, panicSignal }: Props) {
   const [pressedKeys, setPressedKeys] = useState<Set<number>>(new Set())
+
+  useEffect(() => {
+    if (panicSignal !== undefined && panicSignal > 0) {
+      setPressedKeys(new Set())
+    }
+  }, [panicSignal])
 
   function handleMouseDown(midi: number) {
     noteOn(midi)

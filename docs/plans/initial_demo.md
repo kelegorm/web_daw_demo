@@ -60,14 +60,14 @@ Architecture ownership:
 - [x] Mark completed
 
 ### Task 6: Transport controls
-- [ ] Create `src/components/Transport.tsx`
-- [ ] Play / Pause toggle button
-- [ ] Panic button (red)
-- [ ] Play/Pause controls `useSequencer` start/stop directly — does not send messages to AudioWorklet
-- [ ] Panic calls `panic()` via `useAudioEngine`
-- [ ] Write Playwright test: click Play, verify button label changes to "Pause"
-- [ ] Write Playwright test: click Panic, verify `panic()` called and all keys show unpressed state
-- [ ] Mark completed
+- [x] Create `src/components/Transport.tsx`
+- [x] Play / Pause toggle button
+- [x] Panic button (red)
+- [x] Play/Pause controls `useSequencer` start/stop directly — does not send messages to AudioWorklet
+- [x] Panic calls `panic()` via `useAudioEngine`
+- [x] Write Playwright test: click Play, verify button label changes to "Pause"
+- [x] Write Playwright test: click Panic, verify `panic()` called and all keys show unpressed state
+- [x] Mark completed
 
 ### Task 7: MIDI clip sequencer
 - [ ] Create `src/hooks/useSequencer.ts`
