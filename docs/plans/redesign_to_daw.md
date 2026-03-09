@@ -25,11 +25,11 @@ Layout (top to bottom):
 ---
 
 ### Task 1: Design tokens and dark theme
-- [ ] Create `src/styles/tokens.css` with CSS variables: background colors, surface colors, accent color, border radius, font sizes, spacing scale
-- [ ] Dark theme: near-black background (#1a1a1f), dark surface (#26262e), accent orange/amber (#f5a623), text (#e0e0e0)
-- [ ] Apply tokens globally in `src/index.css`
-- [ ] Write Playwright test: open app, verify `body` background-color matches token value
-- [ ] Mark completed
+- [x] Create `src/styles/tokens.css` with CSS variables: background colors, surface colors, accent color, border radius, font sizes, spacing scale
+- [x] Dark theme: near-black background (#1a1a1f), dark surface (#26262e), accent orange/amber (#f5a623), text (#e0e0e0)
+- [x] Apply tokens globally in `src/index.css`
+- [x] Write Playwright test: open app, verify `body` background-color matches token value
+- [x] Mark completed
 
 ### Task 2: Toolbar component
 - [ ] Create `src/components/Toolbar.tsx`
