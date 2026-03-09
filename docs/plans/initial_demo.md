@@ -32,13 +32,13 @@ Architecture ownership:
 - [x] Mark completed
 
 ### Task 3: AudioWorklet processor
-- [ ] Create `src/worklets/synth-processor.js`
-- [ ] Processor loads WASM, calls `process()` each block
-- [ ] Handles MessagePort messages: `noteOn`, `noteOff`, `panic`
-- [ ] Passes AudioParam values (`filterCutoff`, `voiceSpread`, `reverbMix`) to WASM each block
-- [ ] Write Playwright test: open app, run in browser console `await audioWorkletTest()`, verify worklet registers without errors
-- [ ] Write Playwright test: send `noteOn` message to worklet port, verify output node produces non-silent audio (check AnalyserNode getByteTimeDomainData is not flat)
-- [ ] Mark completed
+- [x] Create `src/worklets/synth-processor.js`
+- [x] Processor loads WASM, calls `process()` each block
+- [x] Handles MessagePort messages: `noteOn`, `noteOff`, `panic`
+- [x] Passes AudioParam values (`filterCutoff`, `voiceSpread`, `reverbMix`) to WASM each block
+- [x] Write Playwright test: open app, run in browser console `await audioWorkletTest()`, verify worklet registers without errors
+- [x] Write Playwright test: send `noteOn` message to worklet port, verify output node produces non-silent audio (check AnalyserNode getByteTimeDomainData is not flat)
+- [x] Mark completed
 
 ### Task 4: useAudioEngine hook
 - [ ] Create `src/hooks/useAudioEngine.ts`
