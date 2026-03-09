@@ -24,8 +24,7 @@ interface KeyDef {
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 const OCTAVE_LABELS = ['3', '4']
-// white key layout: semitone offsets within octave that are white keys
-const WHITE_OFFSETS = [0, 2, 4, 5, 7, 9, 11]
+
 
 function buildKeys(): KeyDef[] {
   const keys: KeyDef[] = []

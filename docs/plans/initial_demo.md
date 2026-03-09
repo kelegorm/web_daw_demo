@@ -70,16 +70,16 @@ Architecture ownership:
 - [x] Mark completed
 
 ### Task 7: MIDI clip sequencer
-- [ ] Create `src/hooks/useSequencer.ts`
-- [ ] `useSequencer` is the sole owner of transport state
-- [ ] Hardcoded 8-note melody: MIDI notes [60, 62, 64, 65, 67, 69, 71, 72] (C D E F G A B C, major scale, not chromatic)
-- [ ] Scheduler uses `audioContext.currentTime` lookahead pattern (schedule 100ms ahead)
-- [ ] Fires `noteOn` / `noteOff` via `useAudioEngine` on exact audio clock
-- [ ] Create `src/components/SequencerDisplay.tsx`: 8 step indicators, highlights current step
-- [ ] Write Vitest test: scheduler fires exactly [60, 62, 64, 65, 67, 69, 71, 72] in that order, not chromatic sequence
-- [ ] Write Vitest test: stop transport mid-sequence, verify no further notes fired
-- [ ] Write Playwright test: click Play, wait 2 beats, verify at least 2 different step indicators were highlighted
-- [ ] Mark completed
+- [x] Create `src/hooks/useSequencer.ts`
+- [x] `useSequencer` is the sole owner of transport state
+- [x] Hardcoded 8-note melody: MIDI notes [60, 62, 64, 65, 67, 69, 71, 72] (C D E F G A B C, major scale, not chromatic)
+- [x] Scheduler uses `audioContext.currentTime` lookahead pattern (schedule 100ms ahead)
+- [x] Fires `noteOn` / `noteOff` via `useAudioEngine` on exact audio clock
+- [x] Create `src/components/SequencerDisplay.tsx`: 8 step indicators, highlights current step
+- [x] Write Vitest test: scheduler fires exactly [60, 62, 64, 65, 67, 69, 71, 72] in that order, not chromatic sequence
+- [x] Write Vitest test: stop transport mid-sequence, verify no further notes fired
+- [x] Write Playwright test: click Play, wait 2 beats, verify at least 2 different step indicators were highlighted
+- [x] Mark completed
 
 ### Task 8: Parameter knobs
 - [ ] Create `src/components/Knob.tsx`: rotary knob, drag up/down changes value, label + value display

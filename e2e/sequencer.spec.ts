@@ -1,0 +1,33 @@
+import { test, expect } from '@playwright/test'
+
+test('clicking Play advances sequencer step indicators', async ({ page }) => {
+  await page.goto('/')
+
+  // Verify sequencer display is present with 8 steps
+  const steps = page.locator('.sequencer-step')
+  await expect(steps).toHaveCount(8)
+
+  // Click Play
+  const playBtn = page.locator('.transport-play-pause')
+  await playBtn.click()
+  await expect(playBtn).toHaveText('Pause')
+
+  // Wait for at least 2 different step indicators to have been highlighted.
+  // BPM=120, beat=500ms. Wait ~1500ms for 2-3 beats.
+  await page.waitForFunction(
+    () => {
+      const steps = window.__activeSteps ?? []
+      const unique = new Set(steps)
+      return unique.size >= 2
+    },
+    { timeout: 5000 },
+  )
+
+  const activeSteps = await page.evaluate(() => window.__activeSteps ?? [])
+  const uniqueSteps = new Set(activeSteps)
+  expect(uniqueSteps.size).toBeGreaterThanOrEqual(2)
+
+  // Click Pause
+  await playBtn.click()
+  await expect(playBtn).toHaveText('Play')
+})

@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import PianoKeyboard from './components/PianoKeyboard'
 import Transport from './components/Transport'
+import SequencerDisplay from './components/SequencerDisplay'
+import { useAudioEngine } from './hooks/useAudioEngine'
+import { useSequencer } from './hooks/useSequencer'
 
 // Expose last note events for E2E testing
 declare global {
@@ -8,46 +11,64 @@ declare global {
     __lastNoteOn?: number
     __lastNoteOff?: number
     __panicCount?: number
+    __activeSteps?: number[]
   }
 }
 
 function App() {
-  const noteOnCallsRef = useRef<number[]>([])
-  const noteOffCallsRef = useRef<number[]>([])
-  const [isPlaying, setIsPlaying] = useState(false)
+  const audioEngine = useAudioEngine()
   const [panicSignal, setPanicSignal] = useState(0)
 
   const noteOn = useCallback((midi: number) => {
-    noteOnCallsRef.current.push(midi)
     window.__lastNoteOn = midi
-  }, [])
+    audioEngine.noteOn(midi)
+  }, [audioEngine])
 
   const noteOff = useCallback((midi: number) => {
-    noteOffCallsRef.current.push(midi)
     window.__lastNoteOff = midi
-  }, [])
+    audioEngine.noteOff(midi)
+  }, [audioEngine])
 
-  const handleTogglePlay = useCallback(() => {
-    setIsPlaying((prev) => !prev)
-  }, [])
+  const sequencer = useSequencer(noteOn, noteOff, audioEngine.getAudioContext)
+
+  const handleTogglePlay = useCallback(async () => {
+    if (!sequencer.isPlaying) {
+      await audioEngine.initAudio()
+    }
+    sequencer.toggle()
+  }, [audioEngine, sequencer])
 
   const handlePanic = useCallback(() => {
+    audioEngine.panic()
     setPanicSignal((prev) => prev + 1)
     window.__panicCount = (window.__panicCount ?? 0) + 1
+  }, [audioEngine])
+
+  useEffect(() => {
+    window.__panicCount = 0
+    window.__activeSteps = []
   }, [])
 
   useEffect(() => {
-    // Expose for E2E spying
-    ;(window as any).__noteOnCalls = noteOnCallsRef.current
-    ;(window as any).__noteOffCalls = noteOffCallsRef.current
-    window.__panicCount = 0
-  }, [])
+    if (sequencer.currentStep >= 0) {
+      window.__activeSteps = [...(window.__activeSteps ?? []), sequencer.currentStep]
+    }
+  }, [sequencer.currentStep])
 
   return (
     <div id="app">
       <h1>Web DAW Demo</h1>
-      <Transport isPlaying={isPlaying} onTogglePlay={handleTogglePlay} onPanic={handlePanic} />
-      <PianoKeyboard noteOn={noteOn} noteOff={noteOff} panicSignal={panicSignal} />
+      <Transport
+        isPlaying={sequencer.isPlaying}
+        onTogglePlay={handleTogglePlay}
+        onPanic={handlePanic}
+      />
+      <SequencerDisplay currentStep={sequencer.currentStep} />
+      <PianoKeyboard
+        noteOn={noteOn}
+        noteOff={noteOff}
+        panicSignal={panicSignal}
+      />
     </div>
   )
 }
