@@ -1,0 +1,75 @@
+# ----------------------------
+# Dependencies
+# ----------------------------
+node_modules/
+
+# ----------------------------
+# Build output
+# ----------------------------
+dist/
+dist-ssr/
+.vite/
+*.tsbuildinfo
+
+# ----------------------------
+# Generated WASM / Emscripten output
+# Keep source C++ in repo, ignore only generated artifacts
+# ----------------------------
+public/synth.wasm
+public/synth.js
+public/generated/
+src/wasm/generated/
+emscripten-build/
+.emscripten
+emscripten_cache/
+*.wasm.map
+*.symbols
+
+# ----------------------------
+# Test / coverage artifacts
+# ----------------------------
+coverage/
+.nyc_output/
+playwright-report/
+playwright/.auth/
+test-results/
+blob-report/
+.vitest/
+
+# ----------------------------
+# Logs
+# ----------------------------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ----------------------------
+# Local env / machine-specific config
+# ----------------------------
+.env
+.env.*
+!.env.example
+*.local
+
+# ----------------------------
+# OS / editor junk
+# ----------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# ----------------------------
+# Temp / cache
+# ----------------------------
+tmp/
+temp/
+.cache/
