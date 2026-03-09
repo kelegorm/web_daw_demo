@@ -169,12 +169,12 @@ Layout (top to bottom):
 - [x] Mark completed
 
 ### Task 12: Legacy cleanup (after Tone.js integration is green)
-- [ ] Delete `src/worklets/` directory
-- [ ] Delete `src/wasm/` directory
-- [ ] Delete `public/synth.wasm` and `public/synth.js` if present
-- [ ] Delete `src/hooks/useAudioEngine.ts` entirely
-- [ ] Remove all imports referencing worklet, WASM, or useAudioEngine across codebase
-- [ ] Delete all test files referencing AudioWorklet, WASM, or useAudioEngine
-- [ ] Run `npm run test` — verify test suite passes
-- [ ] `npm run build` passes with no errors
-- [ ] Mark completed
+- [x] Delete `src/worklets/` directory
+- [x] Delete `src/wasm/` directory
+- [x] Delete `public/synth.wasm` and `public/synth.js` if present
+- [x] Delete `src/hooks/useAudioEngine.ts` entirely
+- [x] Remove all imports referencing worklet, WASM, or useAudioEngine across codebase
+- [x] Delete all test files referencing AudioWorklet, WASM, or useAudioEngine
+- [x] Run `npm run test` — verify test suite passes
+- [x] `npm run build` passes with no errors
+- [x] Mark completed
