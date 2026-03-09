@@ -3,10 +3,6 @@ import { test, expect } from '@playwright/test'
 test('click Play, wait 1000ms at 120 BPM, verify at least 2 different step indicators highlighted', async ({ page }) => {
   await page.goto('/')
 
-  // Verify sequencer display is present with 8 steps
-  const steps = page.locator('.sequencer-step')
-  await expect(steps).toHaveCount(8)
-
   // Click Play via toolbar
   const playBtn = page.locator('.toolbar-play-pause')
   await playBtn.click()

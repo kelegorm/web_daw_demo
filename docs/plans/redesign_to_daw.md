@@ -160,13 +160,13 @@ Layout (top to bottom):
 - [x] Mark completed
 
 ### Task 11: Final integration and layout polish
-- [ ] Compose all components in `src/App.tsx`: Toolbar → TrackZone → DevicePanel → MidiKeyboard
-- [ ] Consistent spacing, colors, fonts using design tokens from Task 1
-- [ ] All interactive elements have visible focus styles
-- [ ] No horizontal scroll at 1280px width
-- [ ] Write Playwright smoke test: open app, click Play, press C3, verify meter reacts, sequencer advances, no console errors
-- [ ] Write Playwright test: viewport 1280px, verify no horizontal scrollbar
-- [ ] Mark completed
+- [x] Compose all components in `src/App.tsx`: Toolbar → TrackZone → DevicePanel → MidiKeyboard
+- [x] Consistent spacing, colors, fonts using design tokens from Task 1
+- [x] All interactive elements have visible focus styles
+- [x] No horizontal scroll at 1280px width
+- [x] Write Playwright smoke test: open app, click Play, press C3, verify meter reacts, sequencer advances, no console errors
+- [x] Write Playwright test: viewport 1280px, verify no horizontal scrollbar
+- [x] Mark completed
 
 ### Task 12: Legacy cleanup (after Tone.js integration is green)
 - [ ] Delete `src/worklets/` directory
