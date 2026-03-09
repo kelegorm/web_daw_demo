@@ -32,17 +32,17 @@ Layout (top to bottom):
 - [x] Mark completed
 
 ### Task 2: Toolbar component
-- [ ] Create `src/components/Toolbar.tsx`
-- [ ] Left: application name "SynthDemo" in accent color
-- [ ] Center: Play/Pause toggle button, Stop button, Panic button (red)
-- [ ] Right: BPM input (number field, 60–200, default 120), Loop toggle button
-- [ ] Toolbar is fixed at top, full width, height 48px
-- [ ] Transport controls call `useSequencer` start/stop — no direct AudioWorklet messages
-- [ ] BPM change updates `Tone.Transport.bpm.value`
-- [ ] Write Playwright test: click Play, verify button label changes to "Pause"
-- [ ] Write Playwright test: change BPM input to 140, verify displayed value is 140
-- [ ] Write Playwright test: click Panic, verify all active notes are released
-- [ ] Mark completed
+- [x] Create `src/components/Toolbar.tsx`
+- [x] Left: application name "SynthDemo" in accent color
+- [x] Center: Play/Pause toggle button, Stop button, Panic button (red)
+- [x] Right: BPM input (number field, 60–200, default 120), Loop toggle button
+- [x] Toolbar is fixed at top, full width, height 48px
+- [x] Transport controls call `useSequencer` start/stop — no direct AudioWorklet messages
+- [x] BPM change updates `Tone.Transport.bpm.value`
+- [x] Write Playwright test: click Play, verify button label changes to "Pause"
+- [x] Write Playwright test: change BPM input to 140, verify displayed value is 140
+- [x] Write Playwright test: click Panic, verify all active notes are released
+- [x] Mark completed
 
 ### Task 3: Track zone with timeline and MIDI clip block
 - [ ] Create `src/components/TrackZone.tsx`

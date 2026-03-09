@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import PianoKeyboard from './components/PianoKeyboard'
 import Transport from './components/Transport'
+import Toolbar from './components/Toolbar'
 import SequencerDisplay from './components/SequencerDisplay'
 import ParameterPanel from './components/ParameterPanel'
 import VUMeter from './components/VUMeter'
 import { useAudioEngine } from './hooks/useAudioEngine'
 import { useSequencer } from './hooks/useSequencer'
+import { getTransport } from 'tone'
 import './App.css'
 
 // Expose last note events for E2E testing
@@ -22,6 +24,8 @@ declare global {
 function App() {
   const audioEngine = useAudioEngine()
   const [panicSignal, setPanicSignal] = useState(0)
+  const [bpm, setBpm] = useState(120)
+  const [loop, setLoop] = useState(false)
 
   const noteOn = useCallback((midi: number) => {
     audioEngine.initAudio().then(() => {
@@ -55,6 +59,23 @@ function App() {
     audioEngine.setParam(name, value)
   }, [audioEngine])
 
+  const handleBpmChange = useCallback((newBpm: number) => {
+    setBpm(newBpm)
+    try { getTransport().bpm.value = newBpm } catch { /* not ready */ }
+  }, [])
+
+  const handleLoopToggle = useCallback(() => {
+    setLoop((prev) => {
+      const next = !prev
+      try { getTransport().loop = next } catch { /* not ready */ }
+      return next
+    })
+  }, [])
+
+  const handleStop = useCallback(() => {
+    sequencer.stop()
+  }, [sequencer])
+
   useEffect(() => {
     window.__panicCount = 0
     window.__activeSteps = []
@@ -69,6 +90,16 @@ function App() {
 
   return (
     <div id="app">
+      <Toolbar
+        isPlaying={sequencer.isPlaying}
+        onPlay={handleTogglePlay}
+        onStop={handleStop}
+        onPanic={handlePanic}
+        bpm={bpm}
+        onBpmChange={handleBpmChange}
+        loop={loop}
+        onLoopToggle={handleLoopToggle}
+      />
       <div className="app-header">
         <h1 className="app-header-title">Web DAW Demo</h1>
         <VUMeter getAnalyserNode={audioEngine.getAnalyserNode} />
