@@ -58,16 +58,16 @@ Layout (top to bottom):
 - [x] Mark completed
 
 ### Task 4: Tone.js polyphonic synth engine
-- [ ] Install Tone.js: `npm install tone`
-- [ ] Create `src/hooks/useToneSynth.ts`
-- [ ] Instantiate `Tone.PolySynth` with `Tone.Synth` voice
-- [ ] Expose: `noteOn(midi, velocity)`, `noteOff(midi)`, `panic()`, `setFilterCutoff(hz)`, `setVoiceSpread(value)`, `setVolume(db)`, `setEnabled(bool)`
-- [ ] `setEnabled(false)` disconnects synth from output (mute via Tone.js graph)
-- [ ] Synth output connects to panner node from Task 5, not directly to destination
-- [ ] Write Vitest test: `noteOn(60, 100)` triggers active voice in PolySynth (mock or spy)
-- [ ] Write Vitest test: `panic()` calls `releaseAll()` on PolySynth
-- [ ] Write Vitest test: `setFilterCutoff(800)` updates filter frequency parameter
-- [ ] Mark completed
+- [x] Install Tone.js: `npm install tone`
+- [x] Create `src/hooks/useToneSynth.ts`
+- [x] Instantiate `Tone.PolySynth` with `Tone.Synth` voice
+- [x] Expose: `noteOn(midi, velocity)`, `noteOff(midi)`, `panic()`, `setFilterCutoff(hz)`, `setVoiceSpread(value)`, `setVolume(db)`, `setEnabled(bool)`
+- [x] `setEnabled(false)` disconnects synth from output (mute via Tone.js graph)
+- [x] Synth output connects to panner node from Task 5, not directly to destination
+- [x] Write Vitest test: `noteOn(60, 100)` triggers active voice in PolySynth (mock or spy)
+- [x] Write Vitest test: `panic()` calls `releaseAll()` on PolySynth
+- [x] Write Vitest test: `setFilterCutoff(800)` updates filter frequency parameter
+- [x] Mark completed
 
 ### Task 5: Panner effect node
 - [ ] Create `src/hooks/usePanner.ts`
