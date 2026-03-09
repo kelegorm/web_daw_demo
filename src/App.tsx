@@ -6,6 +6,7 @@ import ParameterPanel from './components/ParameterPanel'
 import VUMeter from './components/VUMeter'
 import { useAudioEngine } from './hooks/useAudioEngine'
 import { useSequencer } from './hooks/useSequencer'
+import './App.css'
 
 // Expose last note events for E2E testing
 declare global {
@@ -68,17 +69,17 @@ function App() {
 
   return (
     <div id="app">
-      <h1>Web DAW Demo</h1>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+      <div className="app-header">
+        <h1 className="app-header-title">Web DAW Demo</h1>
         <VUMeter getAnalyserNode={audioEngine.getAnalyserNode} />
       </div>
       <ParameterPanel setParam={handleSetParam} />
+      <SequencerDisplay currentStep={sequencer.currentStep} />
       <Transport
         isPlaying={sequencer.isPlaying}
         onTogglePlay={handleTogglePlay}
         onPanic={handlePanic}
       />
-      <SequencerDisplay currentStep={sequencer.currentStep} />
       <PianoKeyboard
         noteOn={noteOn}
         noteOff={noteOff}

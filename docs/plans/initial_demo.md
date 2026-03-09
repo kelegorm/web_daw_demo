@@ -98,8 +98,8 @@ Architecture ownership:
 - [x] Mark completed
 
 ### Task 10: Layout and final integration
-- [ ] Compose all components in `src/App.tsx`
-- [ ] Dark theme CSS, no UI framework
-- [ ] Layout: VU meter top-right, knob row, sequencer display, transport buttons, piano keyboard at bottom
-- [ ] Write Playwright test: full smoke — open app, click Play, click C3 key, verify meter reacts, verify sequencer steps advance, verify no console errors
-- [ ] Mark completed
+- [x] Compose all components in `src/App.tsx`
+- [x] Dark theme CSS, no UI framework
+- [x] Layout: VU meter top-right, knob row, sequencer display, transport buttons, piano keyboard at bottom
+- [x] Write Playwright test: full smoke — open app, click Play, click C3 key, verify meter reacts, verify sequencer steps advance, verify no console errors
+- [x] Mark completed
