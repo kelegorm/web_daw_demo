@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import PianoKeyboard from './components/PianoKeyboard'
 import Transport from './components/Transport'
 import Toolbar from './components/Toolbar'
@@ -33,6 +33,21 @@ function App() {
   // Single source of truth for transport + mute state
   const transport = useTransportController(toneSynth, panner)
   const [panicSignal, setPanicSignal] = useState(0)
+
+  // Wire synth output through panner graph (once)
+  const audioRoutedRef = useRef(false)
+  useEffect(() => {
+    if (!audioRoutedRef.current) {
+      audioRoutedRef.current = true
+      const output = toneSynth.getOutput()
+      try {
+        output.disconnect()
+      } catch {
+        // may not be connected yet
+      }
+      panner.connectSource(output)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const noteOn = (midi: number) => {
     audioEngine.initAudio().then(() => {
@@ -92,12 +107,13 @@ function App() {
         bpm={transport.bpm}
         isTrackMuted={transport.isTrackMuted}
         onMuteToggle={transport.setTrackMute}
+        getAnalyserNode={panner.getAnalyserNode}
       />
       <DevicePanel synth={toneSynth} panner={panner} />
       <MidiKeyboard synth={toneSynth} />
       <div className="app-header">
         <h1 className="app-header-title">Web DAW Demo</h1>
-        <VUMeter getAnalyserNode={audioEngine.getAnalyserNode} />
+        <VUMeter getAnalyserNode={panner.getAnalyserNode} />
       </div>
       <ParameterPanel setParam={handleSetParam} />
       <SequencerDisplay currentStep={transport.currentStep} />

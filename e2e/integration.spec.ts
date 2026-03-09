@@ -9,7 +9,7 @@ test('full integration smoke: play, piano key, meter reacts, sequencer advances,
   // App mounts with all key components visible
   await expect(page.locator('#root')).toBeVisible()
   await expect(page.locator('.transport-play-pause')).toBeVisible()
-  await expect(page.locator('.vu-meter')).toBeVisible()
+  await expect(page.locator('.vu-meter').first()).toBeVisible()
   await expect(page.locator('.parameter-panel')).toBeVisible()
   await expect(page.locator('.sequencer-display')).toBeVisible()
   await expect(page.locator('.piano-keyboard')).toBeVisible()
@@ -32,8 +32,8 @@ test('full integration smoke: play, piano key, meter reacts, sequencer advances,
     { timeout: 3000 }
   )
 
-  // Click a piano key and verify meter reacts
-  const c4 = page.locator('[data-midi="60"]')
+  // Click a piano key and verify meter reacts (use midi-keyboard which routes through panner analyser)
+  const c4 = page.locator('.midi-keyboard [data-midi="60"]')
   await expect(c4).toBeVisible()
   await c4.dispatchEvent('mousedown')
 

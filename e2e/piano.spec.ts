@@ -4,7 +4,7 @@ test('clicking middle C gives it the pressed CSS class', async ({ page }) => {
   await page.goto('/')
 
   // Middle C = C4 = MIDI 60
-  const middleC = page.locator('[data-midi="60"]')
+  const middleC = page.locator('.piano-keyboard [data-midi="60"]')
   await expect(middleC).toBeVisible()
 
   await middleC.dispatchEvent('mousedown')
@@ -18,7 +18,7 @@ test('mousedown on C3 fires noteOn(48), mouseup fires noteOff(48)', async ({ pag
   await page.goto('/')
 
   // C3 = MIDI 48
-  const c3 = page.locator('[data-midi="48"]')
+  const c3 = page.locator('.piano-keyboard [data-midi="48"]')
   await expect(c3).toBeVisible()
 
   await c3.dispatchEvent('mousedown')

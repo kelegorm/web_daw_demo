@@ -149,15 +149,15 @@ Layout (top to bottom):
 - [x] Mark completed
 
 ### Task 10: VU meter on track header
-- [ ] Create `src/components/VUMeter.tsx`
-- [ ] Vertical bar, reads RMS from `AnalyserNode` in graph `PolySynth -> Panner -> Gain(Mute) -> Analyser -> destination` via `requestAnimationFrame`
-- [ ] Green / yellow / red zones
-- [ ] Embed in track header in `TrackZone.tsx`
-- [ ] Mute button silences output and freezes meter at zero
-- [ ] Write Playwright test: no notes playing → meter bar at minimum height
-- [ ] Write Playwright test: press C3 key → meter exceeds minimum within 300ms
-- [ ] Write Playwright test: click Mute → meter returns to minimum within 300ms
-- [ ] Mark completed
+- [x] Create `src/components/VUMeter.tsx`
+- [x] Vertical bar, reads RMS from `AnalyserNode` in graph `PolySynth -> Panner -> Gain(Mute) -> Analyser -> destination` via `requestAnimationFrame`
+- [x] Green / yellow / red zones
+- [x] Embed in track header in `TrackZone.tsx`
+- [x] Mute button silences output and freezes meter at zero
+- [x] Write Playwright test: no notes playing → meter bar at minimum height
+- [x] Write Playwright test: press C3 key → meter exceeds minimum within 300ms
+- [x] Write Playwright test: click Mute → meter returns to minimum within 300ms
+- [x] Mark completed
 
 ### Task 11: Final integration and layout polish
 - [ ] Compose all components in `src/App.tsx`: Toolbar → TrackZone → DevicePanel → MidiKeyboard

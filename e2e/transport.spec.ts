@@ -25,8 +25,8 @@ test('clicking Pause after Play changes label back to Play', async ({ page }) =>
 test('clicking Panic increments panicCount and clears pressed piano keys', async ({ page }) => {
   await page.goto('/')
 
-  // Press a piano key
-  const c3 = page.locator('[data-midi="48"]')
+  // Press a piano key (target old PianoKeyboard component)
+  const c3 = page.locator('.piano-keyboard [data-midi="48"]')
   await c3.dispatchEvent('mousedown')
   await expect(c3).toHaveClass(/pressed/)
 

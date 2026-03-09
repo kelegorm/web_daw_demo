@@ -8,14 +8,25 @@ declare global {
 
 interface Props {
   getAnalyserNode: () => AnalyserNode | null
+  muted?: boolean
 }
 
-export default function VUMeter({ getAnalyserNode }: Props) {
+export default function VUMeter({ getAnalyserNode, muted = false }: Props) {
   const [level, setLevel] = useState(0)
   const rafRef = useRef<number | null>(null)
   const dataRef = useRef<Uint8Array | null>(null)
 
   useEffect(() => {
+    if (muted) {
+      setLevel(0)
+      window.__vuMeterLevel = 0
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
+      }
+      return
+    }
+
     function tick() {
       const analyser = getAnalyserNode()
       if (analyser) {
@@ -39,7 +50,7 @@ export default function VUMeter({ getAnalyserNode }: Props) {
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
     }
-  }, [getAnalyserNode])
+  }, [getAnalyserNode, muted])
 
   const pct = level * 100
 

@@ -3,10 +3,10 @@ import { test, expect } from '@playwright/test'
 test('drag Filter Cutoff knob upward increases displayed value', async ({ page }) => {
   await page.goto('/')
 
-  const knob = page.locator('[data-testid="knob-filter-cutoff"] .knob')
+  const knob = page.locator('.parameter-panel [data-testid="knob-filter-cutoff"] .knob')
   await expect(knob).toBeVisible()
 
-  const valueEl = page.locator('[data-testid="knob-filter-cutoff"] .knob-value')
+  const valueEl = page.locator('.parameter-panel [data-testid="knob-filter-cutoff"] .knob-value')
   const initialText = await valueEl.textContent()
   const initialValue = parseInt(initialText ?? '0')
 

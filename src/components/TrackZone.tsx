@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
+import VUMeter from './VUMeter'
 
 const SEQUENCE_NOTES = [60, 62, 64, 65, 67, 69, 71, 72]
 const MIN_PITCH = 60
@@ -9,9 +10,10 @@ interface Props {
   bpm: number
   isTrackMuted?: boolean
   onMuteToggle?: (muted: boolean) => void
+  getAnalyserNode?: () => AnalyserNode | null
 }
 
-export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMuteToggle }: Props) {
+export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMuteToggle, getAnalyserNode }: Props) {
   const [rec, setRec] = useState(true)
   const [volume, setVolume] = useState(80)
   const [playheadPos, setPlayheadPos] = useState(0)
@@ -72,16 +74,22 @@ export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMute
           boxSizing: 'border-box',
         }}
       >
-        <span
-          className="track-name"
-          style={{
-            color: 'var(--color-text)',
-            fontSize: 'var(--font-size-sm)',
-            fontWeight: 'bold',
-          }}
-        >
-          synth1
-        </span>
+        <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
+          <span
+            className="track-name"
+            style={{
+              color: 'var(--color-text)',
+              fontSize: 'var(--font-size-sm)',
+              fontWeight: 'bold',
+              flex: 1,
+            }}
+          >
+            synth1
+          </span>
+          {getAnalyserNode && (
+            <VUMeter getAnalyserNode={getAnalyserNode} muted={isTrackMuted} />
+          )}
+        </div>
         <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
           <input
             type="range"
