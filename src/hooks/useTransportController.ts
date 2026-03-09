@@ -1,0 +1,209 @@
+import { useState, useCallback, useRef, useEffect } from 'react';
+import * as Tone from 'tone';
+import { createSequencer, Sequencer } from './useSequencer';
+import type { ToneSynthHook } from './useToneSynth';
+import type { PannerHook } from './usePanner';
+
+export interface TransportControllerState {
+  isPlaying: boolean;
+  bpm: number;
+  loop: boolean;
+  isTrackMuted: boolean;
+  currentStep: number;
+}
+
+export interface TransportControllerActions {
+  play(): Promise<void>;
+  pause(): void;
+  stop(): void;
+  toggle(): Promise<void>;
+  setBpm(bpm: number): void;
+  setLoop(loop: boolean): void;
+  setTrackMute(muted: boolean): void;
+  panic(): void;
+}
+
+export type TransportController = TransportControllerState & TransportControllerActions;
+
+export interface TransportCore {
+  isPlaying: () => boolean;
+  currentStep: () => number;
+  isTrackMuted: () => boolean;
+  play(): void;
+  pause(): void;
+  stop(): void;
+  setBpm(bpm: number): void;
+  setLoop(loop: boolean): void;
+  setTrackMute(muted: boolean): void;
+  panic(): void;
+}
+
+export interface TransportCoreDeps {
+  noteOn: (midi: number, velocity: number) => void;
+  noteOff: (midi: number) => void;
+  synthPanic: () => void;
+  getGainNode: () => GainNode;
+  onStepChange?: (step: number) => void;
+}
+
+/**
+ * Pure factory: no React state. Accepts deps via object so tests can substitute.
+ * State transitions:
+ *   pause() — keeps current step, does NOT call panic()
+ *   stop()  — resets step to -1, calls panic() exactly once
+ *   setTrackMute(true) — silences via GainNode; sequencer timing continues
+ */
+export function createTransportCore(deps: TransportCoreDeps): TransportCore {
+  let _trackMuted = false;
+
+  const seq: Sequencer = createSequencer(
+    deps.noteOn,
+    deps.noteOff,
+    deps.synthPanic,
+    deps.onStepChange,
+  );
+
+  function play() {
+    seq.start();
+  }
+
+  function pause() {
+    // Does NOT reset step, does NOT call panic
+    seq.pause();
+  }
+
+  function stop() {
+    // Resets step to -1, calls panic exactly once (done inside createSequencer.stop)
+    seq.stop();
+  }
+
+  function setBpm(bpm: number) {
+    try {
+      Tone.getTransport().bpm.value = bpm;
+    } catch {
+      /* transport not yet ready */
+    }
+  }
+
+  function setLoop(loop: boolean) {
+    Tone.getTransport().loop = loop;
+  }
+
+  function setTrackMute(muted: boolean) {
+    _trackMuted = muted;
+    // Track mute overrides synth/panner enable states for final audible output
+    deps.getGainNode().gain.value = muted ? 0 : 1;
+    // Sequencer timing / step progression continues regardless of mute state
+  }
+
+  function panic() {
+    deps.synthPanic();
+  }
+
+  return {
+    isPlaying: () => seq.isPlaying(),
+    currentStep: () => seq.currentStep(),
+    isTrackMuted: () => _trackMuted,
+    play,
+    pause,
+    stop,
+    setBpm,
+    setLoop,
+    setTrackMute,
+    panic,
+  };
+}
+
+export function useTransportController(
+  toneSynth: ToneSynthHook,
+  panner: PannerHook,
+): TransportController {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [bpm, setBpmState] = useState(120);
+  const [loop, setLoopState] = useState(false);
+  const [isTrackMuted, setIsTrackMutedState] = useState(false);
+  const [currentStep, setCurrentStep] = useState(-1);
+
+  const toneSynthRef = useRef(toneSynth);
+  toneSynthRef.current = toneSynth;
+  const pannerRef = useRef(panner);
+  pannerRef.current = panner;
+
+  const coreRef = useRef<TransportCore | null>(null);
+
+  if (!coreRef.current) {
+    coreRef.current = createTransportCore({
+      noteOn: (midi, velocity) => toneSynthRef.current.noteOn(midi, velocity),
+      noteOff: (midi) => toneSynthRef.current.noteOff(midi),
+      synthPanic: () => toneSynthRef.current.panic(),
+      getGainNode: () => pannerRef.current.getGainNode(),
+      onStepChange: (step) => setCurrentStep(step),
+    });
+  }
+
+  const play = useCallback(async () => {
+    await Tone.start();
+    coreRef.current!.play();
+    setIsPlaying(true);
+  }, []);
+
+  const pause = useCallback(() => {
+    coreRef.current!.pause();
+    setIsPlaying(false);
+  }, []);
+
+  const stop = useCallback(() => {
+    coreRef.current!.stop();
+    setIsPlaying(false);
+    setCurrentStep(-1);
+  }, []);
+
+  const toggle = useCallback(async () => {
+    if (coreRef.current!.isPlaying()) {
+      pause();
+    } else {
+      await play();
+    }
+  }, [play, pause]);
+
+  const setBpm = useCallback((newBpm: number) => {
+    setBpmState(newBpm);
+    coreRef.current!.setBpm(newBpm);
+  }, []);
+
+  const setLoop = useCallback((newLoop: boolean) => {
+    setLoopState(newLoop);
+    coreRef.current!.setLoop(newLoop);
+  }, []);
+
+  const setTrackMute = useCallback((muted: boolean) => {
+    setIsTrackMutedState(muted);
+    coreRef.current!.setTrackMute(muted);
+  }, []);
+
+  const panic = useCallback(() => {
+    coreRef.current!.panic();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      coreRef.current?.stop();
+    };
+  }, []);
+
+  return {
+    isPlaying,
+    bpm,
+    loop,
+    isTrackMuted,
+    currentStep,
+    play,
+    pause,
+    stop,
+    toggle,
+    setBpm,
+    setLoop,
+    setTrackMute,
+    panic,
+  };
+}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import PianoKeyboard from './components/PianoKeyboard'
 import Transport from './components/Transport'
 import Toolbar from './components/Toolbar'
@@ -8,10 +8,9 @@ import SequencerDisplay from './components/SequencerDisplay'
 import ParameterPanel from './components/ParameterPanel'
 import VUMeter from './components/VUMeter'
 import { useAudioEngine } from './hooks/useAudioEngine'
-import { useSequencer } from './hooks/useSequencer'
 import { useToneSynth } from './hooks/useToneSynth'
 import { usePanner } from './hooks/usePanner'
-import { getTransport } from 'tone'
+import { useTransportController } from './hooks/useTransportController'
 import './App.css'
 
 // Expose last note events for E2E testing
@@ -29,56 +28,39 @@ function App() {
   const audioEngine = useAudioEngine()
   const toneSynth = useToneSynth()
   const panner = usePanner()
-  const [panicSignal, setPanicSignal] = useState(0)
-  const [bpm, setBpm] = useState(120)
-  const [loop, setLoop] = useState(false)
 
-  const noteOn = useCallback((midi: number) => {
+  // Single source of truth for transport + mute state
+  const transport = useTransportController(toneSynth, panner)
+  const [panicSignal, setPanicSignal] = useState(0)
+
+  const noteOn = (midi: number) => {
     audioEngine.initAudio().then(() => {
       audioEngine.noteOn(midi)
     })
     window.__lastNoteOn = midi
-  }, [audioEngine])
+  }
 
-  const noteOff = useCallback((midi: number) => {
+  const noteOff = (midi: number) => {
     window.__lastNoteOff = midi
     audioEngine.noteOff(midi)
-  }, [audioEngine])
+  }
 
-  const sequencer = useSequencer(toneSynth.noteOn, toneSynth.noteOff, toneSynth.panic)
-
-  const handleTogglePlay = useCallback(async () => {
-    await audioEngine.initAudio()
-    sequencer.toggle()
-  }, [audioEngine, sequencer])
-
-  const handlePanic = useCallback(() => {
+  const handlePanic = () => {
     audioEngine.panic()
+    transport.panic()
     setPanicSignal((prev) => prev + 1)
     window.__panicCount = (window.__panicCount ?? 0) + 1
-  }, [audioEngine])
+  }
 
-  const handleSetParam = useCallback((name: string, value: number) => {
+  const handleSetParam = (name: string, value: number) => {
     window.__lastSetParam = { name, value }
     audioEngine.setParam(name, value)
-  }, [audioEngine])
+  }
 
-  const handleBpmChange = useCallback((newBpm: number) => {
-    setBpm(newBpm)
-    try { getTransport().bpm.value = newBpm } catch { /* not ready */ }
-  }, [])
-
-  const handleLoopToggle = useCallback(() => {
-    setLoop((prev) => {
-      const next = !prev
-      sequencer.setLoop(next)
-      return next
-    })
-  }, [sequencer])
-
-  const handleStop = useCallback(() => {
-    sequencer.stop()
-  }, [sequencer])
+  const handlePlay = async () => {
+    await audioEngine.initAudio()
+    await transport.toggle()
+  }
 
   useEffect(() => {
     window.__panicCount = 0
@@ -87,34 +69,39 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (sequencer.currentStep >= 0) {
-      window.__activeSteps = [...(window.__activeSteps ?? []), sequencer.currentStep]
+    if (transport.currentStep >= 0) {
+      window.__activeSteps = [...(window.__activeSteps ?? []), transport.currentStep]
     }
-  }, [sequencer.currentStep])
+  }, [transport.currentStep])
 
   return (
     <div id="app">
       <Toolbar
-        isPlaying={sequencer.isPlaying}
-        onPlay={handleTogglePlay}
-        onStop={handleStop}
+        isPlaying={transport.isPlaying}
+        onPlay={handlePlay}
+        onStop={transport.stop}
         onPanic={handlePanic}
-        bpm={bpm}
-        onBpmChange={handleBpmChange}
-        loop={loop}
-        onLoopToggle={handleLoopToggle}
+        bpm={transport.bpm}
+        onBpmChange={transport.setBpm}
+        loop={transport.loop}
+        onLoopToggle={() => transport.setLoop(!transport.loop)}
       />
-      <TrackZone isPlaying={sequencer.isPlaying} bpm={bpm} />
+      <TrackZone
+        isPlaying={transport.isPlaying}
+        bpm={transport.bpm}
+        isTrackMuted={transport.isTrackMuted}
+        onMuteToggle={transport.setTrackMute}
+      />
       <DevicePanel synth={toneSynth} panner={panner} />
       <div className="app-header">
         <h1 className="app-header-title">Web DAW Demo</h1>
         <VUMeter getAnalyserNode={audioEngine.getAnalyserNode} />
       </div>
       <ParameterPanel setParam={handleSetParam} />
-      <SequencerDisplay currentStep={sequencer.currentStep} />
+      <SequencerDisplay currentStep={transport.currentStep} />
       <Transport
-        isPlaying={sequencer.isPlaying}
-        onTogglePlay={handleTogglePlay}
+        isPlaying={transport.isPlaying}
+        onTogglePlay={handlePlay}
         onPanic={handlePanic}
       />
       <PianoKeyboard

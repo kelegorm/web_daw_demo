@@ -120,21 +120,21 @@ Layout (top to bottom):
 - [x] Mark completed
 
 ### Task 8: Transport and mute business logic
-- [ ] Create `src/hooks/useTransportController.ts` as the single owner of transport + mute transitions
-- [ ] Expose explicit actions: `play()`, `pause()`, `stop()`, `setBpm()`, `setLoop()`, `setTrackMute()`, `panic()`
-- [ ] Define state transition contract:
-    - [ ] `pause()` keeps current step and does not call `panic()`
-    - [ ] `stop()` resets current step to 0 and calls `panic()/releaseAll()` exactly once
-    - [ ] `setTrackMute(true)` silences output via `GainNode`, but sequencer timing/step progression continues
-    - [ ] `setTrackMute(false)` restores audible output and meter activity
-- [ ] Define mute priority rule: track mute overrides synth/panner enable states for final audible output
-- [ ] Wire Toolbar transport controls, Track mute button, and device enable toggles through this controller (no duplicated component-local transport logic)
-- [ ] Write Vitest test: play -> pause -> play resumes from paused step
-- [ ] Write Vitest test: stop triggers panic once and resets step
-- [ ] Write Vitest test: mute sets gain to 0, unmute restores gain > 0
-- [ ] Write Vitest test: while muted, sequencer current step still advances
-- [ ] Write Vitest test: track mute ON keeps output silent even if synth/panner are enabled
-- [ ] Mark completed
+- [x] Create `src/hooks/useTransportController.ts` as the single owner of transport + mute transitions
+- [x] Expose explicit actions: `play()`, `pause()`, `stop()`, `setBpm()`, `setLoop()`, `setTrackMute()`, `panic()`
+- [x] Define state transition contract:
+    - [x] `pause()` keeps current step and does not call `panic()`
+    - [x] `stop()` resets current step to 0 and calls `panic()/releaseAll()` exactly once
+    - [x] `setTrackMute(true)` silences output via `GainNode`, but sequencer timing/step progression continues
+    - [x] `setTrackMute(false)` restores audible output and meter activity
+- [x] Define mute priority rule: track mute overrides synth/panner enable states for final audible output
+- [x] Wire Toolbar transport controls, Track mute button, and device enable toggles through this controller (no duplicated component-local transport logic)
+- [x] Write Vitest test: play -> pause -> play resumes from paused step
+- [x] Write Vitest test: stop triggers panic once and resets step
+- [x] Write Vitest test: mute sets gain to 0, unmute restores gain > 0
+- [x] Write Vitest test: while muted, sequencer current step still advances
+- [x] Write Vitest test: track mute ON keeps output silent even if synth/panner are enabled
+- [x] Mark completed
 
 ### Task 9: MIDI keyboard strip
 - [ ] Create `src/components/MidiKeyboard.tsx`

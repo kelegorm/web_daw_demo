@@ -7,10 +7,11 @@ const MAX_PITCH = 72
 interface Props {
   isPlaying: boolean
   bpm: number
+  isTrackMuted?: boolean
+  onMuteToggle?: (muted: boolean) => void
 }
 
-export default function TrackZone({ isPlaying, bpm }: Props) {
-  const [muted, setMuted] = useState(false)
+export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMuteToggle }: Props) {
   const [rec, setRec] = useState(true)
   const [volume, setVolume] = useState(80)
   const [playheadPos, setPlayheadPos] = useState(0)
@@ -93,12 +94,12 @@ export default function TrackZone({ isPlaying, bpm }: Props) {
           />
           <button
             className="track-mute"
-            aria-pressed={muted}
-            onClick={() => setMuted((m) => !m)}
+            aria-pressed={isTrackMuted}
+            onClick={() => onMuteToggle?.(!isTrackMuted)}
             style={{
               padding: '2px 6px',
               fontSize: 'var(--font-size-xs)',
-              background: muted ? 'var(--color-accent-dim)' : 'var(--color-surface-raised)',
+              background: isTrackMuted ? 'var(--color-accent-dim)' : 'var(--color-surface-raised)',
               color: 'var(--color-text)',
               border: '1px solid var(--color-border)',
               borderRadius: 'var(--radius-sm)',
