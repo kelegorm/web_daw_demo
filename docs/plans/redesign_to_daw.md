@@ -3,6 +3,8 @@
 ## Overview
 Redesign the synth demo into a DAW-style interface inspired by Bitwig Studio.
 Stack: React + TypeScript + Vite, Tone.js (synth), Web Audio API (panner effect).
+Documentation alignment:
+- Update architecture docs (`AGENTS.md`, plan notes) to reflect Tone.js migration and new ownership boundaries.
 
 Architecture ownership:
 - JS/Tone.js: transport, sequencer, timing, synth engine, MIDI events
@@ -21,17 +23,6 @@ Layout (top to bottom):
 - `npm run build`
 
 ---
-
-### Task 0: Remove WASM and AudioWorklet
-- [ ] Delete `src/worklets/` directory
-- [ ] Delete `src/wasm/` directory
-- [ ] Delete `public/synth.wasm` and `public/synth.js` if present
-- [ ] Delete `src/hooks/useAudioEngine.ts` entirely
-- [ ] Remove all imports referencing worklet, WASM, or useAudioEngine across codebase
-- [ ] Delete all test files referencing AudioWorklet, WASM, or useAudioEngine
-- [ ] Run `npm run test` — verify no failing tests remain (zero passing is acceptable)
-- [ ] `npm run build` passes with no errors
-- [ ] Mark completed
 
 ### Task 1: Design tokens and dark theme
 - [ ] Create `src/styles/tokens.css` with CSS variables: background colors, surface colors, accent color, border radius, font sizes, spacing scale
@@ -81,9 +72,9 @@ Layout (top to bottom):
 ### Task 5: Panner effect node
 - [ ] Create `src/hooks/usePanner.ts`
 - [ ] Instantiate `StereoPannerNode` via raw Web Audio API: `audioContext.createStereoPanner()`
-- [ ] Connect: Tone.js synth output → StereoPannerNode → AudioContext.destination
+- [ ] Define and implement explicit graph: `Tone.PolySynth output -> StereoPannerNode -> GainNode (track mute) -> AnalyserNode -> AudioContext.destination`
 - [ ] Expose: `setPan(value)` (-1 left, 0 center, +1 right), `setEnabled(bool)`, `isEnabled: boolean`
-- [ ] `setEnabled(false)` bypasses panner (connect synth directly to destination)
+- [ ] `setEnabled(false)` bypasses panner while keeping `GainNode -> AnalyserNode` chain intact
 - [ ] Write Vitest test: `setPan(-1)` sets `pannerNode.pan.value` to -1
 - [ ] Write Vitest test: `setPan(0.5)` sets `pannerNode.pan.value` to 0.5
 - [ ] Write Playwright test: open app, verify no AudioContext errors in console
@@ -118,7 +109,9 @@ Layout (top to bottom):
 - [ ] Replace raw `audioContext.currentTime` scheduler with `Tone.Transport` and `Tone.Part`
 - [ ] Sequence: notes [60, 62, 64, 65, 67, 69, 71, 72], one note per 8th note at current BPM
 - [ ] Each step calls `useToneSynth.noteOn()` and schedules `noteOff()` after 80% of step duration
-- [ ] Transport Play/Stop synced with `Tone.Transport.start()` / `Tone.Transport.stop()`
+- [ ] Transport semantics:
+  - [ ] Pause = temporary transport halt without resetting current step
+  - [ ] Stop = transport stop + step reset to 0 + `panic()/releaseAll()` to avoid hanging notes
 - [ ] Loop button toggles `Tone.Transport.loop`
 - [ ] Current step index exposed for SequencerDisplay and playhead in TrackZone
 - [ ] Write Vitest test: sequence fires exactly [60, 62, 64, 65, 67, 69, 71, 72] in order (mock Tone.Transport)
@@ -126,7 +119,24 @@ Layout (top to bottom):
 - [ ] Write Playwright test: click Play, wait 1000ms at 120 BPM, verify at least 2 different step indicators highlighted
 - [ ] Mark completed
 
-### Task 8: MIDI keyboard strip
+### Task 8: Transport and mute business logic
+- [ ] Create `src/hooks/useTransportController.ts` as the single owner of transport + mute transitions
+- [ ] Expose explicit actions: `play()`, `pause()`, `stop()`, `setBpm()`, `setLoop()`, `setTrackMute()`, `panic()`
+- [ ] Define state transition contract:
+    - [ ] `pause()` keeps current step and does not call `panic()`
+    - [ ] `stop()` resets current step to 0 and calls `panic()/releaseAll()` exactly once
+    - [ ] `setTrackMute(true)` silences output via `GainNode`, but sequencer timing/step progression continues
+    - [ ] `setTrackMute(false)` restores audible output and meter activity
+- [ ] Define mute priority rule: track mute overrides synth/panner enable states for final audible output
+- [ ] Wire Toolbar transport controls, Track mute button, and device enable toggles through this controller (no duplicated component-local transport logic)
+- [ ] Write Vitest test: play -> pause -> play resumes from paused step
+- [ ] Write Vitest test: stop triggers panic once and resets step
+- [ ] Write Vitest test: mute sets gain to 0, unmute restores gain > 0
+- [ ] Write Vitest test: while muted, sequencer current step still advances
+- [ ] Write Vitest test: track mute ON keeps output silent even if synth/panner are enabled
+- [ ] Mark completed
+
+### Task 9: MIDI keyboard strip
 - [ ] Create `src/components/MidiKeyboard.tsx`
 - [ ] Horizontal strip at bottom, full width, height ~100px
 - [ ] 2 octaves C3–B4 (MIDI 48–71), white and black keys
@@ -138,9 +148,9 @@ Layout (top to bottom):
 - [ ] Write Playwright test: mouseup on C3, verify C3 loses pressed class, E3 retains it
 - [ ] Mark completed
 
-### Task 9: VU meter on track header
+### Task 10: VU meter on track header
 - [ ] Create `src/components/VUMeter.tsx`
-- [ ] Vertical bar, reads RMS from `AnalyserNode` connected after panner via `requestAnimationFrame`
+- [ ] Vertical bar, reads RMS from `AnalyserNode` in graph `PolySynth -> Panner -> Gain(Mute) -> Analyser -> destination` via `requestAnimationFrame`
 - [ ] Green / yellow / red zones
 - [ ] Embed in track header in `TrackZone.tsx`
 - [ ] Mute button silences output and freezes meter at zero
@@ -149,11 +159,22 @@ Layout (top to bottom):
 - [ ] Write Playwright test: click Mute → meter returns to minimum within 300ms
 - [ ] Mark completed
 
-### Task 10: Final integration and layout polish
+### Task 11: Final integration and layout polish
 - [ ] Compose all components in `src/App.tsx`: Toolbar → TrackZone → DevicePanel → MidiKeyboard
 - [ ] Consistent spacing, colors, fonts using design tokens from Task 1
 - [ ] All interactive elements have visible focus styles
 - [ ] No horizontal scroll at 1280px width
 - [ ] Write Playwright smoke test: open app, click Play, press C3, verify meter reacts, sequencer advances, no console errors
 - [ ] Write Playwright test: viewport 1280px, verify no horizontal scrollbar
+- [ ] Mark completed
+
+### Task 12: Legacy cleanup (after Tone.js integration is green)
+- [ ] Delete `src/worklets/` directory
+- [ ] Delete `src/wasm/` directory
+- [ ] Delete `public/synth.wasm` and `public/synth.js` if present
+- [ ] Delete `src/hooks/useAudioEngine.ts` entirely
+- [ ] Remove all imports referencing worklet, WASM, or useAudioEngine across codebase
+- [ ] Delete all test files referencing AudioWorklet, WASM, or useAudioEngine
+- [ ] Run `npm run test` — verify test suite passes
+- [ ] `npm run build` passes with no errors
 - [ ] Mark completed
