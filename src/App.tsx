@@ -3,6 +3,7 @@ import PianoKeyboard from './components/PianoKeyboard'
 import Transport from './components/Transport'
 import SequencerDisplay from './components/SequencerDisplay'
 import ParameterPanel from './components/ParameterPanel'
+import VUMeter from './components/VUMeter'
 import { useAudioEngine } from './hooks/useAudioEngine'
 import { useSequencer } from './hooks/useSequencer'
 
@@ -22,8 +23,10 @@ function App() {
   const [panicSignal, setPanicSignal] = useState(0)
 
   const noteOn = useCallback((midi: number) => {
+    audioEngine.initAudio().then(() => {
+      audioEngine.noteOn(midi)
+    })
     window.__lastNoteOn = midi
-    audioEngine.noteOn(midi)
   }, [audioEngine])
 
   const noteOff = useCallback((midi: number) => {
@@ -66,6 +69,9 @@ function App() {
   return (
     <div id="app">
       <h1>Web DAW Demo</h1>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+        <VUMeter getAnalyserNode={audioEngine.getAnalyserNode} />
+      </div>
       <ParameterPanel setParam={handleSetParam} />
       <Transport
         isPlaying={sequencer.isPlaying}

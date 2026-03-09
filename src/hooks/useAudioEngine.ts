@@ -67,6 +67,7 @@ export interface AudioEngineHook {
   panic: () => void;
   setParam: (name: string, value: number) => void;
   analyserNode: AnalyserNode | null;
+  getAnalyserNode: () => AnalyserNode | null;
   getAudioContext: () => AudioContext | null;
   initAudio: () => Promise<void>;
 }
@@ -86,6 +87,7 @@ export function useAudioEngine(): AudioEngineHook {
   const panic = useCallback(() => engine.panic(), [engine]);
   const setParam = useCallback((name: string, value: number) => engine.setParam(name, value), [engine]);
   const getAudioContext = useCallback(() => engine.getAudioContext(), [engine]);
+  const getAnalyserNode = useCallback(() => engine.getAnalyserNode(), [engine]);
 
   return {
     noteOn,
@@ -93,6 +95,7 @@ export function useAudioEngine(): AudioEngineHook {
     panic,
     setParam,
     analyserNode: engine.getAnalyserNode(),
+    getAnalyserNode,
     getAudioContext,
     initAudio,
   };

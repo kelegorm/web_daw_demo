@@ -90,12 +90,12 @@ Architecture ownership:
 - [x] Mark completed
 
 ### Task 9: VU meter
-- [ ] Create `src/components/VUMeter.tsx`
-- [ ] Reads RMS from `AnalyserNode` via `requestAnimationFrame`
-- [ ] Vertical bar with green / yellow / red zones
-- [ ] Write Playwright test: with no notes playing, verify meter bar height is at minimum
-- [ ] Write Playwright test: click piano key, verify meter bar height increases above minimum within 200ms
-- [ ] Mark completed
+- [x] Create `src/components/VUMeter.tsx`
+- [x] Reads RMS from `AnalyserNode` via `requestAnimationFrame`
+- [x] Vertical bar with green / yellow / red zones
+- [x] Write Playwright test: with no notes playing, verify meter bar height is at minimum
+- [x] Write Playwright test: click piano key, verify meter bar height increases above minimum within 200ms
+- [x] Mark completed
 
 ### Task 10: Layout and final integration
 - [ ] Compose all components in `src/App.tsx`
