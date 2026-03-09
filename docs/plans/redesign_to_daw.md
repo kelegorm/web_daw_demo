@@ -45,17 +45,17 @@ Layout (top to bottom):
 - [x] Mark completed
 
 ### Task 3: Track zone with timeline and MIDI clip block
-- [ ] Create `src/components/TrackZone.tsx`
-- [ ] Full-width zone below toolbar
-- [ ] Track header on left (fixed width 180px): track name "synth1", horizontal volume slider, Mute toggle (default off), Rec toggle (default on)
-- [ ] Timeline area on right: shows MIDI clip as a colored block, width proportional to clip duration at current BPM
-- [ ] MIDI clip block displays mini piano-roll: render notes [60, 62, 64, 65, 67, 69, 71, 72] as small horizontal bars inside the block, vertically positioned by pitch
-- [ ] Playhead line moves across timeline during playback using `requestAnimationFrame`
-- [ ] Write Playwright test: verify track header contains text "synth1"
-- [ ] Write Playwright test: verify Mute button has aria-pressed="false" by default
-- [ ] Write Playwright test: verify Rec button has aria-pressed="true" by default
-- [ ] Write Playwright test: click Play, wait 500ms, verify playhead has moved (check transform or left style changed)
-- [ ] Mark completed
+- [x] Create `src/components/TrackZone.tsx`
+- [x] Full-width zone below toolbar
+- [x] Track header on left (fixed width 180px): track name "synth1", horizontal volume slider, Mute toggle (default off), Rec toggle (default on)
+- [x] Timeline area on right: shows MIDI clip as a colored block, width proportional to clip duration at current BPM
+- [x] MIDI clip block displays mini piano-roll: render notes [60, 62, 64, 65, 67, 69, 71, 72] as small horizontal bars inside the block, vertically positioned by pitch
+- [x] Playhead line moves across timeline during playback using `requestAnimationFrame`
+- [x] Write Playwright test: verify track header contains text "synth1"
+- [x] Write Playwright test: verify Mute button has aria-pressed="false" by default
+- [x] Write Playwright test: verify Rec button has aria-pressed="true" by default
+- [x] Write Playwright test: click Play, wait 500ms, verify playhead has moved (check transform or left style changed)
+- [x] Mark completed
 
 ### Task 4: Tone.js polyphonic synth engine
 - [ ] Install Tone.js: `npm install tone`

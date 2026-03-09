@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import PianoKeyboard from './components/PianoKeyboard'
 import Transport from './components/Transport'
 import Toolbar from './components/Toolbar'
+import TrackZone from './components/TrackZone'
 import SequencerDisplay from './components/SequencerDisplay'
 import ParameterPanel from './components/ParameterPanel'
 import VUMeter from './components/VUMeter'
@@ -100,6 +101,7 @@ function App() {
         loop={loop}
         onLoopToggle={handleLoopToggle}
       />
+      <TrackZone isPlaying={sequencer.isPlaying} bpm={bpm} />
       <div className="app-header">
         <h1 className="app-header-title">Web DAW Demo</h1>
         <VUMeter getAnalyserNode={audioEngine.getAnalyserNode} />
