@@ -31,17 +31,17 @@ Master limiter device, and track row click selection.
 - [x] Mark completed
 
 ### Task 3: Master Limiter hook
-- [ ] Create `src/hooks/useLimiter.ts`
-- [ ] Instantiate `Tone.Limiter` with default threshold `-3` dB
-- [ ] Insert limiter into existing usePanner chain between masterGain and masterAnalyser/destination
+- [x] Create `src/hooks/useLimiter.ts`
+- [x] Instantiate `Tone.Limiter` with default threshold `-3` dB
+- [x] Insert limiter into existing usePanner chain between masterGain and masterAnalyser/destination
     - Current chain: masterGain → masterAnalyser → audioContext.destination
     - New chain: masterGain → Limiter → masterAnalyser → audioContext.destination
-- [ ] usePanner.ts accepts optional limiter node and rewires chain on mount — do NOT connect via Tone.Destination
-- [ ] Expose: `setThreshold(db: number)`, `setEnabled(bool)`, `isEnabled: boolean`, `threshold: number`
-- [ ] `setEnabled(false)` bypasses limiter node (masterGain connects directly to masterAnalyser)
-- [ ] Write Vitest test: `setThreshold(-6)` sets `limiter.threshold.value` to -6
-- [ ] Write Vitest test: `setEnabled(false)` removes limiter from chain, masterGain connects directly to masterAnalyser
-- [ ] Mark completed
+- [x] usePanner.ts accepts optional limiter node and rewires chain on mount — do NOT connect via Tone.Destination
+- [x] Expose: `setThreshold(db: number)`, `setEnabled(bool)`, `isEnabled: boolean`, `threshold: number`
+- [x] `setEnabled(false)` bypasses limiter node (masterGain connects directly to masterAnalyser)
+- [x] Write Vitest test: `setThreshold(-6)` sets `limiter.threshold.value` to -6
+- [x] Write Vitest test: `setEnabled(false)` removes limiter from chain, masterGain connects directly to masterAnalyser
+- [x] Mark completed
 
 ### Task 4: Device panel switches content on track selection
 - [ ] Delete or rewrite existing test in `e2e/devicepanel.spec.ts` that asserts Polysynth and Panner visible simultaneously — this contract no longer holds after track selection
