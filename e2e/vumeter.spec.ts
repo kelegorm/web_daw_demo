@@ -194,6 +194,7 @@ test('VU meter peak hold tick falls downward after release within 2000ms', async
 
   // Release the key — peak should start decaying after hold interval
   await c3.dispatchEvent('mouseup')
+  await page.locator('.toolbar-stop').click()
 
   // Wait for hold to expire and capture decay trend in two samples.
   await page.waitForTimeout(1700)

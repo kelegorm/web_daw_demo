@@ -48,9 +48,10 @@ function zoneColor(db: number): string {
 // 0 dB position from bottom as percentage
 const ZERO_DB_PCT = ((0 - DB_MIN) / DB_RANGE) * 100
 
-const PEAK_HOLD_MS = 1000
-const PEAK_DECAY_NORM_PER_MS = 0.5 / 1000 // 0.5 normalized units per second for stable visible fall
-const PEAK_HOLD_RESET_EPSILON = 0.02 // ignore tiny jitter so hold timer does not keep resetting
+const PEAK_HOLD_MS = 180
+const PEAK_ATTACK_ALPHA = 0.55 // fast but non-zero attack for smoother peak rise
+const PEAK_DECAY_NORM_PER_MS = 0.75 / 1000 // smoother fall after hold; avoids jumpy drop perception
+const PEAK_HOLD_RESET_EPSILON = 0.015 // keep stability but react a bit earlier to new peaks
 
 interface ChannelState {
   level: number
@@ -58,15 +59,26 @@ interface ChannelState {
   peakDb: number
 }
 
-function readRms(analyser: AnalyserNode, buf: Uint8Array): number {
-  if (buf.length !== analyser.fftSize) return 0
+interface SignalMetrics {
+  rms: number
+  peak: number
+}
+
+function readSignalMetrics(analyser: AnalyserNode, buf: Uint8Array): SignalMetrics {
+  if (buf.length !== analyser.fftSize) return { rms: 0, peak: 0 }
   analyser.getByteTimeDomainData(buf)
   let sum = 0
+  let peak = 0
   for (let i = 0; i < buf.length; i++) {
     const s = (buf[i] - 128) / 128
+    const abs = Math.abs(s)
+    if (abs > peak) peak = abs
     sum += s * s
   }
-  return Math.sqrt(sum / buf.length)
+  return {
+    rms: Math.sqrt(sum / buf.length),
+    peak,
+  }
 }
 
 export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = false }: Props) {
@@ -81,6 +93,8 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
   // Peak hold state — stored in refs to avoid triggering re-renders on every frame
   const peakLRef = useRef({ norm: 0, db: -Infinity, heldAt: 0, decaying: false })
   const peakRRef = useRef({ norm: 0, db: -Infinity, heldAt: 0, decaying: false })
+  const rmsLRef = useRef({ norm: 0, db: -Infinity, heldAt: 0, decaying: false })
+  const rmsRRef = useRef({ norm: 0, db: -Infinity, heldAt: 0, decaying: false })
 
   useEffect(() => {
     if (muted) {
@@ -88,6 +102,8 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
       setRight({ level: 0, peakNorm: 0, peakDb: -Infinity })
       peakLRef.current = { norm: 0, db: -Infinity, heldAt: 0, decaying: false }
       peakRRef.current = { norm: 0, db: -Infinity, heldAt: 0, decaying: false }
+      rmsLRef.current = { norm: 0, db: -Infinity, heldAt: 0, decaying: false }
+      rmsRRef.current = { norm: 0, db: -Infinity, heldAt: 0, decaying: false }
       window.__vuMeterLevel = 0
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current)
@@ -105,42 +121,92 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
       const analyserL = getAnalyserNodeL()
       const analyserR = getAnalyserNodeR()
 
-      let normL = 0
-      let dbL = -Infinity
-      let normR = 0
-      let dbR = -Infinity
+      let rmsNormL = 0
+      let rmsDbL = -Infinity
+      let peakNormL = 0
+      let peakDbL = -Infinity
+      let rmsNormR = 0
+      let rmsDbR = -Infinity
+      let peakNormR = 0
+      let peakDbR = -Infinity
 
       if (analyserL) {
         if (!bufLRef.current || bufLRef.current.length !== analyserL.fftSize) {
           bufLRef.current = new Uint8Array(analyserL.fftSize)
         }
-        const rms = readRms(analyserL, bufLRef.current)
-        dbL = rms > 1e-6 ? 20 * Math.log10(rms) : -Infinity
-        normL = dbToNorm(dbL)
+        const metrics = readSignalMetrics(analyserL, bufLRef.current)
+        rmsDbL = metrics.rms > 1e-6 ? 20 * Math.log10(metrics.rms) : -Infinity
+        rmsNormL = dbToNorm(rmsDbL)
+        peakDbL = metrics.peak > 1e-6 ? 20 * Math.log10(metrics.peak) : -Infinity
+        peakNormL = dbToNorm(peakDbL)
       }
 
       if (analyserR) {
         if (!bufRRef.current || bufRRef.current.length !== analyserR.fftSize) {
           bufRRef.current = new Uint8Array(analyserR.fftSize)
         }
-        const rms = readRms(analyserR, bufRRef.current)
-        dbR = rms > 1e-6 ? 20 * Math.log10(rms) : -Infinity
-        normR = dbToNorm(dbR)
+        const metrics = readSignalMetrics(analyserR, bufRRef.current)
+        rmsDbR = metrics.rms > 1e-6 ? 20 * Math.log10(metrics.rms) : -Infinity
+        rmsNormR = dbToNorm(rmsDbR)
+        peakDbR = metrics.peak > 1e-6 ? 20 * Math.log10(metrics.peak) : -Infinity
+        peakNormR = dbToNorm(peakDbR)
       }
 
-      // Update peak L
+      // RMS bar follows the same attack/hold/release ballistics as peak indicator.
+      const rmsL = rmsLRef.current
+      if (rmsNormL > rmsL.norm) {
+        const shouldResetHold = rmsL.decaying
+          || rmsL.heldAt === 0
+          || rmsNormL >= rmsL.norm + PEAK_HOLD_RESET_EPSILON
+        rmsL.norm += (rmsNormL - rmsL.norm) * PEAK_ATTACK_ALPHA
+        rmsL.db = rmsDbL
+        if (shouldResetHold) {
+          rmsL.heldAt = now
+          rmsL.decaying = false
+        }
+      } else {
+        if (!rmsL.decaying && now - rmsL.heldAt > PEAK_HOLD_MS) {
+          rmsL.decaying = true
+        }
+        if (rmsL.decaying) {
+          rmsL.norm = Math.max(0, rmsL.norm - PEAK_DECAY_NORM_PER_MS * dtMs)
+          if (rmsL.norm <= 0) rmsL.db = -Infinity
+        }
+      }
+
+      const rmsR = rmsRRef.current
+      if (rmsNormR > rmsR.norm) {
+        const shouldResetHold = rmsR.decaying
+          || rmsR.heldAt === 0
+          || rmsNormR >= rmsR.norm + PEAK_HOLD_RESET_EPSILON
+        rmsR.norm += (rmsNormR - rmsR.norm) * PEAK_ATTACK_ALPHA
+        rmsR.db = rmsDbR
+        if (shouldResetHold) {
+          rmsR.heldAt = now
+          rmsR.decaying = false
+        }
+      } else {
+        if (!rmsR.decaying && now - rmsR.heldAt > PEAK_HOLD_MS) {
+          rmsR.decaying = true
+        }
+        if (rmsR.decaying) {
+          rmsR.norm = Math.max(0, rmsR.norm - PEAK_DECAY_NORM_PER_MS * dtMs)
+          if (rmsR.norm <= 0) rmsR.db = -Infinity
+        }
+      }
+
+      // Update peak L using sample-peak signal, while main bar stays RMS.
       const pkL = peakLRef.current
-      if (normL >= pkL.norm + PEAK_HOLD_RESET_EPSILON) {
-        const shouldResetHold = pkL.decaying || pkL.heldAt === 0
-        pkL.norm = normL
-        pkL.db = dbL
+      if (peakNormL > pkL.norm) {
+        const shouldResetHold = pkL.decaying
+          || pkL.heldAt === 0
+          || peakNormL >= pkL.norm + PEAK_HOLD_RESET_EPSILON
+        pkL.norm += (peakNormL - pkL.norm) * PEAK_ATTACK_ALPHA
+        pkL.db = peakDbL
         if (shouldResetHold) {
           pkL.heldAt = now
           pkL.decaying = false
         }
-      } else if (normL > pkL.norm) {
-        pkL.norm = normL
-        pkL.db = dbL
       } else {
         if (!pkL.decaying && now - pkL.heldAt > PEAK_HOLD_MS) {
           pkL.decaying = true
@@ -151,19 +217,18 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
         }
       }
 
-      // Update peak R
+      // Update peak R using sample-peak signal, while main bar stays RMS.
       const pkR = peakRRef.current
-      if (normR >= pkR.norm + PEAK_HOLD_RESET_EPSILON) {
-        const shouldResetHold = pkR.decaying || pkR.heldAt === 0
-        pkR.norm = normR
-        pkR.db = dbR
+      if (peakNormR > pkR.norm) {
+        const shouldResetHold = pkR.decaying
+          || pkR.heldAt === 0
+          || peakNormR >= pkR.norm + PEAK_HOLD_RESET_EPSILON
+        pkR.norm += (peakNormR - pkR.norm) * PEAK_ATTACK_ALPHA
+        pkR.db = peakDbR
         if (shouldResetHold) {
           pkR.heldAt = now
           pkR.decaying = false
         }
-      } else if (normR > pkR.norm) {
-        pkR.norm = normR
-        pkR.db = dbR
       } else {
         if (!pkR.decaying && now - pkR.heldAt > PEAK_HOLD_MS) {
           pkR.decaying = true
@@ -174,9 +239,10 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
         }
       }
 
-      setLeft({ level: normL, peakNorm: pkL.norm, peakDb: pkL.db })
-      setRight({ level: normR, peakNorm: pkR.norm, peakDb: pkR.db })
-      window.__vuMeterLevel = Math.max(normL, normR)
+      setLeft({ level: rmsL.norm, peakNorm: pkL.norm, peakDb: pkL.db })
+      setRight({ level: rmsR.norm, peakNorm: pkR.norm, peakDb: pkR.db })
+      // Expose raw RMS activity for tests/debugging; visual bars keep ballistic smoothing.
+      window.__vuMeterLevel = Math.max(rmsNormL, rmsNormR)
 
       rafRef.current = requestAnimationFrame(tick)
     }
@@ -247,8 +313,10 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
               bottom: `${left.peakNorm * 100}%`,
               left: 0,
               width: '100%',
-              height: 2,
+              height: 1,
               background: zoneColor(left.peakDb),
+              boxShadow: `0 0 4px ${zoneColor(left.peakDb)}`,
+              zIndex: 3,
             }}
           />
         )}
@@ -278,8 +346,10 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
               bottom: `${right.peakNorm * 100}%`,
               left: 0,
               width: '100%',
-              height: 2,
+              height: 1,
               background: zoneColor(right.peakDb),
+              boxShadow: `0 0 4px ${zoneColor(right.peakDb)}`,
+              zIndex: 3,
             }}
           />
         )}
