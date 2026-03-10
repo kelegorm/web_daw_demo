@@ -57,9 +57,10 @@ No audio engine changes.
 - [x] Mark completed
 
 ### Task 6: VU meter color zones matching DAW convention
-- [ ] Below -10 dB: green (#4caf74)
-- [ ] -10 dB to 0 dB: yellow/amber (#f5c842, harmonizes with app accent #f5a623)
-- [ ] Above 0 dB: red (#e83b3b)
-- [ ] Color transitions applied per-bar in real time as level changes
-- [ ] Peak hold tick uses same color as the zone it currently occupies
-- [ ] Write Play
+- [x] Below -10 dB: green (#4caf74)
+- [x] -10 dB to 0 dB: yellow/amber (#f5c842, harmonizes with app accent #f5a623)
+- [x] Above 0 dB: red (#e83b3b)
+- [x] Color transitions applied per-bar in real time as level changes
+- [x] Peak hold tick uses same color as the zone it currently occupies
+- [x] Write Playwright tests: gradient includes all zone colors; peak hold tick uses zone color
+- [x] Mark completed
