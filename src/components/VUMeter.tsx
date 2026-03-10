@@ -50,6 +50,7 @@ const ZERO_DB_PCT = ((0 - DB_MIN) / DB_RANGE) * 100
 
 const PEAK_HOLD_MS = 1500
 const PEAK_DECAY_NORM_PER_MS = 0.3 / 1000 // 0.3 normalized units per second
+const PEAK_HOLD_RESET_EPSILON = 0.02 // ignore tiny jitter so hold timer does not keep resetting
 
 interface ChannelState {
   level: number
@@ -123,11 +124,17 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
 
       // Update peak L
       const pkL = peakLRef.current
-      if (normL >= pkL.norm) {
+      if (normL >= pkL.norm + PEAK_HOLD_RESET_EPSILON) {
+        const shouldResetHold = pkL.decaying || pkL.heldAt === 0
         pkL.norm = normL
         pkL.db = dbL
-        pkL.heldAt = now
-        pkL.decaying = false
+        if (shouldResetHold) {
+          pkL.heldAt = now
+          pkL.decaying = false
+        }
+      } else if (normL > pkL.norm) {
+        pkL.norm = normL
+        pkL.db = dbL
       } else {
         if (!pkL.decaying && now - pkL.heldAt > PEAK_HOLD_MS) {
           pkL.decaying = true
@@ -141,11 +148,17 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
 
       // Update peak R
       const pkR = peakRRef.current
-      if (normR >= pkR.norm) {
+      if (normR >= pkR.norm + PEAK_HOLD_RESET_EPSILON) {
+        const shouldResetHold = pkR.decaying || pkR.heldAt === 0
         pkR.norm = normR
         pkR.db = dbR
-        pkR.heldAt = now
-        pkR.decaying = false
+        if (shouldResetHold) {
+          pkR.heldAt = now
+          pkR.decaying = false
+        }
+      } else if (normR > pkR.norm) {
+        pkR.norm = normR
+        pkR.db = dbR
       } else {
         if (!pkR.decaying && now - pkR.heldAt > PEAK_HOLD_MS) {
           pkR.decaying = true

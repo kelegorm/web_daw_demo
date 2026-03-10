@@ -103,7 +103,7 @@ export default function TimelineRuler({ bpm }: Props) {
         flexShrink: 0,
         height: RULER_HEIGHT,
         borderBottom: '1px solid var(--color-border, #444)',
-        background: 'var(--color-surface, #1a1a1a)',
+        background: 'var(--color-track-content-bg, var(--color-bg))',
         boxSizing: 'border-box',
       }}
     >
@@ -112,7 +112,8 @@ export default function TimelineRuler({ bpm }: Props) {
         style={{
           width: 'var(--track-header-width)',
           flexShrink: 0,
-          borderRight: '1px solid var(--color-border, #444)',
+          background: 'var(--color-track-header-bg, var(--color-surface))',
+          borderRight: '1px solid var(--color-track-divider, var(--color-border, #444))',
           boxSizing: 'border-box',
         }}
       />
@@ -123,6 +124,8 @@ export default function TimelineRuler({ bpm }: Props) {
           flex: 1,
           position: 'relative',
           overflow: 'hidden',
+          background: 'var(--color-track-content-bg, var(--color-bg))',
+          boxShadow: 'inset 1px 0 0 rgba(255, 255, 255, 0.03)',
         }}
       >
         {bars}

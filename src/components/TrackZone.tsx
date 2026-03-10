@@ -105,6 +105,15 @@ export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted =
         style={{
           flex: 1,
           overflowY: 'auto',
+          background: [
+            'linear-gradient(to right,',
+            'var(--color-track-header-bg, var(--color-surface)) 0,',
+            'var(--color-track-header-bg, var(--color-surface)) var(--track-header-width),',
+            'var(--color-track-divider, var(--color-border)) var(--track-header-width),',
+            'var(--color-track-divider, var(--color-border)) calc(var(--track-header-width) + 1px),',
+            'var(--color-track-content-bg, var(--color-bg)) calc(var(--track-header-width) + 1px),',
+            'var(--color-track-content-bg, var(--color-bg)) 100%)',
+          ].join(' '),
         }}
       >
       <div
@@ -123,8 +132,8 @@ export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted =
         style={{
           width: 'var(--track-header-width)',
           flexShrink: 0,
-          background: 'var(--color-surface)',
-          borderRight: '1px solid var(--color-border)',
+          background: 'var(--color-track-header-bg, var(--color-surface))',
+          borderRight: '1px solid var(--color-track-divider, var(--color-border))',
           display: 'flex',
           flexDirection: 'row',
           alignItems: 'stretch',
@@ -158,7 +167,7 @@ export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted =
                 letterSpacing: 1,
               }}
             >
-              SYNTH1
+              synth1
             </span>
             <button
               className="track-mute"
@@ -244,7 +253,8 @@ export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted =
           flex: 1,
           position: 'relative',
           overflow: 'hidden',
-          background: 'var(--color-bg)',
+          background: 'var(--color-track-content-bg, var(--color-bg))',
+          boxShadow: 'inset 1px 0 0 rgba(255, 255, 255, 0.03)',
         }}
       >
         <div
@@ -303,7 +313,7 @@ export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted =
           display: 'flex',
           width: '100%',
           borderTop: '1px solid var(--color-border)',
-          background: 'var(--color-surface)',
+          background: 'var(--color-track-content-bg, var(--color-bg))',
           boxSizing: 'border-box',
         }}
       >
@@ -312,8 +322,8 @@ export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted =
           style={{
             width: 'var(--track-header-width)',
             flexShrink: 0,
-            background: 'var(--color-surface)',
-            borderRight: '1px solid var(--color-border)',
+            background: 'var(--color-track-header-bg, var(--color-surface))',
+            borderRight: '1px solid var(--color-track-divider, var(--color-border))',
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'stretch',
@@ -346,7 +356,7 @@ export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted =
                   letterSpacing: 1,
                 }}
               >
-                MASTER
+                Master
               </span>
             </div>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
@@ -385,6 +395,14 @@ export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted =
             </div>
           )}
         </div>
+        <div
+          className="master-track-content"
+          style={{
+            flex: 1,
+            background: 'var(--color-track-content-bg, var(--color-bg))',
+            boxShadow: 'inset 1px 0 0 rgba(255, 255, 255, 0.03)',
+          }}
+        />
       </div>
     </div>
   )
