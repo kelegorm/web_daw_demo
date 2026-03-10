@@ -3,7 +3,6 @@ import Knob from './Knob'
 import type { LimiterHook } from '../hooks/useLimiter'
 import { LIMITER_THRESHOLD_DEFAULT_DB } from '../audio/parameterDefaults'
 import {
-  GR_METER_HEIGHT_PX,
   GR_METER_RANGE_DB,
 } from '../audio/gainReductionMath'
 
@@ -15,6 +14,11 @@ export default function LimiterDevice({ limiter }: Props) {
   const [reductionDb, setReductionDb] = useState(0)
   const rafRef = useRef<number>(0)
   const getReductionDb = limiter.getReductionDb
+  const KNOB_COLUMN_HEIGHT_PX = 108
+  const GR_METER_GAP_PX = 4
+  const GR_LABEL_HEIGHT_PX = 10
+  const grMeterTrackHeightPx =
+    KNOB_COLUMN_HEIGHT_PX - GR_METER_GAP_PX - GR_LABEL_HEIGHT_PX
 
   useEffect(() => {
     let running = true
@@ -46,7 +50,7 @@ export default function LimiterDevice({ limiter }: Props) {
   }
 
   const reductionNorm = Math.max(0, Math.min(1, reductionDb / GR_METER_RANGE_DB))
-  const reductionBarHeightPx = reductionNorm * GR_METER_HEIGHT_PX
+  const reductionBarHeightPx = reductionNorm * grMeterTrackHeightPx
   const reductionBarColor = reductionNorm > 0.5 ? '#e04444' : '#f5a623'
 
   return (
@@ -88,7 +92,7 @@ export default function LimiterDevice({ limiter }: Props) {
           Master FX
         </span>
       </div>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', minHeight: 80 }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', minHeight: KNOB_COLUMN_HEIGHT_PX }}>
         <Knob
           label="Threshold"
           min={-30}
@@ -106,14 +110,15 @@ export default function LimiterDevice({ limiter }: Props) {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 4,
-            paddingTop: 4,
+            gap: GR_METER_GAP_PX,
+            height: KNOB_COLUMN_HEIGHT_PX,
+            marginLeft: 6,
           }}
         >
           <div
             style={{
               width: 8,
-              height: GR_METER_HEIGHT_PX,
+              height: grMeterTrackHeightPx,
               background: '#1a1a22',
               borderRadius: 2,
               border: '1px solid #444',
@@ -125,7 +130,7 @@ export default function LimiterDevice({ limiter }: Props) {
               className="limiter-gr-bar"
               style={{
                 position: 'absolute',
-                bottom: 0,
+                top: 0,
                 left: 0,
                 right: 0,
                 height: `${reductionBarHeightPx}px`,
@@ -133,7 +138,9 @@ export default function LimiterDevice({ limiter }: Props) {
               }}
             />
           </div>
-          <span style={{ color: 'var(--color-text-muted, #888899)', fontSize: 9 }}>GR</span>
+          <span style={{ color: 'var(--color-text-muted, #888899)', fontSize: 9, lineHeight: `${GR_LABEL_HEIGHT_PX}px` }}>
+            GR
+          </span>
         </div>
       </div>
     </div>
