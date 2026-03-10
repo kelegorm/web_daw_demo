@@ -11,6 +11,9 @@ interface Props {
   dataTestid?: string
 }
 
+const KNOB_MIN_ANGLE = -135
+const KNOB_MAX_ANGLE = 135
+
 export default function Knob({ label, min, max, value, onChange, resetValue, formatValue, dataTestid }: Props) {
   const [dragging, setDragging] = useState(false)
   const startYRef = useRef(0)
@@ -51,14 +54,14 @@ export default function Knob({ label, min, max, value, onChange, resetValue, for
     }
   }, [dragging, min, max, onChange])
 
-  // Map value to rotation angle: -135 to +135 degrees
+  // Map value to rotation angle.
   const pct = (value - min) / (max - min)
-  const angle = -135 + pct * 270
+  const angle = KNOB_MIN_ANGLE + pct * (KNOB_MAX_ANGLE - KNOB_MIN_ANGLE)
 
   const display = formatValue ? formatValue(value) : value.toFixed(2)
   const dotCount = 17
-  const dotStart = -140
-  const dotEnd = 140
+  const dotStart = KNOB_MIN_ANGLE
+  const dotEnd = KNOB_MAX_ANGLE
   const dotRadius = 36
 
   return (
@@ -80,6 +83,8 @@ export default function Knob({ label, min, max, value, onChange, resetValue, for
           const t = i / (dotCount - 1)
           const markerAngle = dotStart + (dotEnd - dotStart) * t
           const isCenter = i === Math.floor(dotCount / 2)
+          const isEdge = i === 0 || i === dotCount - 1
+          const isQuarter = i === Math.floor((dotCount - 1) * 0.25) || i === Math.floor((dotCount - 1) * 0.75)
           return (
             <div
               key={`dot-${i}`}
@@ -87,10 +92,16 @@ export default function Knob({ label, min, max, value, onChange, resetValue, for
                 position: 'absolute',
                 left: '50%',
                 top: '50%',
-                width: isCenter ? 5 : 2,
-                height: isCenter ? 5 : 2,
+                width: isCenter ? 5 : isEdge ? 3.5 : isQuarter ? 3 : 2,
+                height: isCenter ? 5 : isEdge ? 3.5 : isQuarter ? 3 : 2,
                 borderRadius: '50%',
-                background: isCenter ? 'rgba(240, 238, 230, 0.9)' : 'rgba(191, 198, 210, 0.42)',
+                background: isCenter
+                  ? 'rgba(240, 238, 230, 0.9)'
+                  : isEdge
+                    ? 'rgba(191, 198, 210, 0.6)'
+                    : isQuarter
+                      ? 'rgba(191, 198, 210, 0.6)'
+                    : 'rgba(191, 198, 210, 0.42)',
                 boxShadow: isCenter ? '0 1px 3px rgba(0, 0, 0, 0.45)' : 'none',
                 transform: `translate(-50%, -50%) rotate(${markerAngle}deg) translateY(-${dotRadius}px)`,
               }}
