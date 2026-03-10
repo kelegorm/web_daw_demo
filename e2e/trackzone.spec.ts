@@ -235,6 +235,40 @@ test('loop region indicator appears when Loop is enabled and matches clip width'
   expect(Math.abs(trackRegionBox!.width - clipBox!.width)).toBeLessThanOrEqual(2)
 })
 
+test('click synth1 track row sets data-selected="true"', async ({ page }) => {
+  await page.goto('/')
+  const trackRow = page.locator('.track-row')
+  await trackRow.click()
+  await expect(trackRow).toHaveAttribute('data-selected', 'true')
+})
+
+test('click Master track row sets Master data-selected="true" and synth1 loses it', async ({ page }) => {
+  await page.goto('/')
+  const trackRow = page.locator('.track-row')
+  const masterTrack = page.locator('.master-track')
+
+  // First select synth1
+  await trackRow.click()
+  await expect(trackRow).toHaveAttribute('data-selected', 'true')
+
+  // Then click master
+  await masterTrack.click()
+  await expect(masterTrack).toHaveAttribute('data-selected', 'true')
+  await expect(trackRow).toHaveAttribute('data-selected', 'false')
+})
+
+test('selected track row has distinct left border style', async ({ page }) => {
+  await page.goto('/')
+  const trackRow = page.locator('.track-row')
+
+  // synth1 is selected by default
+  await expect(trackRow).toHaveAttribute('data-selected', 'true')
+
+  const borderLeft = await trackRow.evaluate((el) => (el as HTMLElement).style.borderLeft)
+  expect(borderLeft).toContain('3px solid')
+  expect(borderLeft).not.toContain('transparent')
+})
+
 test('Master track is always visible regardless of track zone scroll position', async ({ page }) => {
   await page.goto('/')
   const masterTrack = page.locator('.master-track')

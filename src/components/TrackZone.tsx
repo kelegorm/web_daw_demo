@@ -3,6 +3,7 @@ import * as Tone from 'tone'
 import VUMeter from './VUMeter'
 import TimelineRuler from './TimelineRuler'
 import { clipDurationSeconds, getPixelsPerSecond } from '../utils/timelineScale'
+import { useTrackSelectionContext } from '../hooks/useTrackSelection'
 
 const SEQUENCE_NOTES = [60, 62, 64, 65, 67, 69, 71, 72]
 const MIN_PITCH = 60
@@ -50,6 +51,7 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
   const [volumeDb, setVolumeDb] = useState(0)
   const [masterVolumeDb, setMasterVolumeDb] = useState(0)
   const [playheadPos, setPlayheadPos] = useState(0)
+  const { selectedTrack, selectTrack } = useTrackSelectionContext()
 
   const rafRef = useRef<number | null>(null)
 
@@ -132,6 +134,8 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
       />
       <div
         className="track-row"
+        data-selected={selectedTrack === 'synth1' ? 'true' : 'false'}
+        onClick={() => selectTrack('synth1')}
         style={{
           height: 80,
           flexShrink: 0,
@@ -140,6 +144,9 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
           borderBottom: '1px solid var(--color-border)',
           boxSizing: 'border-box',
           boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03), inset 0 -1px 0 rgba(0, 0, 0, 0.3)',
+          borderLeft: selectedTrack === 'synth1' ? '3px solid var(--color-accent)' : '3px solid transparent',
+          background: selectedTrack === 'synth1' ? 'rgba(255,255,255,0.03)' : undefined,
+          cursor: 'pointer',
         }}
       >
         <div
@@ -382,6 +389,8 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
       </div>
       <div
         className="master-track"
+        data-selected={selectedTrack === 'master' ? 'true' : 'false'}
+        onClick={() => selectTrack('master')}
         style={{
           height: 80,
           flexShrink: 0,
@@ -389,9 +398,11 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
           width: '100%',
           borderTop: '1px solid var(--color-border)',
           borderBottom: '1px solid var(--color-border)',
-          background: 'var(--color-track-content-bg, var(--color-bg))',
+          background: selectedTrack === 'master' ? 'rgba(255,255,255,0.03)' : 'var(--color-track-content-bg, var(--color-bg))',
           boxSizing: 'border-box',
           boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03), inset 0 -1px 0 rgba(0, 0, 0, 0.3)',
+          borderLeft: selectedTrack === 'master' ? '3px solid var(--color-accent)' : '3px solid transparent',
+          cursor: 'pointer',
         }}
       >
         <div

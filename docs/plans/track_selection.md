@@ -21,14 +21,14 @@ Master limiter device, and track row click selection.
 - [x] Mark completed
 
 ### Task 2: Track row click selection
-- [ ] In `TrackZone.tsx`: clicking anywhere on synth1 track row calls `selectTrack('synth1')`
-- [ ] Clicking anywhere on Master track row calls `selectTrack('master')`
-- [ ] Selected track row gets visual highlight: left border accent color (3px solid `--accent`), background slightly lighter than default
-- [ ] Unselected track rows return to default appearance
-- [ ] Write Playwright test: click synth1 track row, verify it receives `data-selected="true"` attribute
-- [ ] Write Playwright test: click Master track row, verify Master gets `data-selected="true"` and synth1 loses it
-- [ ] Write Playwright test: verify selected track row has a distinct left border style
-- [ ] Mark completed
+- [x] In `TrackZone.tsx`: clicking anywhere on synth1 track row calls `selectTrack('synth1')`
+- [x] Clicking anywhere on Master track row calls `selectTrack('master')`
+- [x] Selected track row gets visual highlight: left border accent color (3px solid `--accent`), background slightly lighter than default
+- [x] Unselected track rows return to default appearance
+- [x] Write Playwright test: click synth1 track row, verify it receives `data-selected="true"` attribute
+- [x] Write Playwright test: click Master track row, verify Master gets `data-selected="true"` and synth1 loses it
+- [x] Write Playwright test: verify selected track row has a distinct left border style
+- [x] Mark completed
 
 ### Task 3: Master Limiter hook
 - [ ] Create `src/hooks/useLimiter.ts`

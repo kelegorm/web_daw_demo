@@ -6,6 +6,7 @@ import MidiKeyboard from './components/MidiKeyboard'
 import { useToneSynth } from './hooks/useToneSynth'
 import { usePanner } from './hooks/usePanner'
 import { useTransportController } from './hooks/useTransportController'
+import { useTrackSelection, TrackSelectionContext } from './hooks/useTrackSelection'
 import './App.css'
 
 declare global {
@@ -21,6 +22,7 @@ function App() {
   const panner = usePanner()
   const transport = useTransportController(toneSynth, panner)
   const [isTrackRecEnabled, setIsTrackRecEnabled] = useState(true)
+  const trackSelection = useTrackSelection()
 
   // Wire synth output through panner graph (once)
   const audioRoutedRef = useRef(false)
@@ -54,6 +56,7 @@ function App() {
   }
 
   return (
+    <TrackSelectionContext.Provider value={trackSelection}>
     <div id="app">
       <Toolbar
         isPlaying={transport.isPlaying}
@@ -83,6 +86,7 @@ function App() {
       <DevicePanel synth={toneSynth} panner={panner} />
       <MidiKeyboard synth={toneSynth} enabled={isTrackRecEnabled} />
     </div>
+    </TrackSelectionContext.Provider>
   )
 }
 
