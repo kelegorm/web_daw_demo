@@ -48,8 +48,8 @@ function zoneColor(db: number): string {
 // 0 dB position from bottom as percentage
 const ZERO_DB_PCT = ((0 - DB_MIN) / DB_RANGE) * 100
 
-const PEAK_HOLD_MS = 1500
-const PEAK_DECAY_NORM_PER_MS = 0.3 / 1000 // 0.3 normalized units per second
+const PEAK_HOLD_MS = 1000
+const PEAK_DECAY_NORM_PER_MS = 0.5 / 1000 // 0.5 normalized units per second for stable visible fall
 const PEAK_HOLD_RESET_EPSILON = 0.02 // ignore tiny jitter so hold timer does not keep resetting
 
 interface ChannelState {
@@ -74,6 +74,7 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
   const [right, setRight] = useState<ChannelState>({ level: 0, peakNorm: 0, peakDb: -Infinity })
 
   const rafRef = useRef<number | null>(null)
+  const lastFrameNowRef = useRef<number | null>(null)
   const bufLRef = useRef<Uint8Array | null>(null)
   const bufRRef = useRef<Uint8Array | null>(null)
 
@@ -92,10 +93,15 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
         cancelAnimationFrame(rafRef.current)
         rafRef.current = null
       }
+      lastFrameNowRef.current = null
       return
     }
 
     function tick(now: number) {
+      const lastNow = lastFrameNowRef.current ?? now
+      const dtMs = Math.max(0, Math.min(100, now - lastNow))
+      lastFrameNowRef.current = now
+
       const analyserL = getAnalyserNodeL()
       const analyserR = getAnalyserNodeR()
 
@@ -140,8 +146,7 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
           pkL.decaying = true
         }
         if (pkL.decaying) {
-          // approximate dt as 16ms (60fps)
-          pkL.norm = Math.max(0, pkL.norm - PEAK_DECAY_NORM_PER_MS * 16)
+          pkL.norm = Math.max(0, pkL.norm - PEAK_DECAY_NORM_PER_MS * dtMs)
           if (pkL.norm <= 0) pkL.db = -Infinity
         }
       }
@@ -164,7 +169,7 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
           pkR.decaying = true
         }
         if (pkR.decaying) {
-          pkR.norm = Math.max(0, pkR.norm - PEAK_DECAY_NORM_PER_MS * 16)
+          pkR.norm = Math.max(0, pkR.norm - PEAK_DECAY_NORM_PER_MS * dtMs)
           if (pkR.norm <= 0) pkR.db = -Infinity
         }
       }
@@ -179,6 +184,7 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
     rafRef.current = requestAnimationFrame(tick)
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+      lastFrameNowRef.current = null
     }
   }, [getAnalyserNodeL, getAnalyserNodeR, muted])
 

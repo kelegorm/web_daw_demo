@@ -45,3 +45,38 @@ test('drag Pan knob right increases displayed pan value', async ({ page }) => {
 
   expect(finalVal).toBeGreaterThan(initialVal)
 })
+
+test('knob labels and values do not overflow device card bounds', async ({ page }) => {
+  await page.goto('/')
+
+  const devices = page.locator('.device')
+  const deviceCount = await devices.count()
+  expect(deviceCount).toBeGreaterThan(0)
+
+  for (let i = 0; i < deviceCount; i++) {
+    const device = devices.nth(i)
+    await expect(device).toBeVisible()
+    const deviceBox = await device.boundingBox()
+    expect(deviceBox).not.toBeNull()
+    if (!deviceBox) continue
+
+    const textRows = device.locator('.knob-label, .knob-value')
+    const textCount = await textRows.count()
+    expect(textCount).toBeGreaterThan(0)
+
+    for (let j = 0; j < textCount; j++) {
+      const text = textRows.nth(j)
+      await expect(text).toBeVisible()
+      const textBox = await text.boundingBox()
+      expect(textBox).not.toBeNull()
+      if (!textBox) continue
+
+      // Small epsilon for subpixel layout differences
+      const eps = 0.75
+      expect(textBox.x).toBeGreaterThanOrEqual(deviceBox.x - eps)
+      expect(textBox.y).toBeGreaterThanOrEqual(deviceBox.y - eps)
+      expect(textBox.x + textBox.width).toBeLessThanOrEqual(deviceBox.x + deviceBox.width + eps)
+      expect(textBox.y + textBox.height).toBeLessThanOrEqual(deviceBox.y + deviceBox.height + eps)
+    }
+  }
+})

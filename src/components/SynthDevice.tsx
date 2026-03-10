@@ -43,7 +43,14 @@ export default function SynthDevice({ synth }: Props) {
       flexDirection: 'column',
       padding: '8px 12px',
       gap: 8,
-      flex: 1,
+      flex: '0 0 320px',
+      width: 320,
+      maxWidth: 320,
+      minWidth: 320,
+      border: '1px solid var(--color-border, #3a3a48)',
+      borderRadius: 'var(--radius-md, 4px)',
+      background: 'var(--color-surface-raised, #2e2e38)',
+      boxSizing: 'border-box',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <button
@@ -65,7 +72,7 @@ export default function SynthDevice({ synth }: Props) {
           Polysynth
         </span>
       </div>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', minHeight: 92 }}>
         <Knob
           label="Filter"
           min={20}

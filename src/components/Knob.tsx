@@ -53,7 +53,15 @@ export default function Knob({ label, min, max, value, onChange, formatValue, da
   return (
     <div
       className="knob-container"
-      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, userSelect: 'none' }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 3,
+        userSelect: 'none',
+        width: 72,
+        minWidth: 72,
+      }}
       data-testid={dataTestid}
     >
       <div
@@ -83,8 +91,36 @@ export default function Knob({ label, min, max, value, onChange, formatValue, da
           background: '#2a7',
         }} />
       </div>
-      <span className="knob-value" style={{ color: '#aaa', fontSize: 11 }}>{display}</span>
-      <span className="knob-label" style={{ color: '#888', fontSize: 12 }}>{label}</span>
+      <span
+        className="knob-label"
+        style={{
+          color: '#888',
+          fontSize: 12,
+          lineHeight: 1.1,
+          width: '100%',
+          textAlign: 'center',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {label}
+      </span>
+      <span
+        className="knob-value"
+        style={{
+          color: '#aaa',
+          fontSize: 11,
+          lineHeight: 1.1,
+          width: '100%',
+          textAlign: 'center',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {display}
+      </span>
     </div>
   )
 }

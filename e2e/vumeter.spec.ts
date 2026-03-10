@@ -192,21 +192,20 @@ test('VU meter peak hold tick falls downward after release within 2000ms', async
 
   const peakTick = page.locator('.track-header .vu-meter-peak').first()
 
-  // Record initial bottom position
-  const initialBottom = await peakTick.evaluate((el) => parseFloat((el as HTMLElement).style.bottom))
-
-  // Release the key — peak should start decaying after 1.5s hold
+  // Release the key — peak should start decaying after hold interval
   await c3.dispatchEvent('mouseup')
 
-  // Wait 2000ms for hold to expire and decay to start
-  await page.waitForTimeout(2000)
-
-  // Peak bottom should have moved toward 0 (i.e., decreased from initial)
-  // or the element may have disappeared (peak reached 0)
+  // Wait for hold to expire and capture decay trend in two samples.
+  await page.waitForTimeout(1700)
   const peakExists = await page.locator('.track-header .vu-meter-peak').first().isVisible().catch(() => false)
   if (peakExists) {
-    const newBottom = await peakTick.evaluate((el) => parseFloat((el as HTMLElement).style.bottom))
-    expect(newBottom).toBeLessThan(initialBottom)
+    const firstAfterHold = await peakTick.evaluate((el) => parseFloat((el as HTMLElement).style.bottom))
+    await page.waitForTimeout(300)
+    const stillExists = await page.locator('.track-header .vu-meter-peak').first().isVisible().catch(() => false)
+    if (stillExists) {
+      const secondAfterHold = await peakTick.evaluate((el) => parseFloat((el as HTMLElement).style.bottom))
+      expect(secondAfterHold).toBeLessThan(firstAfterHold)
+    }
   }
   // If it disappeared, that also means it fell — test passes
 })
