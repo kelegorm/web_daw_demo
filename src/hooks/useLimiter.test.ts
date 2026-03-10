@@ -23,8 +23,6 @@ function createMockAnalyser(sampleValue: number) {
   };
 }
 
-let mockPreAnalyser = createMockAnalyser(0);
-let mockPostAnalyser = createMockAnalyser(0);
 let mockInputAnalyserL = createMockAnalyser(0);
 let mockInputAnalyserR = createMockAnalyser(0);
 const mockInputSplitter = {
@@ -62,16 +60,12 @@ describe('createLimiter', () => {
     vi.clearAllMocks();
     mockCompressor.threshold.value = -3;
     mockCompressor.reduction = 0;
-    mockPreAnalyser = createMockAnalyser(0);
-    mockPostAnalyser = createMockAnalyser(0);
     mockInputAnalyserL = createMockAnalyser(0);
     mockInputAnalyserR = createMockAnalyser(0);
     mockMeterSinkGain.gain.value = 1;
     mockAudioContext.createDynamicsCompressor.mockReturnValue(mockCompressor);
     mockAudioContext.createChannelSplitter.mockReturnValue(mockInputSplitter);
     mockAudioContext.createAnalyser
-      .mockReturnValueOnce(mockPreAnalyser)
-      .mockReturnValueOnce(mockPostAnalyser)
       .mockReturnValueOnce(mockInputAnalyserL)
       .mockReturnValueOnce(mockInputAnalyserR);
     mockAudioContext.createGain.mockReturnValue(mockMeterSinkGain);
@@ -119,8 +113,8 @@ describe('createLimiter', () => {
     vi.clearAllMocks();
     limiter.setEnabled(false);
     expect(limiter.isEnabled).toBe(false);
-    expect(mockMasterGainNode.disconnect).toHaveBeenCalledWith(mockPreAnalyser);
-    expect(mockPostAnalyser.disconnect).toHaveBeenCalledWith(mockMasterAnalyserNode);
+    expect(mockMasterGainNode.disconnect).toHaveBeenCalledWith(mockCompressor);
+    expect(mockCompressor.disconnect).toHaveBeenCalledWith(mockMasterAnalyserNode);
     expect(mockMasterGainNode.connect).toHaveBeenCalledWith(mockMasterAnalyserNode);
   });
 
@@ -134,8 +128,8 @@ describe('createLimiter', () => {
     limiter.setEnabled(true);
     expect(limiter.isEnabled).toBe(true);
     expect(mockMasterGainNode.disconnect).toHaveBeenCalledWith(mockMasterAnalyserNode);
-    expect(mockMasterGainNode.connect).toHaveBeenCalledWith(mockPreAnalyser);
-    expect(mockPostAnalyser.connect).toHaveBeenCalledWith(mockMasterAnalyserNode);
+    expect(mockMasterGainNode.connect).toHaveBeenCalledWith(mockCompressor);
+    expect(mockCompressor.connect).toHaveBeenCalledWith(mockMasterAnalyserNode);
   });
 
   it('getLimiterNode returns the compressor node', () => {
@@ -156,35 +150,17 @@ describe('createLimiter', () => {
     expect(limiter.getInputAnalyserNodeR()).toBe(mockInputAnalyserR);
   });
 
-  it('getReductionDb returns reduction in dB when output is quieter', () => {
-    mockPreAnalyser = createMockAnalyser(1.0);
-    mockPostAnalyser = createMockAnalyser(0.2);
-    mockAudioContext.createAnalyser
-      .mockReset()
-      .mockReturnValueOnce(mockPreAnalyser)
-      .mockReturnValueOnce(mockPostAnalyser)
-      .mockReturnValueOnce(createMockAnalyser(0))
-      .mockReturnValueOnce(createMockAnalyser(0));
-
+  it('getReductionDb returns positive dB from compressor.reduction', () => {
+    mockCompressor.reduction = -6;
     const limiter = createLimiter(
       mockMasterGainNode as unknown as AudioNode,
       mockMasterAnalyserNode as unknown as AudioNode,
     );
-    const gr = limiter.getReductionDb();
-    expect(gr).toBeGreaterThan(13.9);
-    expect(gr).toBeLessThan(14.1);
+    expect(limiter.getReductionDb()).toBe(6);
   });
 
-  it('getReductionDb returns 0 when output is not quieter', () => {
-    mockPreAnalyser = createMockAnalyser(0.1);
-    mockPostAnalyser = createMockAnalyser(0.3);
-    mockAudioContext.createAnalyser
-      .mockReset()
-      .mockReturnValueOnce(mockPreAnalyser)
-      .mockReturnValueOnce(mockPostAnalyser)
-      .mockReturnValueOnce(createMockAnalyser(0))
-      .mockReturnValueOnce(createMockAnalyser(0));
-
+  it('getReductionDb returns 0 when reduction is 0', () => {
+    mockCompressor.reduction = 0;
     const limiter = createLimiter(
       mockMasterGainNode as unknown as AudioNode,
       mockMasterAnalyserNode as unknown as AudioNode,
@@ -192,22 +168,30 @@ describe('createLimiter', () => {
     expect(limiter.getReductionDb()).toBe(0);
   });
 
-  it('getReductionDb is not capped for very strong attenuation', () => {
-    mockPreAnalyser = createMockAnalyser(1.0);   // 0 dBFS input peak
-    mockPostAnalyser = createMockAnalyser(0.01); // unrealistic huge drop
-    mockAudioContext.createAnalyser
-      .mockReset()
-      .mockReturnValueOnce(mockPreAnalyser)
-      .mockReturnValueOnce(mockPostAnalyser)
-      .mockReturnValueOnce(createMockAnalyser(0))
-      .mockReturnValueOnce(createMockAnalyser(0));
-
+  it('getReductionDb applies epsilon to suppress tiny jitter', () => {
+    mockCompressor.reduction = -0.03;
     const limiter = createLimiter(
       mockMasterGainNode as unknown as AudioNode,
       mockMasterAnalyserNode as unknown as AudioNode,
     );
-    const gr = limiter.getReductionDb();
-    expect(gr).toBeGreaterThan(39.9);
-    expect(gr).toBeLessThan(40.1);
+    expect(limiter.getReductionDb()).toBe(0);
+  });
+
+  it('getReductionDb is not capped for strong attenuation', () => {
+    mockCompressor.reduction = -40;
+    const limiter = createLimiter(
+      mockMasterGainNode as unknown as AudioNode,
+      mockMasterAnalyserNode as unknown as AudioNode,
+    );
+    expect(limiter.getReductionDb()).toBe(40);
+  });
+
+  it('getReductionDb returns 0 for non-finite compressor reduction', () => {
+    mockCompressor.reduction = Number.NaN;
+    const limiter = createLimiter(
+      mockMasterGainNode as unknown as AudioNode,
+      mockMasterAnalyserNode as unknown as AudioNode,
+    );
+    expect(limiter.getReductionDb()).toBe(0);
   });
 });

@@ -3,7 +3,6 @@ import {
   LIMITER_ENABLED_DEFAULT,
   LIMITER_THRESHOLD_DEFAULT_DB,
 } from '../audio/parameterDefaults';
-import { computeGainReduction } from '../audio/gainReductionMath';
 
 export interface LimiterGraph {
   setThreshold: (db: number) => void;
@@ -20,6 +19,7 @@ export interface LimiterGraph {
 }
 
 export function createLimiter(masterGainNode: AudioNode, masterAnalyserNode: AudioNode): LimiterGraph {
+  const REDUCTION_EPSILON_DB = 0.05;
   const audioContext = masterGainNode.context as AudioContext;
   const compressor = audioContext.createDynamicsCompressor();
   compressor.threshold.value = LIMITER_THRESHOLD_DEFAULT_DB;
@@ -27,32 +27,22 @@ export function createLimiter(masterGainNode: AudioNode, masterAnalyserNode: Aud
   compressor.ratio.value = 20;    // High ratio ≈ limiter
   compressor.attack.value = 0.001;
   compressor.release.value = 0.1;
-  const preLimiterAnalyser = audioContext.createAnalyser();
-  const postLimiterAnalyser = audioContext.createAnalyser();
   const inputChannelSplitter = audioContext.createChannelSplitter(2);
   const inputAnalyserNodeL = audioContext.createAnalyser();
   const inputAnalyserNodeR = audioContext.createAnalyser();
-  preLimiterAnalyser.fftSize = 1024;
-  postLimiterAnalyser.fftSize = 1024;
-  preLimiterAnalyser.smoothingTimeConstant = 0;
-  postLimiterAnalyser.smoothingTimeConstant = 0;
-  const preData = new Float32Array(preLimiterAnalyser.fftSize);
-  const postData = new Float32Array(postLimiterAnalyser.fftSize);
 
   let enabled = LIMITER_ENABLED_DEFAULT;
   let currentThreshold = LIMITER_THRESHOLD_DEFAULT_DB;
 
-  // Insert limiter inline so analysers are always in active graph:
-  // masterGain → preAnalyser → compressor → postAnalyser → masterAnalyser
+  // Insert limiter inline:
+  // masterGain → compressor → masterAnalyser
   try {
     masterGainNode.disconnect(masterAnalyserNode);
   } catch {
     // No direct connection existed
   }
-  masterGainNode.connect(preLimiterAnalyser);
-  preLimiterAnalyser.connect(compressor);
-  compressor.connect(postLimiterAnalyser);
-  postLimiterAnalyser.connect(masterAnalyserNode);
+  masterGainNode.connect(compressor);
+  compressor.connect(masterAnalyserNode);
   masterGainNode.connect(inputChannelSplitter);
   inputChannelSplitter.connect(inputAnalyserNodeL, 0);
   inputChannelSplitter.connect(inputAnalyserNodeR, 1);
@@ -68,42 +58,24 @@ export function createLimiter(masterGainNode: AudioNode, masterAnalyserNode: Aud
 
     if (!isEnabled) {
       // Bypass: masterGain connects directly to masterAnalyser
-      masterGainNode.disconnect(preLimiterAnalyser);
-      postLimiterAnalyser.disconnect(masterAnalyserNode);
+      masterGainNode.disconnect(compressor);
+      compressor.disconnect(masterAnalyserNode);
       masterGainNode.connect(masterAnalyserNode);
     } else {
       // Restore compressor in chain
       masterGainNode.disconnect(masterAnalyserNode);
-      masterGainNode.connect(preLimiterAnalyser);
-      postLimiterAnalyser.connect(masterAnalyserNode);
+      masterGainNode.connect(compressor);
+      compressor.connect(masterAnalyserNode);
     }
-  }
-
-  function peakDb(analyser: AnalyserNode, buffer: Float32Array): number {
-    analyser.getFloatTimeDomainData(buffer);
-    let peak = 0;
-    for (let i = 0; i < buffer.length; i += 1) {
-      const x = Math.abs(buffer[i]);
-      if (x > peak) peak = x;
-    }
-    const safe = Math.max(peak, 1e-6);
-    return 20 * Math.log10(safe);
   }
 
   function getReductionDb(): number {
     if (!enabled) return 0;
-
-    const inDb = peakDb(preLimiterAnalyser, preData);
-    if (!Number.isFinite(inDb) || inDb < -70) {
-      return 0;
-    }
-
-    const outDb = peakDb(postLimiterAnalyser, postData);
-    if (!Number.isFinite(outDb)) {
-      return 0;
-    }
-
-    return computeGainReduction(inDb, outDb);
+    const reduction = compressor.reduction;
+    if (!Number.isFinite(reduction)) return 0;
+    const reductionDb = Math.max(0, -reduction);
+    if (reductionDb < REDUCTION_EPSILON_DB) return 0;
+    return reductionDb;
   }
 
   return {
