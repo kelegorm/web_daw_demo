@@ -105,9 +105,10 @@ export default function TimelineRuler({ bpm, loop = false, loopRegionWidth = 0 }
         display: 'flex',
         flexShrink: 0,
         height: RULER_HEIGHT,
-        borderBottom: '1px solid var(--color-border, #444)',
-        background: 'var(--color-track-content-bg, var(--color-bg))',
+        borderBottom: '1px solid var(--color-border-strong, var(--color-border, #444))',
+        background: 'linear-gradient(180deg, #2b2b37 0%, var(--color-track-content-bg, var(--color-bg)) 100%)',
         boxSizing: 'border-box',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
       }}
     >
       <div
@@ -115,8 +116,8 @@ export default function TimelineRuler({ bpm, loop = false, loopRegionWidth = 0 }
         style={{
           width: 'var(--track-header-width)',
           flexShrink: 0,
-          background: 'var(--color-track-header-bg, var(--color-surface))',
-          borderRight: '1px solid var(--color-track-divider, var(--color-border, #444))',
+          background: 'linear-gradient(180deg, #31313d 0%, var(--color-track-header-bg, var(--color-surface)) 100%)',
+          borderRight: '1px solid var(--color-track-divider, var(--color-border-strong, var(--color-border, #444)))',
           boxSizing: 'border-box',
         }}
       />
@@ -128,7 +129,7 @@ export default function TimelineRuler({ bpm, loop = false, loopRegionWidth = 0 }
           position: 'relative',
           overflow: 'hidden',
           background: 'var(--color-track-content-bg, var(--color-bg))',
-          boxShadow: 'inset 1px 0 0 rgba(255, 255, 255, 0.03)',
+          boxShadow: 'inset 1px 0 0 rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255,255,255,0.02)',
         }}
       >
         {loop && loopRegionWidth > 0 && (

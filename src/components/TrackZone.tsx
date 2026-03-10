@@ -111,15 +111,8 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
         style={{
           flex: 1,
           overflowY: 'auto',
-          background: [
-            'linear-gradient(to right,',
-            'var(--color-track-header-bg, var(--color-surface)) 0,',
-            'var(--color-track-header-bg, var(--color-surface)) var(--track-header-width),',
-            'var(--color-track-divider, var(--color-border)) var(--track-header-width),',
-            'var(--color-track-divider, var(--color-border)) calc(var(--track-header-width) + 1px),',
-            'var(--color-track-content-bg, var(--color-bg)) calc(var(--track-header-width) + 1px),',
-            'var(--color-track-content-bg, var(--color-bg)) 100%)',
-          ].join(' '),
+          background: 'var(--color-track-content-bg, var(--color-bg))',
+          boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.025)',
         }}
       >
       <div
@@ -131,6 +124,7 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
           width: '100%',
           borderBottom: '1px solid var(--color-border)',
           boxSizing: 'border-box',
+          boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03), inset 0 -1px 0 rgba(0, 0, 0, 0.3)',
         }}
       >
         <div
@@ -139,7 +133,7 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
           width: 'var(--track-header-width)',
           flexShrink: 0,
           background: 'var(--color-track-header-bg, var(--color-surface))',
-          borderRight: '1px solid var(--color-track-divider, var(--color-border))',
+          borderRight: '1px solid #5d5d76',
           display: 'flex',
           flexDirection: 'row',
           alignItems: 'stretch',
@@ -147,6 +141,7 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
           gap: 'var(--space-2)',
           boxSizing: 'border-box',
           overflow: 'hidden',
+          boxShadow: '0 3px 7px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(0,0,0,0.35)',
         }}
       >
         <div
@@ -167,6 +162,7 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
                 color: 'var(--color-text)',
                 fontSize: 'calc(var(--font-size-sm) + 0.1rem)',
                 fontWeight: 'bold',
+                fontFamily: "'Courier New', Courier, monospace",
                 flex: 1,
                 minWidth: 0,
                 textTransform: 'uppercase',
@@ -175,46 +171,86 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
             >
               synth1
             </span>
-            <button
-              className="track-mute"
-              aria-pressed={isTrackMuted}
-              onClick={() => onMuteToggle?.(!isTrackMuted)}
+            <div
               style={{
-                width: 28,
-                height: 22,
-                padding: 0,
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                lineHeight: 1,
-                background: isTrackMuted ? 'var(--color-accent-dim)' : '#303041',
-                color: 'var(--color-text)',
-                border: '1px solid #4a4a60',
-                borderRadius: 4,
-                cursor: 'pointer',
+                display: 'flex',
+                gap: 4,
               }}
             >
-              M
-            </button>
-            <button
-              className="track-rec"
-              aria-pressed={rec}
-              onClick={() => setRec((r) => !r)}
-              style={{
-                width: 28,
-                height: 22,
-                padding: 0,
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                lineHeight: 1,
-                background: rec ? 'var(--color-danger)' : '#303041',
-                color: '#fff',
-                border: '1px solid #4a4a60',
-                borderRadius: 4,
-                cursor: 'pointer',
-              }}
-            >
-              R
-            </button>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  padding: 1,
+                  borderRadius: 6,
+                  background: 'linear-gradient(180deg, #1a1a22 0%, #15151c 100%)',
+                  border: '1px solid rgba(0,0,0,0.45)',
+                  boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.45), inset 0 -1px 0 rgba(255,255,255,0.03)',
+                }}
+              >
+                <button
+                  className="track-mute"
+                  aria-pressed={isTrackMuted}
+                  onClick={() => onMuteToggle?.(!isTrackMuted)}
+                  style={{
+                    width: 26,
+                    height: 26,
+                    padding: 0,
+                    fontSize: '0.64rem',
+                    fontWeight: 700,
+                    lineHeight: 1,
+                    letterSpacing: 0.3,
+                    background: isTrackMuted
+                      ? 'linear-gradient(180deg, #b27512 0%, #a76c10 52%, #9f660f 100%)'
+                      : 'linear-gradient(180deg, #3c3c4e 0%, #353546 52%, #313142 100%)',
+                    color: isTrackMuted ? '#fff7e8' : '#e1e6f4',
+                    border: '1px solid',
+                    borderColor: isTrackMuted ? '#e1b56f #b8822f #6f4307 #bf892b' : '#9090ac #64647c #343447 #6c6c87',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.3)',
+                    textShadow: '0 1px 0 rgba(0,0,0,0.35)',
+                  }}
+                >
+                  M
+                </button>
+              </span>
+              <span
+                style={{
+                  display: 'inline-flex',
+                  padding: 1,
+                  borderRadius: 6,
+                  background: 'linear-gradient(180deg, #1a1a22 0%, #15151c 100%)',
+                  border: '1px solid rgba(0,0,0,0.45)',
+                  boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.45), inset 0 -1px 0 rgba(255,255,255,0.03)',
+                }}
+              >
+                <button
+                  className="track-rec"
+                  aria-pressed={rec}
+                  onClick={() => setRec((r) => !r)}
+                  style={{
+                    width: 26,
+                    height: 26,
+                    padding: 0,
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    lineHeight: 1,
+                    background: rec
+                      ? 'linear-gradient(180deg, #df4747 0%, #d13d3d 52%, #c53a3a 100%)'
+                      : 'linear-gradient(180deg, #3c3c4e 0%, #353546 52%, #313142 100%)',
+                    color: rec ? '#fff3f3' : '#e1e6f4',
+                    border: '1px solid',
+                    borderColor: rec ? '#ff9a9a #dd5a5a #7f1f1f #e26363' : '#9090ac #64647c #343447 #6c6c87',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.3)',
+                    textShadow: '0 1px 0 rgba(0,0,0,0.35)',
+                  }}
+                >
+                  ●
+                </button>
+              </span>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
             <input
@@ -260,7 +296,7 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
           position: 'relative',
           overflow: 'hidden',
           background: 'var(--color-track-content-bg, var(--color-bg))',
-          boxShadow: 'inset 1px 0 0 rgba(255, 255, 255, 0.03)',
+          boxShadow: 'inset 1px 0 0 rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.015)',
         }}
       >
         {loop && (
@@ -274,9 +310,10 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
               width: clipWidth,
               border: '1px dashed rgba(65, 180, 120, 0.65)',
               boxSizing: 'border-box',
-              background: 'rgba(65, 180, 120, 0.08)',
-              pointerEvents: 'none',
-            }}
+            background: 'rgba(65, 180, 120, 0.08)',
+            boxShadow: 'inset 0 0 0 1px rgba(65, 180, 120, 0.08)',
+            pointerEvents: 'none',
+          }}
           />
         )}
         <div
@@ -291,6 +328,7 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
             border: '1px solid #3a6090',
             borderRadius: 'var(--radius-sm)',
             overflow: 'hidden',
+            boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 6px rgba(0, 0, 0, 0.24)',
           }}
         >
           {SEQUENCE_NOTES.map((note, i) => {
@@ -335,8 +373,10 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
           display: 'flex',
           width: '100%',
           borderTop: '1px solid var(--color-border)',
+          borderBottom: '1px solid var(--color-border)',
           background: 'var(--color-track-content-bg, var(--color-bg))',
           boxSizing: 'border-box',
+          boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03), inset 0 -1px 0 rgba(0, 0, 0, 0.3)',
         }}
       >
         <div
@@ -345,7 +385,7 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
             width: 'var(--track-header-width)',
             flexShrink: 0,
             background: 'var(--color-track-header-bg, var(--color-surface))',
-            borderRight: '1px solid var(--color-track-divider, var(--color-border))',
+            borderRight: '1px solid #5d5d76',
             display: 'flex',
             flexDirection: 'row',
             alignItems: 'stretch',
@@ -353,6 +393,7 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
             gap: 'var(--space-2)',
             boxSizing: 'border-box',
             overflow: 'hidden',
+            boxShadow: '0 3px 7px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(0,0,0,0.35)',
           }}
         >
           <div
@@ -372,6 +413,7 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
                   color: 'var(--color-text)',
                   fontSize: 'var(--font-size-sm)',
                   fontWeight: 'bold',
+                  fontFamily: "'Courier New', Courier, monospace",
                   flex: 1,
                   minWidth: 0,
                   textTransform: 'uppercase',
@@ -422,7 +464,7 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
           style={{
             flex: 1,
             background: 'var(--color-track-content-bg, var(--color-bg))',
-            boxShadow: 'inset 1px 0 0 rgba(255, 255, 255, 0.03)',
+            boxShadow: 'inset 1px 0 0 rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.015)',
           }}
         />
       </div>

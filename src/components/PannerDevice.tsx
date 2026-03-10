@@ -28,10 +28,11 @@ export default function PannerDevice({ panner }: Props) {
       width: 220,
       maxWidth: 220,
       minWidth: 220,
-      border: '1px solid var(--color-border, #3a3a48)',
+      border: '1px solid var(--color-border-strong, var(--color-border, #3a3a48))',
       borderRadius: 'var(--radius-md, 4px)',
-      background: 'var(--color-surface-raised, #2e2e38)',
+      background: 'linear-gradient(180deg, #353544 0%, var(--color-surface-raised, #2e2e38) 100%)',
       boxSizing: 'border-box',
+      boxShadow: 'var(--shadow-soft, 0 6px 16px rgba(0, 0, 0, 0.2)), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <button

@@ -1,3 +1,12 @@
+import { type MouseEvent as ReactMouseEvent, useEffect, useRef, useState } from 'react'
+
+const MIN_BPM = 60
+const MAX_BPM = 200
+
+function clampBpm(value: number): number {
+  return Math.min(MAX_BPM, Math.max(MIN_BPM, Math.round(value)))
+}
+
 interface Props {
   isPlaying: boolean
   onPlay: () => void
@@ -19,6 +28,73 @@ export default function Toolbar({
   loop,
   onLoopToggle,
 }: Props) {
+  const [draggingBpm, setDraggingBpm] = useState(false)
+  const bpmStartYRef = useRef(0)
+  const bpmStartValueRef = useRef(bpm)
+
+  useEffect(() => {
+    if (!draggingBpm) return
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const dy = bpmStartYRef.current - event.clientY
+      const delta = Math.round(dy / 2)
+      onBpmChange(clampBpm(bpmStartValueRef.current + delta))
+    }
+
+    const handleMouseUp = () => {
+      setDraggingBpm(false)
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [draggingBpm, onBpmChange])
+
+  const handleBpmMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    bpmStartYRef.current = event.clientY
+    bpmStartValueRef.current = bpm
+    setDraggingBpm(true)
+  }
+
+  const stepBpm = (delta: number) => {
+    onBpmChange(clampBpm(bpm + delta))
+  }
+
+  const transportButtonStyle = {
+    width: 34,
+    height: 34,
+    padding: 0,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+    cursor: 'pointer',
+    lineHeight: 1,
+    background: 'linear-gradient(180deg, #3b3b4d 0%, #363647 52%, #333345 100%)',
+    border: '1px solid',
+    borderColor: '#8a8aa5 #5f5f75 #343447 #67677e',
+    boxShadow: [
+      '0 3px 8px rgba(0,0,0,0.42)',
+      'inset 0 1px 0 rgba(255, 255, 255, 0.22)',
+      'inset 0 2px 2px rgba(255,255,255,0.06)',
+      'inset 0 -2px 3px rgba(0,0,0,0.38)',
+      'inset 0 0 0 1px rgba(255,255,255,0.04)',
+    ].join(', '),
+  } as const
+  const buttonSocketStyle = {
+    display: 'inline-flex',
+    padding: 1,
+    borderRadius: 9,
+    background: 'linear-gradient(180deg, #1a1a22 0%, #15151c 100%)',
+    border: '1px solid rgba(0,0,0,0.45)',
+    boxShadow: 'inset 0 1px 1px rgba(0,0,0,0.45), inset 0 -1px 0 rgba(255,255,255,0.03)',
+  } as const
+
   return (
     <div
       className="toolbar"
@@ -28,13 +104,14 @@ export default function Toolbar({
         left: 0,
         right: 0,
         height: 'var(--toolbar-height)',
-        background: 'var(--color-surface)',
-        borderBottom: '1px solid var(--color-border)',
+        background: 'linear-gradient(180deg, #343440 0%, var(--color-surface) 100%)',
+        borderBottom: '1px solid var(--color-border-strong)',
         display: 'flex',
         alignItems: 'center',
         padding: '0 var(--space-4)',
         zIndex: 100,
         boxSizing: 'border-box',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255,255,255,0.06)',
       }}
     >
       <span
@@ -43,6 +120,7 @@ export default function Toolbar({
           color: 'var(--color-accent)',
           fontWeight: 'bold',
           fontSize: 'var(--font-size-lg)',
+          fontFamily: "'Courier New', Courier, monospace",
           flexShrink: 0,
         }}
       >
@@ -59,98 +137,192 @@ export default function Toolbar({
           flexShrink: 0,
         }}
       >
-        <button
-          className="toolbar-play-pause"
-          onClick={onPlay}
-          aria-pressed={isPlaying}
-          style={{
-            padding: '4px 16px',
-            background: isPlaying ? 'var(--color-surface-raised)' : 'var(--color-success)',
-            color: 'var(--color-text)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-md)',
-            cursor: 'pointer',
-            fontSize: 'var(--font-size-sm)',
-          }}
-        >
-          {isPlaying ? 'Pause' : 'Play'}
-        </button>
-        <button
-          className="toolbar-stop"
-          onClick={onStop}
-          style={{
-            padding: '4px 12px',
-            background: 'var(--color-surface-raised)',
-            color: 'var(--color-text)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-md)',
-            cursor: 'pointer',
-            fontSize: 'var(--font-size-sm)',
-          }}
-        >
-          Stop
-        </button>
-        <button
-          className="toolbar-loop"
-          onClick={onLoopToggle}
-          aria-pressed={loop}
-          style={{
-            padding: '4px 10px',
-            background: loop ? 'var(--color-accent-dim)' : 'var(--color-surface-raised)',
-            color: loop ? '#fff' : 'var(--color-text-muted)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-md)',
-            cursor: 'pointer',
-            fontSize: 'var(--font-size-sm)',
-          }}
-        >
-          Loop
-        </button>
-        <button
-          className="toolbar-panic"
-          onClick={onPanic}
-          style={{
-            padding: '4px 12px',
-            background: 'var(--color-danger)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 'var(--radius-md)',
-            cursor: 'pointer',
-            fontSize: 'var(--font-size-sm)',
-          }}
-        >
-          Panic
-        </button>
+        <span style={buttonSocketStyle}>
+          <button
+            className="toolbar-play-pause"
+            onClick={onPlay}
+            aria-pressed={isPlaying}
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+            title={isPlaying ? 'Pause' : 'Play'}
+            style={{
+              ...transportButtonStyle,
+              background: isPlaying
+                ? 'linear-gradient(180deg, #4f8158 0%, #45734d 52%, #3e6746 100%)'
+                : 'linear-gradient(180deg, #467b52 0%, #3f6f49 52%, #3a6543 100%)',
+              borderColor: isPlaying ? '#a0cea8 #77a780 #33553a #81b489' : '#8fbf98 #6f9f78 #2f4e35 #75a67e',
+            }}
+          >
+            {isPlaying ? (
+              <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" style={{ filter: 'drop-shadow(0 0 3px rgba(181, 255, 198, 0.45)) drop-shadow(0 1px 0 rgba(0,0,0,0.45))' }}>
+                <rect x="1" y="1" width="3" height="8" rx="0.8" fill="#d8ffe1" />
+                <rect x="6" y="1" width="3" height="8" rx="0.8" fill="#d8ffe1" />
+              </svg>
+            ) : (
+              <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true" style={{ marginLeft: 1, filter: 'drop-shadow(0 0 3px rgba(179, 245, 198, 0.45)) drop-shadow(0 1px 0 rgba(0,0,0,0.45))' }}>
+                <path d="M2 1.5L10 6L2 10.5V1.5Z" fill="#c8f6d6" />
+              </svg>
+            )}
+          </button>
+        </span>
+        <span style={buttonSocketStyle}>
+          <button
+            className="toolbar-stop"
+            onClick={onStop}
+            aria-label="Stop"
+            title="Stop"
+            style={{
+              ...transportButtonStyle,
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" style={{ filter: 'drop-shadow(0 0 3px rgba(228, 234, 255, 0.4)) drop-shadow(0 1px 0 rgba(0,0,0,0.45))' }}>
+              <rect x="1" y="1" width="8" height="8" rx="1.2" fill="#dce3ff" />
+            </svg>
+          </button>
+        </span>
+        <span style={buttonSocketStyle}>
+          <button
+            className="toolbar-loop"
+            onClick={onLoopToggle}
+            aria-pressed={loop}
+            aria-label="Loop"
+            title="Loop"
+            style={{
+              ...transportButtonStyle,
+              background: loop
+                ? 'linear-gradient(180deg, #6b5734 0%, #624f2f 52%, #5b492b 100%)'
+                : transportButtonStyle.background,
+              borderColor: loop ? '#b39a6e #896e46 #503f23 #947852' : transportButtonStyle.borderColor,
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true" style={{ filter: `drop-shadow(0 0 3px ${loop ? 'rgba(255, 220, 150, 0.5)' : 'rgba(218, 224, 245, 0.35)'}) drop-shadow(0 1px 0 rgba(0,0,0,0.45))` }}>
+              <path d="M11.5 4.2V1.8l-2 2a4.8 4.8 0 1 0 1.5 4.7" fill="none" stroke={loop ? '#ffe1a8' : '#d7dff3'} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </span>
+        <span style={buttonSocketStyle}>
+          <button
+            className="toolbar-panic"
+            onClick={onPanic}
+            aria-label="Panic"
+            title="Panic"
+            style={{
+              ...transportButtonStyle,
+              background: 'linear-gradient(180deg, #804040 0%, #743838 52%, #6c3434 100%)',
+              borderColor: '#bd7676 #975555 #5f2a2a #a15b5b',
+            }}
+          >
+            <svg width="10" height="12" viewBox="0 0 10 12" aria-hidden="true" style={{ filter: 'drop-shadow(0 0 3px rgba(255, 172, 172, 0.5)) drop-shadow(0 1px 0 rgba(0,0,0,0.45))' }}>
+              <rect x="4" y="1" width="2" height="7" rx="1" fill="#ffd2d2" />
+              <circle cx="5" cy="10" r="1.2" fill="#ffd2d2" />
+            </svg>
+          </button>
+        </span>
         <label
           style={{
-            color: 'var(--color-text-muted)',
-            fontSize: 'var(--font-size-sm)',
+            color: 'var(--color-text)',
+            fontSize: 11,
             display: 'flex',
             alignItems: 'center',
-            gap: 'var(--space-1)',
+            gap: 6,
+            marginLeft: 2,
+            textTransform: 'uppercase',
+            letterSpacing: 0.6,
+            fontWeight: 700,
           }}
         >
           BPM
-          <input
-            type="number"
-            className="toolbar-bpm"
-            min={60}
-            max={200}
-            value={bpm}
-            onChange={(e) => {
-              const v = Math.min(200, Math.max(60, Number(e.target.value)))
-              onBpmChange(v)
-            }}
+          <div
             style={{
-              width: 52,
-              background: 'var(--color-bg)',
+              width: 64,
+              height: 34,
+              display: 'inline-flex',
+              alignItems: 'stretch',
+              background: '#17171d',
               color: 'var(--color-text)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '2px var(--space-1)',
-              fontSize: 'var(--font-size-sm)',
+              border: '1px solid var(--color-border-strong)',
+              borderRadius: 6,
+              boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.5)',
+              boxSizing: 'border-box',
+              overflow: 'hidden',
             }}
-          />
+          >
+            <div
+              className="toolbar-bpm"
+              role="spinbutton"
+              aria-label="BPM"
+              aria-valuemin={MIN_BPM}
+              aria-valuemax={MAX_BPM}
+              aria-valuenow={bpm}
+              onMouseDown={handleBpmMouseDown}
+              style={{
+                flex: 1,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--color-text)',
+                borderRight: '1px solid #2b2b36',
+                fontSize: 12,
+                fontWeight: 700,
+                fontFamily: "'Orbitron', 'OCR A Std', 'Eurostile', 'Bank Gothic', 'JetBrains Mono', monospace",
+                letterSpacing: 0.5,
+                cursor: 'ns-resize',
+                userSelect: 'none',
+              }}
+            >
+              {bpm}
+            </div>
+            <div
+              style={{
+                width: 16,
+                display: 'flex',
+                flexDirection: 'column',
+                background: 'linear-gradient(180deg, #2a2a34 0%, #24242d 100%)',
+              }}
+            >
+              <button
+                type="button"
+                className="toolbar-bpm-step-up"
+                onClick={() => stepBpm(1)}
+                aria-label="Increase BPM"
+                style={{
+                  width: '100%',
+                  height: '50%',
+                  padding: 0,
+                  border: 'none',
+                  borderBottom: '1px solid #1c1c25',
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 100%)',
+                  color: '#d7deef',
+                  fontSize: 9,
+                  lineHeight: 1,
+                  cursor: 'pointer',
+                  textShadow: '0 1px 0 rgba(0,0,0,0.35)',
+                }}
+              >
+                ▲
+              </button>
+              <button
+                type="button"
+                className="toolbar-bpm-step-down"
+                onClick={() => stepBpm(-1)}
+                aria-label="Decrease BPM"
+                style={{
+                  width: '100%',
+                  height: '50%',
+                  padding: 0,
+                  border: 'none',
+                  borderTop: '1px solid #333344',
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.08) 100%)',
+                  color: '#d7deef',
+                  fontSize: 9,
+                  lineHeight: 1,
+                  cursor: 'pointer',
+                  textShadow: '0 1px 0 rgba(0,0,0,0.35)',
+                }}
+              >
+                ▼
+              </button>
+            </div>
+          </div>
         </label>
       </div>
     </div>

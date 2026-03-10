@@ -86,13 +86,15 @@ export default function MidiKeyboard({ synth }: Props) {
         flexDirection: 'row',
         alignItems: 'stretch',
         flexShrink: 0,
-        background: 'var(--color-surface)',
+        background: 'linear-gradient(180deg, #2f2f3b 0%, var(--color-surface) 100%)',
+        borderTop: '1px solid var(--color-border-strong, var(--color-border))',
+        boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.04)',
       }}
     >
       <div
         className="keyboard-gutter"
         data-testid="keyboard-gutter-left"
-        style={{ flex: 1, background: 'var(--color-surface)' }}
+        style={{ flex: 1, background: 'linear-gradient(180deg, #2f2f3b 0%, var(--color-surface) 100%)' }}
       />
       <div
         className="midi-keyboard"
@@ -102,6 +104,7 @@ export default function MidiKeyboard({ synth }: Props) {
           flexShrink: 0,
           height: '100%',
           userSelect: 'none',
+          boxShadow: '0 -1px 0 rgba(0, 0, 0, 0.3)',
         }}
       >
         {KEYS.filter((k) => !k.isBlack).map((key) => {
@@ -162,7 +165,7 @@ export default function MidiKeyboard({ synth }: Props) {
       <div
         className="keyboard-gutter"
         data-testid="keyboard-gutter-right"
-        style={{ flex: 1, background: 'var(--color-surface)' }}
+        style={{ flex: 1, background: 'linear-gradient(180deg, #2f2f3b 0%, var(--color-surface) 100%)' }}
       />
     </div>
   )

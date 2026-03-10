@@ -17,7 +17,7 @@ export default function DevicePanel({ synth, panner }: Props) {
       style={{
         width: '100%',
         height: 'var(--device-panel-height, 140px)',
-        background: 'var(--color-bg, #1a1a1f)',
+        background: 'linear-gradient(180deg, var(--color-bg-elevated, var(--color-bg, #1a1a1f)) 0%, var(--color-bg, #1a1a1f) 100%)',
         padding: '8px 10px',
         boxSizing: 'border-box',
       }}
@@ -29,10 +29,10 @@ export default function DevicePanel({ synth, panner }: Props) {
           flexDirection: 'row',
           width: '100%',
           height: '100%',
-          background: 'var(--color-surface, #26262e)',
-          border: '1px solid var(--color-border, #3a3a48)',
+          background: 'linear-gradient(180deg, #31313d 0%, var(--color-surface, #26262e) 100%)',
+          border: '1px solid var(--color-border-strong, var(--color-border, #3a3a48))',
           borderRadius: 'var(--radius-md, 4px)',
-          boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+          boxShadow: 'var(--shadow-soft, 0 6px 16px rgba(0, 0, 0, 0.2)), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
           overflow: 'hidden',
         }}
       >
@@ -42,7 +42,7 @@ export default function DevicePanel({ synth, panner }: Props) {
             width: 28,
             flexShrink: 0,
             borderRight: '1px solid var(--color-border, #3a3a48)',
-            background: 'linear-gradient(180deg, #30303b 0%, #2a2a34 100%)',
+            background: 'linear-gradient(180deg, #363646 0%, #2a2a34 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -60,6 +60,7 @@ export default function DevicePanel({ synth, panner }: Props) {
               color: 'var(--color-text-muted, #888899)',
               fontSize: 11,
               fontWeight: 700,
+              fontFamily: "'Courier New', Courier, monospace",
               lineHeight: 1,
             }}
           >
@@ -77,7 +78,7 @@ export default function DevicePanel({ synth, panner }: Props) {
             alignItems: 'stretch',
             justifyContent: 'flex-start',
             gap: 10,
-            padding: 8,
+            padding: 9,
             boxSizing: 'border-box',
             overflowX: 'auto',
           }}
