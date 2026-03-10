@@ -14,17 +14,17 @@ they share the same pixels-per-second scale constant.
 ---
 
 ### Task 1: Shared timeline scale
-- [ ] Create `src/utils/timelineScale.ts` exporting a single source of truth:
-    - [ ] `getPixelsPerSecond(bpm: number): number` — defines the scale used by timeline, clip, and playhead
-    - [ ] `barDurationSeconds(bpm: number): number` — duration of one 4/4 bar in seconds: `4 * 60 / bpm`
-    - [ ] `beatDurationSeconds(bpm: number): number` — duration of one beat: `60 / bpm`
-    - [ ] `clipDurationSeconds(bpm: number, steps: number): number` — `steps * (60 / bpm) / 2` for 8th notes
-- [ ] All other components (timeline, clip block, playhead) import from this module — no local time calculations
-- [ ] Write Vitest test: `getPixelsPerSecond(120)` returns same value as used in timeline width calculation
-- [ ] Write Vitest test: `barDurationSeconds(120)` returns 2.0
-- [ ] Write Vitest test: `beatDurationSeconds(120)` returns 0.5
-- [ ] Write Vitest test: `clipDurationSeconds(120, 8)` returns 2.0 (8 eighth notes at 120 BPM)
-- [ ] Mark completed
+- [x] Create `src/utils/timelineScale.ts` exporting a single source of truth:
+    - [x] `getPixelsPerSecond(bpm: number): number` — defines the scale used by timeline, clip, and playhead
+    - [x] `barDurationSeconds(bpm: number): number` — duration of one 4/4 bar in seconds: `4 * 60 / bpm`
+    - [x] `beatDurationSeconds(bpm: number): number` — duration of one beat: `60 / bpm`
+    - [x] `clipDurationSeconds(bpm: number, steps: number): number` — `steps * (60 / bpm) / 2` for 8th notes
+- [x] All other components (timeline, clip block, playhead) import from this module — no local time calculations
+- [x] Write Vitest test: `getPixelsPerSecond(120)` returns same value as used in timeline width calculation
+- [x] Write Vitest test: `barDurationSeconds(120)` returns 2.0
+- [x] Write Vitest test: `beatDurationSeconds(120)` returns 0.5
+- [x] Write Vitest test: `clipDurationSeconds(120, 8)` returns 2.0 (8 eighth notes at 120 BPM)
+- [x] Mark completed
 
 ### Task 2: Timeline ruler above track zone
 - [ ] Create `src/components/TimelineRuler.tsx`
