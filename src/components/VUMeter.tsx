@@ -175,14 +175,15 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
       data-testid="vu-meter"
       style={{
         display: 'flex',
-        gap: 2,
-        width: 28,
-        height: 120,
+        gap: 1,
+        width: '100%',
+        height: '100%',
+        minWidth: 0,
         background: '#111',
         border: '1px solid #444',
-        borderRadius: 3,
+        borderRadius: 2,
         position: 'relative',
-        padding: '2px 3px',
+        padding: '2px',
         boxSizing: 'border-box',
         overflow: 'visible',
       }}

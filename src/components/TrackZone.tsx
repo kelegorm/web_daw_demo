@@ -118,7 +118,7 @@ export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted =
           boxSizing: 'border-box',
         }}
       >
-      <div
+        <div
         className="track-header"
         style={{
           width: 'var(--track-header-width)',
@@ -126,89 +126,118 @@ export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted =
           background: 'var(--color-surface)',
           borderRight: '1px solid var(--color-border)',
           display: 'flex',
-          flexDirection: 'column',
-          padding: 'var(--space-2)',
-          gap: 'var(--space-1)',
+          flexDirection: 'row',
+          alignItems: 'stretch',
+          padding: '6px var(--space-2)',
+          gap: 'var(--space-2)',
           boxSizing: 'border-box',
+          overflow: 'hidden',
         }}
       >
-        <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
-          <span
-            className="track-name"
-            style={{
-              color: 'var(--color-text)',
-              fontSize: 'var(--font-size-sm)',
-              fontWeight: 'bold',
-              flex: 1,
-            }}
-          >
-            synth1
-          </span>
-          {getAnalyserNodeL && getAnalyserNodeR && (
+        <div
+          className="track-header-main"
+          style={{
+            minWidth: 0,
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            gap: 'var(--space-1)',
+          }}
+        >
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
+            <span
+              className="track-name"
+              style={{
+                color: 'var(--color-text)',
+                fontSize: 'calc(var(--font-size-sm) + 0.1rem)',
+                fontWeight: 'bold',
+                flex: 1,
+                minWidth: 0,
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+              }}
+            >
+              SYNTH1
+            </span>
+            <button
+              className="track-mute"
+              aria-pressed={isTrackMuted}
+              onClick={() => onMuteToggle?.(!isTrackMuted)}
+              style={{
+                width: 28,
+                height: 22,
+                padding: 0,
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                lineHeight: 1,
+                background: isTrackMuted ? 'var(--color-accent-dim)' : '#303041',
+                color: 'var(--color-text)',
+                border: '1px solid #4a4a60',
+                borderRadius: 4,
+                cursor: 'pointer',
+              }}
+            >
+              M
+            </button>
+            <button
+              className="track-rec"
+              aria-pressed={rec}
+              onClick={() => setRec((r) => !r)}
+              style={{
+                width: 28,
+                height: 22,
+                padding: 0,
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                lineHeight: 1,
+                background: rec ? 'var(--color-danger)' : '#303041',
+                color: '#fff',
+                border: '1px solid #4a4a60',
+                borderRadius: 4,
+                cursor: 'pointer',
+              }}
+            >
+              R
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
+            <input
+              type="range"
+              className="track-volume"
+              min={0}
+              max={100}
+              step={0.1}
+              value={dbToPos(volumeDb)}
+              onChange={(e) => {
+                const db = posToDB(Number(e.target.value))
+                setVolumeDb(db)
+                onVolumeChange?.(db)
+              }}
+              style={{ flex: 1, minWidth: 0, accentColor: 'var(--color-accent)' }}
+            />
+            <span
+              className="track-volume-label"
+              style={{
+                color: 'var(--color-text-muted, var(--color-text))',
+                fontSize: 'var(--font-size-xs)',
+                minWidth: 34,
+                flexShrink: 0,
+                textAlign: 'right',
+                lineHeight: 1,
+              }}
+            >
+              {formatDB(volumeDb)}
+            </span>
+          </div>
+        </div>
+        {getAnalyserNodeL && getAnalyserNodeR && (
+          <div style={{ width: 16, flexShrink: 0, display: 'flex', alignItems: 'stretch' }}>
             <VUMeter getAnalyserNodeL={getAnalyserNodeL} getAnalyserNodeR={getAnalyserNodeR} muted={isTrackMuted} />
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
-          <input
-            type="range"
-            className="track-volume"
-            min={0}
-            max={100}
-            step={0.1}
-            value={dbToPos(volumeDb)}
-            onChange={(e) => {
-              const db = posToDB(Number(e.target.value))
-              setVolumeDb(db)
-              onVolumeChange?.(db)
-            }}
-            style={{ flex: 1, accentColor: 'var(--color-accent)' }}
-          />
-          <span
-            className="track-volume-label"
-            style={{
-              color: 'var(--color-text-muted, var(--color-text))',
-              fontSize: 'var(--font-size-xs)',
-              minWidth: 32,
-              textAlign: 'right',
-            }}
-          >
-            {formatDB(volumeDb)}
-          </span>
-          <button
-            className="track-mute"
-            aria-pressed={isTrackMuted}
-            onClick={() => onMuteToggle?.(!isTrackMuted)}
-            style={{
-              padding: '2px 6px',
-              fontSize: 'var(--font-size-xs)',
-              background: isTrackMuted ? 'var(--color-accent-dim)' : 'var(--color-surface-raised)',
-              color: 'var(--color-text)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-sm)',
-              cursor: 'pointer',
-            }}
-          >
-            M
-          </button>
-          <button
-            className="track-rec"
-            aria-pressed={rec}
-            onClick={() => setRec((r) => !r)}
-            style={{
-              padding: '2px 6px',
-              fontSize: 'var(--font-size-xs)',
-              background: rec ? 'var(--color-danger)' : 'var(--color-surface-raised)',
-              color: '#fff',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-sm)',
-              cursor: 'pointer',
-            }}
-          >
-            R
-          </button>
-        </div>
+          </div>
+        )}
       </div>
-
+      
       <div
         className="track-timeline"
         style={{
@@ -269,7 +298,7 @@ export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted =
       <div
         className="master-track"
         style={{
-          height: 60,
+          height: 80,
           flexShrink: 0,
           display: 'flex',
           width: '100%',
@@ -286,55 +315,75 @@ export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted =
             background: 'var(--color-surface)',
             borderRight: '1px solid var(--color-border)',
             display: 'flex',
-            flexDirection: 'column',
-            padding: 'var(--space-2)',
-            gap: 'var(--space-1)',
+            flexDirection: 'row',
+            alignItems: 'stretch',
+            padding: '6px var(--space-2)',
+            gap: 'var(--space-2)',
             boxSizing: 'border-box',
+            overflow: 'hidden',
           }}
         >
-          <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
-            <span
-              className="master-track-name"
-              style={{
-                color: 'var(--color-text)',
-                fontSize: 'var(--font-size-sm)',
-                fontWeight: 'bold',
-                flex: 1,
-              }}
-            >
-              Master
-            </span>
-            {getMasterAnalyserNodeL && getMasterAnalyserNodeR && (
+          <div
+            style={{
+              minWidth: 0,
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              gap: 'var(--space-1)',
+            }}
+          >
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
+              <span
+                className="master-track-name"
+                style={{
+                  color: 'var(--color-text)',
+                  fontSize: 'var(--font-size-sm)',
+                  fontWeight: 'bold',
+                  flex: 1,
+                  minWidth: 0,
+                  textTransform: 'uppercase',
+                  letterSpacing: 1,
+                }}
+              >
+                MASTER
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
+              <input
+                type="range"
+                className="master-volume"
+                min={0}
+                max={100}
+                step={0.1}
+                value={dbToPos(masterVolumeDb)}
+                onChange={(e) => {
+                  const db = posToDB(Number(e.target.value))
+                  setMasterVolumeDb(db)
+                  onMasterVolumeChange?.(db)
+                }}
+                style={{ flex: 1, minWidth: 0, accentColor: 'var(--color-accent)' }}
+              />
+              <span
+                className="master-volume-label"
+                style={{
+                  color: 'var(--color-text-muted, var(--color-text))',
+                  fontSize: 'var(--font-size-xs)',
+                  minWidth: 34,
+                  flexShrink: 0,
+                  textAlign: 'right',
+                  lineHeight: 1,
+                }}
+              >
+                {formatDB(masterVolumeDb)}
+              </span>
+            </div>
+          </div>
+          {getMasterAnalyserNodeL && getMasterAnalyserNodeR && (
+            <div style={{ width: 16, flexShrink: 0, display: 'flex', alignItems: 'stretch' }}>
               <VUMeter getAnalyserNodeL={getMasterAnalyserNodeL} getAnalyserNodeR={getMasterAnalyserNodeR} />
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
-            <input
-              type="range"
-              className="master-volume"
-              min={0}
-              max={100}
-              step={0.1}
-              value={dbToPos(masterVolumeDb)}
-              onChange={(e) => {
-                const db = posToDB(Number(e.target.value))
-                setMasterVolumeDb(db)
-                onMasterVolumeChange?.(db)
-              }}
-              style={{ flex: 1, accentColor: 'var(--color-accent)' }}
-            />
-            <span
-              className="master-volume-label"
-              style={{
-                color: 'var(--color-text-muted, var(--color-text))',
-                fontSize: 'var(--font-size-xs)',
-                minWidth: 32,
-                textAlign: 'right',
-              }}
-            >
-              {formatDB(masterVolumeDb)}
-            </span>
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
