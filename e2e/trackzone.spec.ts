@@ -1,4 +1,13 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, Page } from '@playwright/test'
+
+async function setSliderValue(page: Page, selector: string, value: number) {
+  await page.locator(selector).evaluate((el: HTMLInputElement, val: number) => {
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!
+    nativeInputValueSetter.call(el, val)
+    el.dispatchEvent(new Event('input', { bubbles: true }))
+    el.dispatchEvent(new Event('change', { bubbles: true }))
+  }, value)
+}
 
 test('track header contains text synth1', async ({ page }) => {
   await page.goto('/')
@@ -19,6 +28,30 @@ test('Rec button has aria-pressed="true" by default', async ({ page }) => {
   const recBtn = page.locator('.track-rec')
   await expect(recBtn).toBeVisible()
   await expect(recBtn).toHaveAttribute('aria-pressed', 'true')
+})
+
+test('volume fader default position shows 0 dB label', async ({ page }) => {
+  await page.goto('/')
+  const label = page.locator('.track-volume-label')
+  await expect(label).toBeVisible()
+  const text = await label.textContent()
+  expect(text).toMatch(/^\+?0/)
+})
+
+test('drag volume fader to leftmost position shows -∞ label', async ({ page }) => {
+  await page.goto('/')
+  await setSliderValue(page, '.track-volume', 0)
+  const label = page.locator('.track-volume-label')
+  const text = await label.textContent()
+  expect(text).toContain('-∞')
+})
+
+test('drag volume fader to rightmost position shows +6 label', async ({ page }) => {
+  await page.goto('/')
+  await setSliderValue(page, '.track-volume', 100)
+  const label = page.locator('.track-volume-label')
+  const text = await label.textContent()
+  expect(text).toMatch(/\+?6/)
 })
 
 test('click Play then playhead moves within 500ms', async ({ page }) => {

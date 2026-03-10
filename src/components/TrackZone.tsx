@@ -5,17 +5,40 @@ const SEQUENCE_NOTES = [60, 62, 64, 65, 67, 69, 71, 72]
 const MIN_PITCH = 60
 const MAX_PITCH = 72
 
+const FADER_MIN_DB = -60
+const FADER_MAX_DB = 6
+const FADER_SNAP_THRESHOLD = 10 // leftmost 10% of slider (0-100 range) snaps to -Infinity
+
+function posToDB(pos: number): number {
+  if (pos <= FADER_SNAP_THRESHOLD) return -Infinity
+  const normalized = (pos - FADER_SNAP_THRESHOLD) / (100 - FADER_SNAP_THRESHOLD)
+  return FADER_MIN_DB + normalized * (FADER_MAX_DB - FADER_MIN_DB)
+}
+
+function dbToPos(db: number): number {
+  if (!isFinite(db) || db <= FADER_MIN_DB) return 0
+  const normalized = (db - FADER_MIN_DB) / (FADER_MAX_DB - FADER_MIN_DB)
+  return FADER_SNAP_THRESHOLD + normalized * (100 - FADER_SNAP_THRESHOLD)
+}
+
+function formatDB(db: number): string {
+  if (!isFinite(db)) return '-\u221e'
+  const rounded = Math.round(db * 10) / 10
+  return rounded >= 0 ? `+${rounded}` : `${rounded}`
+}
+
 interface Props {
   isPlaying: boolean
   bpm: number
   isTrackMuted?: boolean
   onMuteToggle?: (muted: boolean) => void
   getAnalyserNode?: () => AnalyserNode | null
+  onVolumeChange?: (db: number) => void
 }
 
-export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMuteToggle, getAnalyserNode }: Props) {
+export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMuteToggle, getAnalyserNode, onVolumeChange }: Props) {
   const [rec, setRec] = useState(true)
-  const [volume, setVolume] = useState(80)
+  const [volumeDb, setVolumeDb] = useState(0)
   const [playheadPos, setPlayheadPos] = useState(0)
 
   const rafRef = useRef<number | null>(null)
@@ -96,10 +119,26 @@ export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMute
             className="track-volume"
             min={0}
             max={100}
-            value={volume}
-            onChange={(e) => setVolume(Number(e.target.value))}
+            step={0.1}
+            value={dbToPos(volumeDb)}
+            onChange={(e) => {
+              const db = posToDB(Number(e.target.value))
+              setVolumeDb(db)
+              onVolumeChange?.(db)
+            }}
             style={{ flex: 1, accentColor: 'var(--color-accent)' }}
           />
+          <span
+            className="track-volume-label"
+            style={{
+              color: 'var(--color-text-muted, var(--color-text))',
+              fontSize: 'var(--font-size-xs)',
+              minWidth: 32,
+              textAlign: 'right',
+            }}
+          >
+            {formatDB(volumeDb)}
+          </span>
           <button
             className="track-mute"
             aria-pressed={isTrackMuted}

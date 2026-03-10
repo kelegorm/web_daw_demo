@@ -20,15 +20,15 @@ No audio engine changes.
 - [x] Mark completed
 
 ### Task 2: Track volume fader for synth1
-- [ ] Replace existing volume control with horizontal fader in track header
-- [ ] Range: -Infinity to +6 dB, default position at 0 dB
-- [ ] Leftmost ~10% of travel snaps to -Infinity; rest maps logarithmically to -60..+6 dB
-- [ ] Fader calls `useToneSynth.setVolume(db)` on change
-- [ ] Display current dB value as text next to fader (show "-∞" at minimum)
-- [ ] Write Playwright test: verify fader default position corresponds to 0 dB label
-- [ ] Write Playwright test: drag fader to leftmost position, verify label shows "-∞"
-- [ ] Write Playwright test: drag fader to rightmost position, verify label shows "+6" or "6"
-- [ ] Mark completed
+- [x] Replace existing volume control with horizontal fader in track header
+- [x] Range: -Infinity to +6 dB, default position at 0 dB
+- [x] Leftmost ~10% of travel snaps to -Infinity; rest maps logarithmically to -60..+6 dB
+- [x] Fader calls `useToneSynth.setVolume(db)` on change
+- [x] Display current dB value as text next to fader (show "-∞" at minimum)
+- [x] Write Playwright test: verify fader default position corresponds to 0 dB label
+- [x] Write Playwright test: drag fader to leftmost position, verify label shows "-∞"
+- [x] Write Playwright test: drag fader to rightmost position, verify label shows "+6" or "6"
+- [x] Mark completed
 
 ### Task 3: Track zone fills full screen height
 - [ ] Track zone expands to fill all available vertical space between toolbar and device panel
