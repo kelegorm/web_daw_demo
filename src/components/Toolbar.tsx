@@ -43,13 +43,22 @@ export default function Toolbar({
           color: 'var(--color-accent)',
           fontWeight: 'bold',
           fontSize: 'var(--font-size-lg)',
-          flex: '1 0 0',
+          flexShrink: 0,
         }}
       >
         SynthDemo
       </span>
 
-      <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+      <div
+        className="toolbar-transport"
+        style={{
+          display: 'flex',
+          gap: 'var(--space-2)',
+          alignItems: 'center',
+          marginLeft: 32,
+          flexShrink: 0,
+        }}
+      >
         <button
           className="toolbar-play-pause"
           onClick={onPlay}
@@ -96,17 +105,6 @@ export default function Toolbar({
         >
           Panic
         </button>
-      </div>
-
-      <div
-        style={{
-          display: 'flex',
-          gap: 'var(--space-2)',
-          alignItems: 'center',
-          flex: '1 0 0',
-          justifyContent: 'flex-end',
-        }}
-      >
         <label
           style={{
             color: 'var(--color-text-muted)',
@@ -138,6 +136,16 @@ export default function Toolbar({
             }}
           />
         </label>
+      </div>
+
+      <div
+        style={{
+          flex: '1 0 0',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+        }}
+      >
         <button
           className="toolbar-loop"
           onClick={onLoopToggle}

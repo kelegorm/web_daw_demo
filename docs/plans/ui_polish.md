@@ -12,12 +12,12 @@ No audio engine changes.
 ---
 
 ### Task 1: Toolbar layout — transport left-aligned with offset from title
-- [ ] Move Play/Pause, Stop, Panic buttons and BPM input to left side of toolbar
-- [ ] Add visible gap between app title "SynthDemo" and transport controls (min 32px)
-- [ ] Transport group and title remain in the same row, no wrapping
-- [ ] Write Playwright test: verify transport buttons are positioned to the right of title and left of viewport center
-- [ ] Write Playwright test: verify gap between title and first transport button is at least 32px
-- [ ] Mark completed
+- [x] Move Play/Pause, Stop, Panic buttons and BPM input to left side of toolbar
+- [x] Add visible gap between app title "SynthDemo" and transport controls (min 32px)
+- [x] Transport group and title remain in the same row, no wrapping
+- [x] Write Playwright test: verify transport buttons are positioned to the right of title and left of viewport center
+- [x] Write Playwright test: verify gap between title and first transport button is at least 32px
+- [x] Mark completed
 
 ### Task 2: Track volume fader for synth1
 - [ ] Replace existing volume control with horizontal fader in track header
