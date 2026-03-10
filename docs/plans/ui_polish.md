@@ -31,12 +31,12 @@ No audio engine changes.
 - [x] Mark completed
 
 ### Task 3: Track zone fills full screen height
-- [ ] Track zone expands to fill all available vertical space between toolbar and device panel
-- [ ] synth1 track row is fixed height at top of track zone
-- [ ] Remaining space below synth1 is empty and scrollable if future tracks are added
-- [ ] Write Playwright test: verify track zone height fills viewport minus toolbar and device panel heights
-- [ ] Write Playwright test: verify synth1 row is at the top of the track zone
-- [ ] Mark completed
+- [x] Track zone expands to fill all available vertical space between toolbar and device panel
+- [x] synth1 track row is fixed height at top of track zone
+- [x] Remaining space below synth1 is empty and scrollable if future tracks are added
+- [x] Write Playwright test: verify track zone height fills viewport minus toolbar and device panel heights
+- [x] Write Playwright test: verify synth1 row is at the top of the track zone
+- [x] Mark completed
 
 ### Task 4: Master track at bottom of track zone
 - [ ] Add Master track row pinned to the bottom of the track zone (not scrolled away)

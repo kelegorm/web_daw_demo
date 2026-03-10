@@ -54,6 +54,47 @@ test('drag volume fader to rightmost position shows +6 label', async ({ page }) 
   expect(text).toMatch(/\+?6/)
 })
 
+test('track zone height fills viewport minus toolbar and device panel heights', async ({ page }) => {
+  await page.goto('/')
+  const trackZone = page.locator('.track-zone')
+  const devicePanel = page.locator('.device-panel')
+
+  const viewportHeight = page.viewportSize()!.height
+  const trackZoneBox = await trackZone.boundingBox()
+  const devicePanelBox = await devicePanel.boundingBox()
+
+  expect(trackZoneBox).not.toBeNull()
+  expect(devicePanelBox).not.toBeNull()
+
+  // Track zone top should be at toolbar height (48px)
+  expect(Math.round(trackZoneBox!.y)).toBe(48)
+
+  // Track zone bottom should align with device panel top
+  expect(Math.round(trackZoneBox!.y + trackZoneBox!.height)).toBe(Math.round(devicePanelBox!.y))
+
+  // Track zone should fill the gap: viewport - toolbar - device panel - midi keyboard
+  const midiKeyboard = page.locator('.midi-keyboard')
+  const midiKeyboardBox = await midiKeyboard.boundingBox()
+  expect(midiKeyboardBox).not.toBeNull()
+  const expectedHeight = viewportHeight - 48 - devicePanelBox!.height - midiKeyboardBox!.height
+  expect(Math.round(trackZoneBox!.height)).toBe(Math.round(expectedHeight))
+})
+
+test('synth1 track row is at the top of the track zone', async ({ page }) => {
+  await page.goto('/')
+  const trackZone = page.locator('.track-zone')
+  const trackRow = page.locator('.track-list .track-row')
+
+  const trackZoneBox = await trackZone.boundingBox()
+  const trackRowBox = await trackRow.boundingBox()
+
+  expect(trackZoneBox).not.toBeNull()
+  expect(trackRowBox).not.toBeNull()
+
+  // synth1 row should be at the top of track zone
+  expect(Math.round(trackRowBox!.y)).toBe(Math.round(trackZoneBox!.y))
+})
+
 test('click Play then playhead moves within 500ms', async ({ page }) => {
   await page.goto('/')
 

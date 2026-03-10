@@ -75,14 +75,33 @@ export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMute
       className="track-zone"
       style={{
         marginTop: 'var(--toolbar-height)',
+        flex: 1,
+        overflow: 'hidden',
         display: 'flex',
+        flexDirection: 'column',
         width: '100%',
-        height: 80,
         background: 'var(--color-bg)',
-        borderBottom: '1px solid var(--color-border)',
         boxSizing: 'border-box',
       }}
     >
+      <div
+        className="track-list"
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+        }}
+      >
+      <div
+        className="track-row"
+        style={{
+          height: 80,
+          flexShrink: 0,
+          display: 'flex',
+          width: '100%',
+          borderBottom: '1px solid var(--color-border)',
+          boxSizing: 'border-box',
+        }}
+      >
       <div
         className="track-header"
         style={{
@@ -227,6 +246,8 @@ export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMute
             }}
           />
         </div>
+      </div>
+      </div>
       </div>
     </div>
   )
