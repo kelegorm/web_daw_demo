@@ -12,13 +12,13 @@ Master limiter device, and track row click selection.
 ---
 
 ### Task 1: Track selection state
-- [ ] Create `src/hooks/useTrackSelection.ts`
-- [ ] State: `selectedTrack: 'synth1' | 'master' | null`, default `'synth1'`
-- [ ] Expose: `selectTrack(id)`, `selectedTrack`
-- [ ] Share state via React context (`TrackSelectionContext`) so DevicePanel and TrackZone both access it without prop drilling
-- [ ] Write Vitest test: `selectTrack('master')` updates `selectedTrack` to `'master'`
-- [ ] Write Vitest test: `selectTrack('synth1')` updates `selectedTrack` to `'synth1'`
-- [ ] Mark completed
+- [x] Create `src/hooks/useTrackSelection.ts`
+- [x] State: `selectedTrack: 'synth1' | 'master' | null`, default `'synth1'`
+- [x] Expose: `selectTrack(id)`, `selectedTrack`
+- [x] Share state via React context (`TrackSelectionContext`) so DevicePanel and TrackZone both access it without prop drilling
+- [x] Write Vitest test: `selectTrack('master')` updates `selectedTrack` to `'master'`
+- [x] Write Vitest test: `selectTrack('synth1')` updates `selectedTrack` to `'synth1'`
+- [x] Mark completed
 
 ### Task 2: Track row click selection
 - [ ] In `TrackZone.tsx`: clicking anywhere on synth1 track row calls `selectTrack('synth1')`
