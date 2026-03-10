@@ -53,15 +53,15 @@ they share the same pixels-per-second scale constant.
 - [x] Mark completed
 
 ### Task 4: Playhead synced to Tone.Transport and timeline scale
-- [ ] Remove any manual time tracking or `Date.now()`-based playhead calculation
-- [ ] Playhead position calculated each animation frame as: `Tone.Transport.seconds * getPixelsPerSecond(bpm)`
-- [ ] `getPixelsPerSecond` imported from `timelineScale.ts` — same scale as ruler and clip
-- [ ] `getPixelsPerSecond(bpm)` recomputed reactively when BPM changes — no stale closure
-- [ ] When Loop is enabled, playhead wraps at `clipDurationSeconds(bpm, 8) * getPixelsPerSecond(bpm)`
-- [ ] When transport is stopped, playhead returns to position 0
-- [ ] Playhead is a vertical line spanning from timeline ruler through all track rows
-- [ ] Write Playwright test: click Play at 120 BPM, wait exactly 1000ms, verify playhead pixel position is within 5% of `1.0 * getPixelsPerSecond(120)`
-- [ ] Write Playwright test: change BPM to 60, click Play, wait 1000ms, verify playhead position is within 5% of `1.0 * getPixelsPerSecond(60)`
-- [ ] Write Playwright test: click Stop, verify playhead returns to pixel position 0
-- [ ] Write Playwright test: enable Loop, click Play, wait for full clip duration + 200ms, verify playhead has wrapped back near position 0
-- [ ] Mark completed
+- [x] Remove any manual time tracking or `Date.now()`-based playhead calculation
+- [x] Playhead position calculated each animation frame as: `Tone.Transport.seconds * getPixelsPerSecond(bpm)`
+- [x] `getPixelsPerSecond` imported from `timelineScale.ts` — same scale as ruler and clip
+- [x] `getPixelsPerSecond(bpm)` recomputed reactively when BPM changes — no stale closure
+- [x] When Loop is enabled, playhead wraps at `clipDurationSeconds(bpm, 8) * getPixelsPerSecond(bpm)`
+- [x] When transport is stopped, playhead returns to position 0
+- [x] Playhead is a vertical line spanning from timeline ruler through all track rows
+- [x] Write Playwright test: click Play at 120 BPM, wait exactly 1000ms, verify playhead pixel position is within 5% of `1.0 * getPixelsPerSecond(120)`
+- [x] Write Playwright test: change BPM to 60, click Play, wait 1000ms, verify playhead position is within 5% of `1.0 * getPixelsPerSecond(60)`
+- [x] Write Playwright test: click Stop, verify playhead returns to pixel position 0
+- [x] Write Playwright test: enable Loop, click Play, wait for full clip duration + 200ms, verify playhead has wrapped back near position 0
+- [x] Mark completed

@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
+import * as Tone from 'tone'
 import VUMeter from './VUMeter'
 import TimelineRuler from './TimelineRuler'
 import { clipDurationSeconds, getPixelsPerSecond } from '../utils/timelineScale'
@@ -32,6 +33,7 @@ function formatDB(db: number): string {
 interface Props {
   isPlaying: boolean
   bpm: number
+  loop?: boolean
   isTrackMuted?: boolean
   onMuteToggle?: (muted: boolean) => void
   getAnalyserNodeL?: () => AnalyserNode | null
@@ -42,39 +44,44 @@ interface Props {
   onMasterVolumeChange?: (db: number) => void
 }
 
-export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMuteToggle, getAnalyserNodeL, getAnalyserNodeR, onVolumeChange, getMasterAnalyserNodeL, getMasterAnalyserNodeR, onMasterVolumeChange }: Props) {
+export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted = false, onMuteToggle, getAnalyserNodeL, getAnalyserNodeR, onVolumeChange, getMasterAnalyserNodeL, getMasterAnalyserNodeR, onMasterVolumeChange }: Props) {
   const [rec, setRec] = useState(true)
   const [volumeDb, setVolumeDb] = useState(0)
   const [masterVolumeDb, setMasterVolumeDb] = useState(0)
   const [playheadPos, setPlayheadPos] = useState(0)
 
   const rafRef = useRef<number | null>(null)
-  const startTimeRef = useRef<number | null>(null)
+  const bpmRef = useRef(bpm)
+  bpmRef.current = bpm
+  const loopRef = useRef(loop)
+  loopRef.current = loop
 
-  const stepDuration = (60 / bpm) * 1000
-  const totalDuration = stepDuration * SEQUENCE_NOTES.length
   const clipWidth = clipDurationSeconds(bpm, SEQUENCE_NOTES.length) * getPixelsPerSecond(bpm)
 
   useEffect(() => {
     if (isPlaying) {
-      startTimeRef.current = performance.now()
       const animate = () => {
-        if (startTimeRef.current === null) return
-        const elapsed = performance.now() - startTimeRef.current
-        const pos = (elapsed % totalDuration) / totalDuration
-        setPlayheadPos(pos)
+        const seconds = Tone.getTransport().seconds
+        const pps = getPixelsPerSecond(bpmRef.current)
+        let px = seconds * pps
+        if (loopRef.current) {
+          const loopEndPx = clipDurationSeconds(bpmRef.current, SEQUENCE_NOTES.length) * pps
+          if (loopEndPx > 0) {
+            px = px % loopEndPx
+          }
+        }
+        setPlayheadPos(px)
         rafRef.current = requestAnimationFrame(animate)
       }
       rafRef.current = requestAnimationFrame(animate)
     } else {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
-      startTimeRef.current = null
       setPlayheadPos(0)
     }
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
     }
-  }, [isPlaying, totalDuration])
+  }, [isPlaying])
 
   const pitchRange = MAX_PITCH - MIN_PITCH
 
@@ -243,18 +250,19 @@ export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMute
               />
             )
           })}
-          <div
-            className="playhead"
-            style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              width: 2,
-              background: 'rgba(255, 255, 255, 0.8)',
-              left: `${playheadPos * 100}%`,
-            }}
-          />
         </div>
+        <div
+          className="playhead"
+          style={{
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            width: 2,
+            background: 'rgba(255, 255, 255, 0.8)',
+            left: `${playheadPos}px`,
+            pointerEvents: 'none',
+          }}
+        />
       </div>
       </div>
       </div>

@@ -67,6 +67,7 @@ function App() {
       <TrackZone
         isPlaying={transport.isPlaying}
         bpm={transport.bpm}
+        loop={transport.loop}
         isTrackMuted={transport.isTrackMuted}
         onMuteToggle={transport.setTrackMute}
         getAnalyserNodeL={panner.getAnalyserNodeL}
