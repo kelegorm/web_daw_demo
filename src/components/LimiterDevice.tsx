@@ -1,25 +1,33 @@
 import { useEffect, useRef, useState } from 'react'
 import Knob from './Knob'
 import type { LimiterHook } from '../hooks/useLimiter'
+import { LIMITER_THRESHOLD_DEFAULT_DB } from '../audio/parameterDefaults'
+import {
+  GR_METER_HEIGHT_PX,
+  GR_METER_RANGE_DB,
+  gainReductionDbToPixels,
+} from '../audio/gainReductionMath'
 
 interface Props {
   limiter: LimiterHook
 }
 
 export default function LimiterDevice({ limiter }: Props) {
-  const [threshold, setThresholdState] = useState(limiter.threshold)
-  const [enabled, setEnabledState] = useState(limiter.isEnabled)
-  const [reduction, setReduction] = useState(0)
+  const [reductionNorm, setReductionNorm] = useState(0)
   const rafRef = useRef<number>(0)
+  const getReductionNorm = limiter.getReductionNorm
 
   useEffect(() => {
     let running = true
     function tick() {
       if (!running) return
-      const limiterNode = limiter.getLimiterNode()
-      // reduction is negative dB (0 = no reduction)
-      const r = limiterNode.reduction ?? 0
-      setReduction(Math.abs(r))
+      const nextReductionNorm = getReductionNorm()
+      setReductionNorm((prev) => {
+        const attack = 0.45
+        const release = 0.18
+        const alpha = nextReductionNorm > prev ? attack : release
+        return prev + (nextReductionNorm - prev) * alpha
+      })
       rafRef.current = requestAnimationFrame(tick)
     }
     rafRef.current = requestAnimationFrame(tick)
@@ -27,21 +35,23 @@ export default function LimiterDevice({ limiter }: Props) {
       running = false
       cancelAnimationFrame(rafRef.current)
     }
-  }, [limiter])
+  }, [getReductionNorm])
 
   const handleToggle = () => {
-    const next = !enabled
-    setEnabledState(next)
+    const next = !limiter.isEnabled
     limiter.setEnabled(next)
   }
 
   const handleThreshold = (val: number) => {
-    setThresholdState(val)
     limiter.setThreshold(val)
   }
 
-  // Clamp reduction display to 0–30 dB range
-  const reductionBarHeight = Math.min((reduction / 30) * 100, 100)
+  const reductionBarHeightPx = gainReductionDbToPixels(
+    reductionNorm,
+    GR_METER_HEIGHT_PX,
+  );
+  const reductionDb = reductionNorm * GR_METER_RANGE_DB;
+  const reductionBarColor = reductionNorm > 0.5 ? '#e04444' : '#f5a623';
 
   return (
     <div className="device limiter-device" style={{
@@ -62,18 +72,18 @@ export default function LimiterDevice({ limiter }: Props) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <button
           className="device-enable-toggle"
-          aria-pressed={enabled}
+          aria-pressed={limiter.isEnabled}
           onClick={handleToggle}
           style={{
             width: 20,
             height: 20,
             borderRadius: 4,
             border: '1px solid #555',
-            background: enabled ? 'var(--color-accent, #f5a623)' : '#333',
+            background: limiter.isEnabled ? 'var(--color-accent, #f5a623)' : '#333',
             cursor: 'pointer',
             padding: 0,
           }}
-          title={enabled ? 'Disable limiter' : 'Enable limiter'}
+          title={limiter.isEnabled ? 'Disable limiter' : 'Enable limiter'}
         />
         <span className="device-label" style={{ color: 'var(--color-accent, #f5a623)', fontWeight: 600, fontSize: 13 }}>
           Limiter
@@ -87,14 +97,15 @@ export default function LimiterDevice({ limiter }: Props) {
           label="Threshold"
           min={-30}
           max={0}
-          value={threshold}
+          value={limiter.threshold}
           onChange={handleThreshold}
+          resetValue={LIMITER_THRESHOLD_DEFAULT_DB}
           formatValue={(v) => `${Math.round(v)}dB`}
           dataTestid="knob-limiter-threshold"
         />
         <div
           className="limiter-gr-meter"
-          title={`GR: -${reduction.toFixed(1)} dB`}
+          title={`GR: -${reductionDb.toFixed(1)} dB`}
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -106,7 +117,7 @@ export default function LimiterDevice({ limiter }: Props) {
           <div
             style={{
               width: 8,
-              height: 60,
+              height: GR_METER_HEIGHT_PX,
               background: '#1a1a22',
               borderRadius: 2,
               border: '1px solid #444',
@@ -121,8 +132,8 @@ export default function LimiterDevice({ limiter }: Props) {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: `${reductionBarHeight}%`,
-                background: reductionBarHeight > 50 ? '#e04444' : '#f5a623',
+                height: `${reductionBarHeightPx}px`,
+                background: reductionBarColor,
                 transition: 'height 60ms linear',
               }}
             />

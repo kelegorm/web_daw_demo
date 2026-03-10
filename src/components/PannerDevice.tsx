@@ -1,20 +1,17 @@
-import { useState } from 'react'
 import Knob from './Knob'
 import type { PannerHook } from '../hooks/usePanner'
+import { PANNER_PAN_DEFAULT } from '../audio/parameterDefaults'
 
 interface Props {
   panner: PannerHook
 }
 
 export default function PannerDevice({ panner }: Props) {
-  const [pan, setPanState] = useState(0)
-
   const handleToggleEnabled = () => {
     panner.setEnabled(!panner.isEnabled)
   }
 
   const handlePan = (val: number) => {
-    setPanState(val)
     panner.setPan(val)
   }
 
@@ -59,8 +56,9 @@ export default function PannerDevice({ panner }: Props) {
           label="Pan"
           min={-1}
           max={1}
-          value={pan}
+          value={panner.pan}
           onChange={handlePan}
+          resetValue={PANNER_PAN_DEFAULT}
           dataTestid="knob-pan"
         />
       </div>

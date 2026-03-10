@@ -4,13 +4,19 @@ import VUMeter from './VUMeter'
 import TimelineRuler from './TimelineRuler'
 import { clipDurationSeconds, getPixelsPerSecond } from '../utils/timelineScale'
 import { useTrackSelectionContext } from '../hooks/useTrackSelection'
+import {
+  AUDIO_DB_MAX,
+  AUDIO_DB_MIN,
+  MASTER_VOLUME_DEFAULT_DB,
+  SYNTH_VOLUME_DEFAULT_DB,
+} from '../audio/parameterDefaults'
 
 const SEQUENCE_NOTES = [60, 62, 64, 65, 67, 69, 71, 72]
 const MIN_PITCH = 60
 const MAX_PITCH = 72
 
-const FADER_MIN_DB = -60
-const FADER_MAX_DB = 6
+const FADER_MIN_DB = AUDIO_DB_MIN
+const FADER_MAX_DB = AUDIO_DB_MAX
 const FADER_SNAP_THRESHOLD = 10 // leftmost 10% of slider (0-100 range) snaps to -Infinity
 
 function posToDB(pos: number): number {
@@ -41,15 +47,31 @@ interface Props {
   onRecToggle?: (recEnabled: boolean) => void
   getAnalyserNodeL?: () => AnalyserNode | null
   getAnalyserNodeR?: () => AnalyserNode | null
+  trackVolumeDb?: number
   onVolumeChange?: (db: number) => void
   getMasterAnalyserNodeL?: () => AnalyserNode | null
   getMasterAnalyserNodeR?: () => AnalyserNode | null
+  masterVolumeDb?: number
   onMasterVolumeChange?: (db: number) => void
 }
 
-export default function TrackZone({ playbackState, bpm, loop = false, isTrackMuted = false, isTrackRecEnabled = true, onMuteToggle, onRecToggle, getAnalyserNodeL, getAnalyserNodeR, onVolumeChange, getMasterAnalyserNodeL, getMasterAnalyserNodeR, onMasterVolumeChange }: Props) {
-  const [volumeDb, setVolumeDb] = useState(0)
-  const [masterVolumeDb, setMasterVolumeDb] = useState(0)
+export default function TrackZone({
+  playbackState,
+  bpm,
+  loop = false,
+  isTrackMuted = false,
+  isTrackRecEnabled = true,
+  onMuteToggle,
+  onRecToggle,
+  getAnalyserNodeL,
+  getAnalyserNodeR,
+  trackVolumeDb = 0,
+  onVolumeChange,
+  getMasterAnalyserNodeL,
+  getMasterAnalyserNodeR,
+  masterVolumeDb = 0,
+  onMasterVolumeChange,
+}: Props) {
   const [playheadPos, setPlayheadPos] = useState(0)
   const { selectedTrack, selectTrack } = useTrackSelectionContext()
 
@@ -281,12 +303,12 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
               min={0}
               max={100}
               step={0.1}
-              value={dbToPos(volumeDb)}
+              value={dbToPos(trackVolumeDb)}
               onChange={(e) => {
                 const db = posToDB(Number(e.target.value))
-                setVolumeDb(db)
                 onVolumeChange?.(db)
               }}
+              onDoubleClick={() => onVolumeChange?.(SYNTH_VOLUME_DEFAULT_DB)}
               style={{ flex: 1, minWidth: 0, accentColor: 'var(--color-accent)' }}
             />
             <span
@@ -300,7 +322,7 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
                 lineHeight: 1,
               }}
             >
-              {formatDB(volumeDb)}
+              {formatDB(trackVolumeDb)}
             </span>
           </div>
         </div>
@@ -459,9 +481,9 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
                 value={dbToPos(masterVolumeDb)}
                 onChange={(e) => {
                   const db = posToDB(Number(e.target.value))
-                  setMasterVolumeDb(db)
                   onMasterVolumeChange?.(db)
                 }}
+                onDoubleClick={() => onMasterVolumeChange?.(MASTER_VOLUME_DEFAULT_DB)}
                 style={{ flex: 1, minWidth: 0, accentColor: 'var(--color-accent)' }}
               />
               <span

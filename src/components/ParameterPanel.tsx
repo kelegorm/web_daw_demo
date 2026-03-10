@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import Knob from './Knob'
+import {
+  SYNTH_FILTER_CUTOFF_DEFAULT_HZ,
+  SYNTH_VOICE_SPREAD_DEFAULT,
+} from '../audio/parameterDefaults'
 
 interface Props {
   setParam: (name: string, value: number) => void
 }
 
 export default function ParameterPanel({ setParam }: Props) {
-  const [filterCutoff, setFilterCutoff] = useState(2000)
-  const [voiceSpread, setVoiceSpread] = useState(0)
+  const [filterCutoff, setFilterCutoff] = useState(SYNTH_FILTER_CUTOFF_DEFAULT_HZ)
+  const [voiceSpread, setVoiceSpread] = useState(SYNTH_VOICE_SPREAD_DEFAULT)
   const [reverbMix, setReverbMix] = useState(0)
 
   const handleFilterCutoff = (v: number) => {
@@ -36,6 +40,7 @@ export default function ParameterPanel({ setParam }: Props) {
         max={20000}
         value={filterCutoff}
         onChange={handleFilterCutoff}
+        resetValue={SYNTH_FILTER_CUTOFF_DEFAULT_HZ}
         formatValue={(v) => `${Math.round(v)} Hz`}
         dataTestid="knob-filter-cutoff"
       />
@@ -45,6 +50,7 @@ export default function ParameterPanel({ setParam }: Props) {
         max={1}
         value={voiceSpread}
         onChange={handleVoiceSpread}
+        resetValue={SYNTH_VOICE_SPREAD_DEFAULT}
         dataTestid="knob-voice-spread"
       />
       <Knob
@@ -53,6 +59,7 @@ export default function ParameterPanel({ setParam }: Props) {
         max={1}
         value={reverbMix}
         onChange={handleReverbMix}
+        resetValue={0}
         dataTestid="knob-reverb-mix"
       />
     </div>

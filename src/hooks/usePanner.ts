@@ -1,7 +1,16 @@
 import { useRef, useCallback, useState } from 'react';
 import * as Tone from 'tone';
+import {
+  AUDIO_DB_MAX,
+  AUDIO_DB_MIN,
+  MASTER_VOLUME_DEFAULT_DB,
+  PANNER_ENABLED_DEFAULT,
+  PANNER_PAN_DEFAULT,
+} from '../audio/parameterDefaults';
 
 export interface PannerGraph {
+  pan: number;
+  masterVolume: number;
   setPan: (value: number) => void;
   setEnabled: (enabled: boolean) => void;
   isEnabled: boolean;
@@ -57,10 +66,13 @@ export function createPanner(limiterNode?: { input: AudioNode; connect: (dest: u
   masterChannelSplitter.connect(masterAnalyserNodeL, 0);
   masterChannelSplitter.connect(masterAnalyserNodeR, 1);
 
-  let enabled = true;
+  let enabled = PANNER_ENABLED_DEFAULT;
+  let pan = PANNER_PAN_DEFAULT;
+  let masterVolume = MASTER_VOLUME_DEFAULT_DB;
 
   function setPan(value: number) {
-    pannerNode.pan.value = Math.max(-1, Math.min(1, value));
+    pan = Math.max(-1, Math.min(1, value));
+    pannerNode.pan.value = pan;
   }
 
   function setEnabled(isEnabled: boolean) {
@@ -88,16 +100,25 @@ export function createPanner(limiterNode?: { input: AudioNode; connect: (dest: u
   }
 
   function setMasterVolume(db: number) {
-    const linear = isFinite(db) ? Math.pow(10, db / 20) : 0;
+    masterVolume = isFinite(db)
+      ? Math.max(AUDIO_DB_MIN, Math.min(AUDIO_DB_MAX, db))
+      : -Infinity;
+    const linear = isFinite(masterVolume) ? Math.pow(10, masterVolume / 20) : 0;
     masterGainNode.gain.value = linear;
     try {
-      Tone.getDestination().volume.value = isFinite(db) ? db : -Infinity;
+      Tone.getDestination().volume.value = masterVolume;
     } catch {
       // Tone.Destination may not be in signal chain
     }
   }
 
   return {
+    get pan() {
+      return pan;
+    },
+    get masterVolume() {
+      return masterVolume;
+    },
     get isEnabled() {
       return enabled;
     },
@@ -119,23 +140,31 @@ export function createPanner(limiterNode?: { input: AudioNode; connect: (dest: u
 
 export interface PannerHook extends PannerGraph {
   isEnabled: boolean;
+  pan: number;
+  masterVolume: number;
 }
 
 export function usePanner(): PannerHook {
   const pannerRef = useRef<PannerGraph | null>(null);
-  const [isEnabled, setIsEnabledState] = useState(true);
 
   if (!pannerRef.current) {
     pannerRef.current = createPanner();
   }
 
+  const [isEnabled, setIsEnabledState] = useState(() => pannerRef.current!.isEnabled);
+  const [pan, setPanState] = useState(() => pannerRef.current!.pan);
+  const [masterVolume, setMasterVolumeState] = useState(() => pannerRef.current!.masterVolume);
+
   const setPan = useCallback((value: number) => {
-    pannerRef.current!.setPan(value);
+    const panner = pannerRef.current!;
+    panner.setPan(value);
+    setPanState(panner.pan);
   }, []);
 
   const setEnabled = useCallback((enabled: boolean) => {
-    pannerRef.current!.setEnabled(enabled);
-    setIsEnabledState(enabled);
+    const panner = pannerRef.current!;
+    panner.setEnabled(enabled);
+    setIsEnabledState(panner.isEnabled);
   }, []);
 
   const connectSource = useCallback((source: AudioNode | Tone.ToneAudioNode) => {
@@ -151,10 +180,16 @@ export function usePanner(): PannerHook {
   const getMasterAnalyserNode = useCallback(() => pannerRef.current!.getMasterAnalyserNode(), []);
   const getMasterAnalyserNodeL = useCallback(() => pannerRef.current!.getMasterAnalyserNodeL(), []);
   const getMasterAnalyserNodeR = useCallback(() => pannerRef.current!.getMasterAnalyserNodeR(), []);
-  const setMasterVolume = useCallback((db: number) => pannerRef.current!.setMasterVolume(db), []);
+  const setMasterVolume = useCallback((db: number) => {
+    const panner = pannerRef.current!;
+    panner.setMasterVolume(db);
+    setMasterVolumeState(panner.masterVolume);
+  }, []);
 
   return {
     isEnabled,
+    pan,
+    masterVolume,
     setPan,
     setEnabled,
     connectSource,

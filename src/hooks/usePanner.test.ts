@@ -70,14 +70,29 @@ describe('createPanner', () => {
     const panner = createPanner();
     panner.setPan(0.5);
     expect(mockPannerNode.pan.value).toBe(0.5);
+    expect(panner.pan).toBe(0.5);
   });
 
   it('setPan clamps values to -1..1 range', () => {
     const panner = createPanner();
     panner.setPan(-2);
     expect(mockPannerNode.pan.value).toBe(-1);
+    expect(panner.pan).toBe(-1);
     panner.setPan(2);
     expect(mockPannerNode.pan.value).toBe(1);
+    expect(panner.pan).toBe(1);
+  });
+
+  it('exposes default pan and master volume values', () => {
+    const panner = createPanner();
+    expect(panner.pan).toBe(0);
+    expect(panner.masterVolume).toBe(0);
+  });
+
+  it('setMasterVolume stores current master volume', () => {
+    const panner = createPanner();
+    panner.setMasterVolume(-12);
+    expect(panner.masterVolume).toBe(-12);
   });
 
   it('isEnabled is true by default', () => {

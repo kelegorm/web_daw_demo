@@ -6,11 +6,12 @@ interface Props {
   max: number
   value: number
   onChange: (value: number) => void
+  resetValue?: number
   formatValue?: (value: number) => string
   dataTestid?: string
 }
 
-export default function Knob({ label, min, max, value, onChange, formatValue, dataTestid }: Props) {
+export default function Knob({ label, min, max, value, onChange, resetValue, formatValue, dataTestid }: Props) {
   const [dragging, setDragging] = useState(false)
   const startYRef = useRef(0)
   const startValueRef = useRef(value)
@@ -23,6 +24,12 @@ export default function Knob({ label, min, max, value, onChange, formatValue, da
     startYRef.current = e.clientY
     startValueRef.current = value
   }, [value])
+
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
+    if (resetValue === undefined) return
+    e.preventDefault()
+    onChange(clamp(resetValue))
+  }, [clamp, onChange, resetValue])
 
   useEffect(() => {
     if (!dragging) return
@@ -94,6 +101,7 @@ export default function Knob({ label, min, max, value, onChange, formatValue, da
         <div
           className="knob"
           onMouseDown={handleMouseDown}
+          onDoubleClick={handleDoubleClick}
           style={{
             width: 58,
             height: 58,
@@ -108,6 +116,7 @@ export default function Knob({ label, min, max, value, onChange, formatValue, da
               ? '0 6px 12px rgba(0,0,0,0.35)'
               : '0 7px 14px rgba(0,0,0,0.42)',
           }}
+          title={resetValue === undefined ? undefined : 'Double-click to reset'}
         >
           {/* Dark chamfer */}
           <div

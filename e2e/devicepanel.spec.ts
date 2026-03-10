@@ -1,4 +1,16 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, Page } from '@playwright/test'
+
+async function dragKnobBy(page: Page, selector: string, dy: number) {
+  const knob = page.locator(selector)
+  await expect(knob).toBeVisible()
+  const box = await knob.boundingBox()
+  if (!box) throw new Error('knob bounding box not found')
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + dy)
+  await page.mouse.up()
+}
 
 test('DevicePanel shows Polysynth device when synth1 is selected', async ({ page }) => {
   await page.goto('/')
@@ -47,6 +59,82 @@ test('drag Pan knob right increases displayed pan value', async ({ page }) => {
   const finalVal = parseFloat(finalText ?? '0')
 
   expect(finalVal).toBeGreaterThan(initialVal)
+})
+
+test('double-click resets synth and panner knobs to defaults', async ({ page }) => {
+  await page.goto('/')
+
+  await dragKnobBy(page, '[data-testid="knob-filter-cutoff"] .knob', -40)
+  await page.locator('[data-testid="knob-filter-cutoff"] .knob').dblclick()
+  await expect(page.locator('[data-testid="knob-filter-cutoff"] .knob-value')).toHaveText('2.0k')
+
+  await dragKnobBy(page, '[data-testid="knob-voice-spread"] .knob', -40)
+  await page.locator('[data-testid="knob-voice-spread"] .knob').dblclick()
+  await expect(page.locator('[data-testid="knob-voice-spread"] .knob-value')).toHaveText('0.00')
+
+  await dragKnobBy(page, '[data-testid="knob-volume"] .knob', -40)
+  await page.locator('[data-testid="knob-volume"] .knob').dblclick()
+  await expect(page.locator('[data-testid="knob-volume"] .knob-value')).toHaveText('0dB')
+
+  await dragKnobBy(page, '[data-testid="knob-pan"] .knob', -40)
+  await page.locator('[data-testid="knob-pan"] .knob').dblclick()
+  await expect(page.locator('[data-testid="knob-pan"] .knob-value')).toHaveText('0.00')
+})
+
+test('double-click resets limiter threshold knob to default', async ({ page }) => {
+  await page.goto('/')
+  await page.locator('.master-track').click()
+
+  await dragKnobBy(page, '[data-testid="knob-limiter-threshold"] .knob', -40)
+  await page.locator('[data-testid="knob-limiter-threshold"] .knob').dblclick()
+  await expect(page.locator('[data-testid="knob-limiter-threshold"] .knob-value')).toHaveText('-3dB')
+})
+
+test('Limiter GR meter shows gain reduction while playing with low threshold', async ({ page }) => {
+  await page.goto('/')
+
+  await dragKnobBy(page, '[data-testid="knob-volume"] .knob', -40)
+  await page.locator('.master-track').click()
+  await dragKnobBy(page, '[data-testid="knob-limiter-threshold"] .knob', 90)
+  await page.locator('.toolbar-play-pause').click()
+
+  const grMeter = page.locator('.limiter-gr-meter')
+  await expect.poll(async () => {
+    const title = await grMeter.getAttribute('title')
+    const match = title?.match(/-([\d.]+) dB/)
+    return match ? Number(match[1]) : 0
+  }).toBeGreaterThan(0.2)
+})
+
+test('Pan knob keeps value after switching to Master and back', async ({ page }) => {
+  await page.goto('/')
+
+  const panKnob = page.locator('[data-testid="knob-pan"] .knob')
+  const panValueEl = page.locator('[data-testid="knob-pan"] .knob-value')
+  await expect(panKnob).toBeVisible()
+
+  const box = await panKnob.boundingBox()
+  if (!box) throw new Error('knob bounding box not found')
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 40)
+  await page.mouse.up()
+
+  const beforeSwitch = parseFloat((await panValueEl.textContent()) ?? '0')
+
+  await page.locator('.master-track').click()
+  await page.locator('.track-row').click()
+
+  const afterSwitch = parseFloat((await panValueEl.textContent()) ?? '0')
+  expect(afterSwitch).toBe(beforeSwitch)
+})
+
+test('synth volume knob starts at 0 dB', async ({ page }) => {
+  await page.goto('/')
+
+  const volumeValueEl = page.locator('[data-testid="knob-volume"] .knob-value')
+  await expect(volumeValueEl).toHaveText('0dB')
 })
 
 test('knob labels and values do not overflow device card bounds', async ({ page }) => {

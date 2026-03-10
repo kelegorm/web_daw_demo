@@ -72,17 +72,38 @@ describe('createToneSynth', () => {
     expect(mockPolySynth.triggerRelease).toHaveBeenCalledOnce();
   });
 
-  it('setEnabled(false) disconnects filter from destination', () => {
+  it('setEnabled(false) mutes synth output', () => {
     const synth = createToneSynth();
     synth.setEnabled(false);
-    expect(mockFilter.disconnect).toHaveBeenCalled();
+    expect(mockPolySynth.volume.value).toBe(-Infinity);
   });
 
-  it('setEnabled(true) reconnects filter to destination', () => {
+  it('setEnabled(true) restores synth volume', () => {
     const synth = createToneSynth();
-    // First disable then enable
+    synth.setVolume(-9);
     synth.setEnabled(false);
     synth.setEnabled(true);
-    expect(mockFilter.connect).toHaveBeenCalled();
+    expect(mockPolySynth.volume.value).toBe(-9);
+  });
+
+  it('exposes default UI parameter values', () => {
+    const synth = createToneSynth();
+    expect(synth.isEnabled).toBe(true);
+    expect(synth.filterCutoff).toBe(2000);
+    expect(synth.voiceSpread).toBe(0);
+    expect(synth.volume).toBe(0);
+  });
+
+  it('updates exposed values through setters', () => {
+    const synth = createToneSynth();
+    synth.setFilterCutoff(1200);
+    synth.setVoiceSpread(0.4);
+    synth.setVolume(-6);
+    synth.setEnabled(false);
+
+    expect(synth.filterCutoff).toBe(1200);
+    expect(synth.voiceSpread).toBe(0.4);
+    expect(synth.volume).toBe(-6);
+    expect(synth.isEnabled).toBe(false);
   });
 });

@@ -80,9 +80,11 @@ function App() {
         onRecToggle={setIsTrackRecEnabled}
         getAnalyserNodeL={panner.getAnalyserNodeL}
         getAnalyserNodeR={panner.getAnalyserNodeR}
+        trackVolumeDb={toneSynth.volume}
         onVolumeChange={toneSynth.setVolume}
         getMasterAnalyserNodeL={panner.getMasterAnalyserNodeL}
         getMasterAnalyserNodeR={panner.getMasterAnalyserNodeR}
+        masterVolumeDb={panner.masterVolume}
         onMasterVolumeChange={panner.setMasterVolume}
       />
       <DevicePanel synth={toneSynth} panner={panner} limiter={limiter} />

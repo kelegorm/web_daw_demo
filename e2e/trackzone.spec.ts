@@ -56,6 +56,24 @@ test('drag volume fader to rightmost position shows +6 label', async ({ page }) 
   expect(text).toMatch(/\+?6/)
 })
 
+test('double-click track volume fader resets to 0 dB', async ({ page }) => {
+  await page.goto('/')
+  await setSliderValue(page, '.track-volume', 100)
+  await expect(page.locator('.track-volume-label')).toContainText('+6')
+
+  await page.locator('.track-volume').dblclick()
+  await expect(page.locator('.track-volume-label')).toContainText('+0')
+})
+
+test('double-click master volume fader resets to 0 dB', async ({ page }) => {
+  await page.goto('/')
+  await setSliderValue(page, '.master-volume', 0)
+  await expect(page.locator('.master-volume-label')).toContainText('-∞')
+
+  await page.locator('.master-volume').dblclick()
+  await expect(page.locator('.master-volume-label')).toContainText('+0')
+})
+
 test('track zone height fills viewport minus toolbar and device panel heights', async ({ page }) => {
   await page.goto('/')
   const trackZone = page.locator('.track-zone')

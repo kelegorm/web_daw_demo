@@ -1,35 +1,30 @@
-import { useState } from 'react'
 import Knob from './Knob'
 import type { ToneSynthHook } from '../hooks/useToneSynth'
+import {
+  SYNTH_FILTER_CUTOFF_DEFAULT_HZ,
+  SYNTH_VOICE_SPREAD_DEFAULT,
+  SYNTH_VOLUME_DEFAULT_DB,
+} from '../audio/parameterDefaults'
 
 interface Props {
   synth: ToneSynthHook
 }
 
 export default function SynthDevice({ synth }: Props) {
-  const [enabled, setEnabled] = useState(true)
-  const [filterCutoff, setFilterCutoff] = useState(2000)
-  const [voiceSpread, setVoiceSpread] = useState(0)
-  const [volume, setVolume] = useState(-12)
-
   const handleToggleEnabled = () => {
-    const next = !enabled
-    setEnabled(next)
+    const next = !synth.isEnabled
     synth.setEnabled(next)
   }
 
   const handleFilterCutoff = (val: number) => {
-    setFilterCutoff(val)
     synth.setFilterCutoff(val)
   }
 
   const handleVoiceSpread = (val: number) => {
-    setVoiceSpread(val)
     synth.setVoiceSpread(val)
   }
 
   const handleVolume = (val: number) => {
-    setVolume(val)
     synth.setVolume(val)
   }
 
@@ -56,18 +51,18 @@ export default function SynthDevice({ synth }: Props) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <button
           className="device-enable-toggle"
-          aria-pressed={enabled}
+          aria-pressed={synth.isEnabled}
           onClick={handleToggleEnabled}
           style={{
             width: 20,
             height: 20,
             borderRadius: 4,
             border: '1px solid #555',
-            background: enabled ? 'var(--color-accent, #f5a623)' : '#333',
+            background: synth.isEnabled ? 'var(--color-accent, #f5a623)' : '#333',
             cursor: 'pointer',
             padding: 0,
           }}
-          title={enabled ? 'Disable synth' : 'Enable synth'}
+          title={synth.isEnabled ? 'Disable synth' : 'Enable synth'}
         />
         <span className="device-label" style={{ color: 'var(--color-accent, #f5a623)', fontWeight: 600, fontSize: 13 }}>
           Polysynth
@@ -78,8 +73,9 @@ export default function SynthDevice({ synth }: Props) {
           label="Filter"
           min={20}
           max={20000}
-          value={filterCutoff}
+          value={synth.filterCutoff}
           onChange={handleFilterCutoff}
+          resetValue={SYNTH_FILTER_CUTOFF_DEFAULT_HZ}
           formatValue={formatHz}
           dataTestid="knob-filter-cutoff"
         />
@@ -87,17 +83,19 @@ export default function SynthDevice({ synth }: Props) {
           label="Spread"
           min={0}
           max={1}
-          value={voiceSpread}
+          value={synth.voiceSpread}
           onChange={handleVoiceSpread}
+          resetValue={SYNTH_VOICE_SPREAD_DEFAULT}
           dataTestid="knob-voice-spread"
         />
         <Knob
           label="Volume"
           min={-60}
-          max={0}
-          value={volume}
+          max={6}
+          value={synth.volume}
           onChange={handleVolume}
-          formatValue={(v) => `${Math.round(v)}dB`}
+          resetValue={SYNTH_VOLUME_DEFAULT_DB}
+          formatValue={(v) => (isFinite(v) ? `${Math.round(v)}dB` : '-∞dB')}
           dataTestid="knob-volume"
         />
       </div>
