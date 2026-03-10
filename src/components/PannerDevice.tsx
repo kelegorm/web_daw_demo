@@ -53,7 +53,7 @@ export default function PannerDevice({ panner }: Props) {
           Panner
         </span>
       </div>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', minHeight: 92 }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', minHeight: 124 }}>
         <Knob
           label="Pan"
           min={-1}

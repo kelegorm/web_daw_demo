@@ -49,6 +49,10 @@ export default function Knob({ label, min, max, value, onChange, formatValue, da
   const angle = -135 + pct * 270
 
   const display = formatValue ? formatValue(value) : value.toFixed(2)
+  const dotCount = 17
+  const dotStart = -140
+  const dotEnd = 140
+  const dotRadius = 36
 
   return (
     <div
@@ -57,45 +61,130 @@ export default function Knob({ label, min, max, value, onChange, formatValue, da
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: 3,
+        gap: 4,
         userSelect: 'none',
-        width: 72,
-        minWidth: 72,
+        width: 76,
+        minWidth: 76,
       }}
       data-testid={dataTestid}
     >
-      <div
-        className="knob"
-        onMouseDown={handleMouseDown}
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle at 35% 35%, #555, #222)',
-          border: '2px solid #444',
-          cursor: 'ns-resize',
-          position: 'relative',
-          transform: `rotate(${angle}deg)`,
-          boxShadow: dragging ? '0 0 0 2px #2a7' : 'none',
-        }}
-      >
-        {/* Indicator dot */}
-        <div style={{
-          position: 'absolute',
-          top: 4,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 4,
-          height: 4,
-          borderRadius: '50%',
-          background: '#2a7',
-        }} />
+      <div style={{ position: 'relative', width: 76, height: 76 }}>
+        {Array.from({ length: dotCount }).map((_, i) => {
+          const t = i / (dotCount - 1)
+          const markerAngle = dotStart + (dotEnd - dotStart) * t
+          const isCenter = i === Math.floor(dotCount / 2)
+          return (
+            <div
+              key={`dot-${i}`}
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                width: isCenter ? 5 : 2,
+                height: isCenter ? 5 : 2,
+                borderRadius: '50%',
+                background: isCenter ? 'rgba(240, 238, 230, 0.9)' : 'rgba(191, 198, 210, 0.42)',
+                boxShadow: isCenter ? '0 1px 3px rgba(0, 0, 0, 0.45)' : 'none',
+                transform: `translate(-50%, -50%) rotate(${markerAngle}deg) translateY(-${dotRadius}px)`,
+              }}
+            />
+          )
+        })}
+
+        <div
+          className="knob"
+          onMouseDown={handleMouseDown}
+          style={{
+            width: 58,
+            height: 58,
+            borderRadius: '50%',
+            cursor: 'ns-resize',
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: 'transparent',
+            boxShadow: dragging
+              ? '0 6px 12px rgba(0,0,0,0.35)'
+              : '0 7px 14px rgba(0,0,0,0.42)',
+          }}
+        >
+          {/* Dark chamfer */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '50%',
+              background: 'linear-gradient(180deg, #181f2d 0%, #0a0f18 100%)',
+            }}
+          />
+          {/* Subtle micro-tooth ring */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 1,
+              borderRadius: '50%',
+              background: 'repeating-conic-gradient(from -90deg, rgba(76, 84, 100, 0.55) 0deg 1deg, rgba(8, 12, 19, 0.95) 1deg 3deg)',
+              WebkitMask: 'radial-gradient(circle, transparent 72%, #000 77%)',
+              mask: 'radial-gradient(circle, transparent 72%, #000 77%)',
+              opacity: 0.32,
+            }}
+          />
+          {/* Knob face with fixed top lighting */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 3,
+              borderRadius: '50%',
+              background: 'linear-gradient(180deg, #2d3546 0%, #1c2332 52%, #101623 100%)',
+              border: '1px solid rgba(118, 128, 146, 0.2)',
+              boxShadow: 'inset 0 -3px 5px rgba(0,0,0,0.38)',
+            }}
+          />
+          {/* Fixed specular highlight */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 3,
+              borderRadius: '50%',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.03) 18%, rgba(255,255,255,0) 40%)',
+              pointerEvents: 'none',
+            }}
+          />
+          {/* Rotating notch ring + indicator */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              transform: `rotate(${angle}deg)`,
+              transformOrigin: '50% 50%',
+              pointerEvents: 'none',
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: 2,
+                transform: 'translateX(-50%)',
+                width: 3,
+                height: 21,
+                borderRadius: 1,
+                background: 'linear-gradient(180deg, #ff8a1d 0%, #ffb35a 6%, #fff8ee 12%, #ffd993 22%, #ff9d36 40%, #ff8417 68%, #ff7308 100%)',
+                boxShadow: '0 0 5px rgba(255, 140, 28, 0.45)',
+              }}
+            />
+          </div>
+        </div>
       </div>
       <span
         className="knob-label"
         style={{
-          color: '#888',
+          color: '#b4bccb',
           fontSize: 12,
+          fontFamily: '"Segoe UI", "Helvetica Neue", Arial, sans-serif',
+          fontWeight: 600,
+          letterSpacing: 0.1,
           lineHeight: 1.1,
           width: '100%',
           textAlign: 'center',
@@ -109,8 +198,10 @@ export default function Knob({ label, min, max, value, onChange, formatValue, da
       <span
         className="knob-value"
         style={{
-          color: '#aaa',
+          color: '#8f98aa',
           fontSize: 11,
+          fontFamily: '"Segoe UI", "Helvetica Neue", Arial, sans-serif',
+          fontWeight: 500,
           lineHeight: 1.1,
           width: '100%',
           textAlign: 'center',

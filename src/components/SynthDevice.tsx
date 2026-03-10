@@ -72,7 +72,7 @@ export default function SynthDevice({ synth }: Props) {
           Polysynth
         </span>
       </div>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', minHeight: 92 }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', minHeight: 124 }}>
         <Knob
           label="Filter"
           min={20}
