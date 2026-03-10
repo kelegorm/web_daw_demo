@@ -21,7 +21,7 @@ declare global {
 function App() {
   const toneSynth = useToneSynth()
   const panner = usePanner()
-  const limiter = useLimiter(panner.getMasterGainNode(), panner.getMasterAnalyserNode())
+  const limiter = useLimiter(panner.getMixerNode(), panner.getMasterGainNode())
   const transport = useTransportController(toneSynth, panner)
   const [isTrackRecEnabled, setIsTrackRecEnabled] = useState(true)
   const trackSelection = useTrackSelection()
@@ -80,8 +80,8 @@ function App() {
         onRecToggle={setIsTrackRecEnabled}
         getAnalyserNodeL={panner.getAnalyserNodeL}
         getAnalyserNodeR={panner.getAnalyserNodeR}
-        trackVolumeDb={toneSynth.volume}
-        onVolumeChange={toneSynth.setVolume}
+        trackVolumeDb={panner.trackVolume}
+        onVolumeChange={panner.setTrackVolume}
         getMasterAnalyserNodeL={panner.getMasterAnalyserNodeL}
         getMasterAnalyserNodeR={panner.getMasterAnalyserNodeR}
         masterVolumeDb={panner.masterVolume}

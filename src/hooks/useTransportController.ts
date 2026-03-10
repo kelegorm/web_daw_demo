@@ -45,7 +45,7 @@ export interface TransportCoreDeps {
   noteOn: (midi: number, velocity: number) => void;
   noteOff: (midi: number) => void;
   synthPanic: () => void;
-  getGainNode: () => GainNode;
+  setTrackMuted: (muted: boolean) => void;
   onStepChange?: (step: number) => void;
 }
 
@@ -54,7 +54,7 @@ export interface TransportCoreDeps {
  * State transitions:
  *   pause() — keeps current step, does NOT call panic()
  *   stop()  — resets step to -1, calls panic() exactly once
- *   setTrackMute(true) — silences via GainNode; sequencer timing continues
+ *   setTrackMute(true) — silences via channel strip mute; sequencer timing continues
  */
 export function createTransportCore(deps: TransportCoreDeps): TransportCore {
   let _trackMuted = false;
@@ -94,8 +94,8 @@ export function createTransportCore(deps: TransportCoreDeps): TransportCore {
 
   function setTrackMute(muted: boolean) {
     _trackMuted = muted;
-    // Track mute overrides synth/panner enable states for final audible output
-    deps.getGainNode().gain.value = muted ? 0 : 1;
+    // Mute is applied in the channel strip gain stage.
+    deps.setTrackMuted(muted);
     // Sequencer timing / step progression continues regardless of mute state
   }
 
@@ -139,7 +139,7 @@ export function useTransportController(
       noteOn: (midi, velocity) => toneSynthRef.current.noteOn(midi, velocity),
       noteOff: (midi) => toneSynthRef.current.noteOff(midi),
       synthPanic: () => toneSynthRef.current.panic(),
-      getGainNode: () => pannerRef.current.getGainNode(),
+      setTrackMuted: (muted) => pannerRef.current.setTrackMuted(muted),
       onStepChange: (step) => setCurrentStep(step),
     });
   }

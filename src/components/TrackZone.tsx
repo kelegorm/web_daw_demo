@@ -8,7 +8,7 @@ import {
   AUDIO_DB_MAX,
   AUDIO_DB_MIN,
   MASTER_VOLUME_DEFAULT_DB,
-  SYNTH_VOLUME_DEFAULT_DB,
+  TRACK_VOLUME_DEFAULT_DB,
 } from '../audio/parameterDefaults'
 
 const SEQUENCE_NOTES = [60, 62, 64, 65, 67, 69, 71, 72]
@@ -308,7 +308,7 @@ export default function TrackZone({
                 const db = posToDB(Number(e.target.value))
                 onVolumeChange?.(db)
               }}
-              onDoubleClick={() => onVolumeChange?.(SYNTH_VOLUME_DEFAULT_DB)}
+              onDoubleClick={() => onVolumeChange?.(TRACK_VOLUME_DEFAULT_DB)}
               style={{ flex: 1, minWidth: 0, accentColor: 'var(--color-accent)' }}
             />
             <span

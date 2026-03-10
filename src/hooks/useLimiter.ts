@@ -18,9 +18,9 @@ export interface LimiterGraph {
   getLimiterNode: () => DynamicsCompressorNode;
 }
 
-export function createLimiter(masterGainNode: AudioNode, masterAnalyserNode: AudioNode): LimiterGraph {
+export function createLimiter(inputNode: AudioNode, outputNode: AudioNode): LimiterGraph {
   const REDUCTION_EPSILON_DB = 0.05;
-  const audioContext = masterGainNode.context as AudioContext;
+  const audioContext = inputNode.context as AudioContext;
   const compressor = audioContext.createDynamicsCompressor();
   compressor.threshold.value = LIMITER_THRESHOLD_DEFAULT_DB;
   compressor.knee.value = 0;      // Hard knee
@@ -35,15 +35,15 @@ export function createLimiter(masterGainNode: AudioNode, masterAnalyserNode: Aud
   let currentThreshold = LIMITER_THRESHOLD_DEFAULT_DB;
 
   // Insert limiter inline:
-  // masterGain → compressor → masterAnalyser
+  // input -> compressor -> output
   try {
-    masterGainNode.disconnect(masterAnalyserNode);
+    inputNode.disconnect(outputNode);
   } catch {
     // No direct connection existed
   }
-  masterGainNode.connect(compressor);
-  compressor.connect(masterAnalyserNode);
-  masterGainNode.connect(inputChannelSplitter);
+  inputNode.connect(compressor);
+  compressor.connect(outputNode);
+  inputNode.connect(inputChannelSplitter);
   inputChannelSplitter.connect(inputAnalyserNodeL, 0);
   inputChannelSplitter.connect(inputAnalyserNodeR, 1);
 
@@ -57,15 +57,15 @@ export function createLimiter(masterGainNode: AudioNode, masterAnalyserNode: Aud
     enabled = isEnabled;
 
     if (!isEnabled) {
-      // Bypass: masterGain connects directly to masterAnalyser
-      masterGainNode.disconnect(compressor);
-      compressor.disconnect(masterAnalyserNode);
-      masterGainNode.connect(masterAnalyserNode);
+      // Bypass limiter: input connects directly to output.
+      inputNode.disconnect(compressor);
+      compressor.disconnect(outputNode);
+      inputNode.connect(outputNode);
     } else {
-      // Restore compressor in chain
-      masterGainNode.disconnect(masterAnalyserNode);
-      masterGainNode.connect(compressor);
-      compressor.connect(masterAnalyserNode);
+      // Restore limiter in chain.
+      inputNode.disconnect(outputNode);
+      inputNode.connect(compressor);
+      compressor.connect(outputNode);
     }
   }
 
@@ -92,13 +92,13 @@ export function createLimiter(masterGainNode: AudioNode, masterAnalyserNode: Aud
 
 export interface LimiterHook extends LimiterGraph {}
 
-export function useLimiter(masterGainNode: AudioNode, masterAnalyserNode: AudioNode): LimiterHook {
+export function useLimiter(inputNode: AudioNode, outputNode: AudioNode): LimiterHook {
   const limiterRef = useRef<LimiterGraph | null>(null);
   const [isEnabled, setIsEnabledState] = useState(LIMITER_ENABLED_DEFAULT);
   const [threshold, setThresholdState] = useState(LIMITER_THRESHOLD_DEFAULT_DB);
 
   if (!limiterRef.current) {
-    limiterRef.current = createLimiter(masterGainNode, masterAnalyserNode);
+    limiterRef.current = createLimiter(inputNode, outputNode);
   }
 
   const setThreshold = useCallback((db: number) => {

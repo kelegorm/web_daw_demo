@@ -38,17 +38,18 @@ vi.mock('tone', () => ({
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function makeDeps(overrides: Partial<Parameters<typeof createTransportCore>[0]> = {}) {
-  const gainNode = {
-    gain: { value: 1 },
-  } as unknown as GainNode;
+  let mutedState = false;
+  const setTrackMuted = vi.fn((muted: boolean) => {
+    mutedState = muted;
+  });
 
   return {
     noteOn: vi.fn(),
     noteOff: vi.fn(),
     synthPanic: vi.fn(),
-    getGainNode: vi.fn(() => gainNode),
+    setTrackMuted,
     onStepChange: vi.fn(),
-    gainNode,
+    getMutedState: () => mutedState,
     ...overrides,
   };
 }
@@ -127,16 +128,18 @@ describe('createTransportCore', () => {
     expect(mockState.transport.stop).toHaveBeenCalled();
   });
 
-  // 3. mute sets gain to 0, unmute restores gain > 0
-  it('setTrackMute(true) sets gain node to 0, setTrackMute(false) restores to 1', () => {
+  // 3. mute delegates to channel strip mute, unmute restores it
+  it('setTrackMute(true) mutes channel strip, setTrackMute(false) unmutes it', () => {
     const deps = makeDeps();
     const core = createTransportCore(deps);
 
     core.setTrackMute(true);
-    expect(deps.gainNode.gain.value).toBe(0);
+    expect(deps.setTrackMuted).toHaveBeenCalledWith(true);
+    expect(deps.getMutedState()).toBe(true);
 
     core.setTrackMute(false);
-    expect(deps.gainNode.gain.value).toBe(1);
+    expect(deps.setTrackMuted).toHaveBeenCalledWith(false);
+    expect(deps.getMutedState()).toBe(false);
   });
 
   // 4. while muted, sequencer current step still advances
@@ -154,25 +157,23 @@ describe('createTransportCore', () => {
     fireStep(2);
     expect(core.currentStep()).toBe(2);
 
-    // Gain is still 0 (muted)
-    expect(deps.gainNode.gain.value).toBe(0);
+    // Channel strip mute remains active.
+    expect(deps.getMutedState()).toBe(true);
   });
 
-  // 5. track mute ON keeps output silent even if synth/panner are enabled
-  it('track mute keeps gain at 0 regardless of synth/panner enable state', () => {
+  // 5. track mute ON keeps channel strip muted regardless of synth/panner state
+  it('track mute state is preserved independently from synth/panner enable state', () => {
     const deps = makeDeps();
     const core = createTransportCore(deps);
 
-    // Simulate synth+panner both "enabled" (irrelevant to GainNode)
+    // Simulate synth+panner both "enabled" (irrelevant to mute gate).
     core.setTrackMute(true);
-    // Even if external code tries to re-enable synth/panner, gain stays 0
-    // because track mute is managed solely via GainNode in the core
-    expect(deps.gainNode.gain.value).toBe(0);
+    expect(deps.getMutedState()).toBe(true);
     expect(core.isTrackMuted()).toBe(true);
 
     // Unmute restores
     core.setTrackMute(false);
-    expect(deps.gainNode.gain.value).toBe(1);
+    expect(deps.getMutedState()).toBe(false);
     expect(core.isTrackMuted()).toBe(false);
   });
 

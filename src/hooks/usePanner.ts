@@ -6,17 +6,24 @@ import {
   MASTER_VOLUME_DEFAULT_DB,
   PANNER_ENABLED_DEFAULT,
   PANNER_PAN_DEFAULT,
+  TRACK_VOLUME_DEFAULT_DB,
 } from '../audio/parameterDefaults';
 
 export interface PannerGraph {
   pan: number;
+  trackVolume: number;
   masterVolume: number;
   setPan: (value: number) => void;
+  setTrackVolume: (db: number) => void;
+  setMasterVolume: (db: number) => void;
+  setTrackMuted: (muted: boolean) => void;
   setEnabled: (enabled: boolean) => void;
   isEnabled: boolean;
   connectSource: (source: AudioNode | Tone.ToneAudioNode) => void;
   getPannerNode: () => StereoPannerNode;
   getGainNode: () => GainNode;
+  getTrackGainNode: () => GainNode;
+  getMixerNode: () => GainNode;
   getMasterGainNode: () => GainNode;
   getAnalyserNode: () => AnalyserNode;
   getAnalyserNodeL: () => AnalyserNode;
@@ -24,40 +31,41 @@ export interface PannerGraph {
   getMasterAnalyserNode: () => AnalyserNode;
   getMasterAnalyserNodeL: () => AnalyserNode;
   getMasterAnalyserNodeR: () => AnalyserNode;
-  setMasterVolume: (db: number) => void;
 }
 
-export function createPanner(limiterNode?: { input: AudioNode; connect: (dest: unknown) => void }): PannerGraph {
+function dbToLinear(db: number): number {
+  if (!isFinite(db)) return 0;
+  return Math.pow(10, db / 20);
+}
+
+export function createPanner(): PannerGraph {
   const audioContext = Tone.getContext().rawContext as AudioContext;
 
-  // Internal graph nodes
+  // Track chain: input -> panner -> trackGain(volume+mute) -> trackAnalyser -> mix bus
   const inputGain = audioContext.createGain();
   const pannerNode = audioContext.createStereoPanner();
-  const gainNode = audioContext.createGain(); // track mute
+  const trackGainNode = audioContext.createGain();
   const analyserNode = audioContext.createAnalyser();
   const channelSplitter = audioContext.createChannelSplitter(2);
   const analyserNodeL = audioContext.createAnalyser();
   const analyserNodeR = audioContext.createAnalyser();
-  const masterGainNode = audioContext.createGain(); // master volume
+
+  // Master chain: mix bus -> (limiter inserted externally) -> masterGain -> masterAnalyser -> destination
+  const mixerNode = audioContext.createGain();
+  const masterGainNode = audioContext.createGain();
   const masterAnalyserNode = audioContext.createAnalyser();
   const masterChannelSplitter = audioContext.createChannelSplitter(2);
   const masterAnalyserNodeL = audioContext.createAnalyser();
   const masterAnalyserNodeR = audioContext.createAnalyser();
 
-  // Default chain (enabled): inputGain -> panner -> gain -> analyser -> masterGain -> [limiter ->] masterAnalyser -> destination
   inputGain.connect(pannerNode);
-  pannerNode.connect(gainNode);
-  gainNode.connect(analyserNode);
-  analyserNode.connect(masterGainNode);
-  if (limiterNode) {
-    masterGainNode.connect(limiterNode.input);
-    limiterNode.connect(masterAnalyserNode);
-  } else {
-    masterGainNode.connect(masterAnalyserNode);
-  }
+  pannerNode.connect(trackGainNode);
+  trackGainNode.connect(analyserNode);
+  analyserNode.connect(mixerNode);
+  mixerNode.connect(masterGainNode);
+  masterGainNode.connect(masterAnalyserNode);
   masterAnalyserNode.connect(audioContext.destination);
 
-  // Stereo per-channel analysis branches (silent — no downstream connection needed)
   analyserNode.connect(channelSplitter);
   channelSplitter.connect(analyserNodeL, 0);
   channelSplitter.connect(analyserNodeR, 1);
@@ -68,11 +76,37 @@ export function createPanner(limiterNode?: { input: AudioNode; connect: (dest: u
 
   let enabled = PANNER_ENABLED_DEFAULT;
   let pan = PANNER_PAN_DEFAULT;
+  let trackVolume = TRACK_VOLUME_DEFAULT_DB;
   let masterVolume = MASTER_VOLUME_DEFAULT_DB;
+  let trackMuted = false;
+
+  function applyTrackGain() {
+    const effectiveDb = trackMuted ? -Infinity : trackVolume;
+    trackGainNode.gain.value = dbToLinear(effectiveDb);
+  }
 
   function setPan(value: number) {
     pan = Math.max(-1, Math.min(1, value));
     pannerNode.pan.value = pan;
+  }
+
+  function setTrackVolume(db: number) {
+    trackVolume = isFinite(db)
+      ? Math.max(AUDIO_DB_MIN, Math.min(AUDIO_DB_MAX, db))
+      : -Infinity;
+    applyTrackGain();
+  }
+
+  function setMasterVolume(db: number) {
+    masterVolume = isFinite(db)
+      ? Math.max(AUDIO_DB_MIN, Math.min(AUDIO_DB_MAX, db))
+      : -Infinity;
+    masterGainNode.gain.value = dbToLinear(masterVolume);
+  }
+
+  function setTrackMuted(muted: boolean) {
+    trackMuted = muted;
+    applyTrackGain();
   }
 
   function setEnabled(isEnabled: boolean) {
@@ -80,12 +114,12 @@ export function createPanner(limiterNode?: { input: AudioNode; connect: (dest: u
     enabled = isEnabled;
 
     if (!isEnabled) {
-      // Bypass panner: inputGain -> gainNode directly
+      // Bypass panner stage: input -> track gain
       inputGain.disconnect(pannerNode);
-      inputGain.connect(gainNode);
+      inputGain.connect(trackGainNode);
     } else {
-      // Restore panner in chain
-      inputGain.disconnect(gainNode);
+      // Restore panner stage
+      inputGain.disconnect(trackGainNode);
       inputGain.connect(pannerNode);
     }
   }
@@ -94,27 +128,20 @@ export function createPanner(limiterNode?: { input: AudioNode; connect: (dest: u
     if (source instanceof AudioNode) {
       source.connect(inputGain);
     } else {
-      // Tone.ToneAudioNode — use its connect method
       source.connect(inputGain as unknown as Tone.ToneAudioNode);
     }
   }
 
-  function setMasterVolume(db: number) {
-    masterVolume = isFinite(db)
-      ? Math.max(AUDIO_DB_MIN, Math.min(AUDIO_DB_MAX, db))
-      : -Infinity;
-    const linear = isFinite(masterVolume) ? Math.pow(10, masterVolume / 20) : 0;
-    masterGainNode.gain.value = linear;
-    try {
-      Tone.getDestination().volume.value = masterVolume;
-    } catch {
-      // Tone.Destination may not be in signal chain
-    }
-  }
+  // Ensure node gains reflect defaults.
+  setTrackVolume(trackVolume);
+  setMasterVolume(masterVolume);
 
   return {
     get pan() {
       return pan;
+    },
+    get trackVolume() {
+      return trackVolume;
     },
     get masterVolume() {
       return masterVolume;
@@ -123,11 +150,15 @@ export function createPanner(limiterNode?: { input: AudioNode; connect: (dest: u
       return enabled;
     },
     setPan,
+    setTrackVolume,
+    setMasterVolume,
+    setTrackMuted,
     setEnabled,
     connectSource,
-    setMasterVolume,
     getPannerNode: () => pannerNode,
-    getGainNode: () => gainNode,
+    getGainNode: () => trackGainNode,
+    getTrackGainNode: () => trackGainNode,
+    getMixerNode: () => mixerNode,
     getMasterGainNode: () => masterGainNode,
     getAnalyserNode: () => analyserNode,
     getAnalyserNodeL: () => analyserNodeL,
@@ -141,6 +172,7 @@ export function createPanner(limiterNode?: { input: AudioNode; connect: (dest: u
 export interface PannerHook extends PannerGraph {
   isEnabled: boolean;
   pan: number;
+  trackVolume: number;
   masterVolume: number;
 }
 
@@ -153,12 +185,29 @@ export function usePanner(): PannerHook {
 
   const [isEnabled, setIsEnabledState] = useState(() => pannerRef.current!.isEnabled);
   const [pan, setPanState] = useState(() => pannerRef.current!.pan);
+  const [trackVolume, setTrackVolumeState] = useState(() => pannerRef.current!.trackVolume);
   const [masterVolume, setMasterVolumeState] = useState(() => pannerRef.current!.masterVolume);
 
   const setPan = useCallback((value: number) => {
     const panner = pannerRef.current!;
     panner.setPan(value);
     setPanState(panner.pan);
+  }, []);
+
+  const setTrackVolume = useCallback((db: number) => {
+    const panner = pannerRef.current!;
+    panner.setTrackVolume(db);
+    setTrackVolumeState(panner.trackVolume);
+  }, []);
+
+  const setMasterVolume = useCallback((db: number) => {
+    const panner = pannerRef.current!;
+    panner.setMasterVolume(db);
+    setMasterVolumeState(panner.masterVolume);
+  }, []);
+
+  const setTrackMuted = useCallback((muted: boolean) => {
+    pannerRef.current!.setTrackMuted(muted);
   }, []);
 
   const setEnabled = useCallback((enabled: boolean) => {
@@ -173,6 +222,8 @@ export function usePanner(): PannerHook {
 
   const getPannerNode = useCallback(() => pannerRef.current!.getPannerNode(), []);
   const getGainNode = useCallback(() => pannerRef.current!.getGainNode(), []);
+  const getTrackGainNode = useCallback(() => pannerRef.current!.getTrackGainNode(), []);
+  const getMixerNode = useCallback(() => pannerRef.current!.getMixerNode(), []);
   const getMasterGainNode = useCallback(() => pannerRef.current!.getMasterGainNode(), []);
   const getAnalyserNode = useCallback(() => pannerRef.current!.getAnalyserNode(), []);
   const getAnalyserNodeL = useCallback(() => pannerRef.current!.getAnalyserNodeL(), []);
@@ -180,22 +231,22 @@ export function usePanner(): PannerHook {
   const getMasterAnalyserNode = useCallback(() => pannerRef.current!.getMasterAnalyserNode(), []);
   const getMasterAnalyserNodeL = useCallback(() => pannerRef.current!.getMasterAnalyserNodeL(), []);
   const getMasterAnalyserNodeR = useCallback(() => pannerRef.current!.getMasterAnalyserNodeR(), []);
-  const setMasterVolume = useCallback((db: number) => {
-    const panner = pannerRef.current!;
-    panner.setMasterVolume(db);
-    setMasterVolumeState(panner.masterVolume);
-  }, []);
 
   return {
     isEnabled,
     pan,
+    trackVolume,
     masterVolume,
     setPan,
+    setTrackVolume,
+    setMasterVolume,
+    setTrackMuted,
     setEnabled,
     connectSource,
-    setMasterVolume,
     getPannerNode,
     getGainNode,
+    getTrackGainNode,
+    getMixerNode,
     getMasterGainNode,
     getAnalyserNode,
     getAnalyserNodeL,
