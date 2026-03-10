@@ -25,6 +25,12 @@ function createMockAnalyser(sampleValue: number) {
 
 let mockPreAnalyser = createMockAnalyser(0);
 let mockPostAnalyser = createMockAnalyser(0);
+let mockInputAnalyserL = createMockAnalyser(0);
+let mockInputAnalyserR = createMockAnalyser(0);
+const mockInputSplitter = {
+  connect: vi.fn(),
+  disconnect: vi.fn(),
+};
 const mockMeterSinkGain = {
   connect: vi.fn(),
   disconnect: vi.fn(),
@@ -34,6 +40,7 @@ const mockMeterSinkGain = {
 const mockAudioContext = {
   createDynamicsCompressor: vi.fn(() => mockCompressor),
   createAnalyser: vi.fn(() => createMockAnalyser(0)),
+  createChannelSplitter: vi.fn(() => mockInputSplitter),
   createGain: vi.fn(() => mockMeterSinkGain),
   destination: {},
 };
@@ -57,11 +64,16 @@ describe('createLimiter', () => {
     mockCompressor.reduction = 0;
     mockPreAnalyser = createMockAnalyser(0);
     mockPostAnalyser = createMockAnalyser(0);
+    mockInputAnalyserL = createMockAnalyser(0);
+    mockInputAnalyserR = createMockAnalyser(0);
     mockMeterSinkGain.gain.value = 1;
     mockAudioContext.createDynamicsCompressor.mockReturnValue(mockCompressor);
+    mockAudioContext.createChannelSplitter.mockReturnValue(mockInputSplitter);
     mockAudioContext.createAnalyser
       .mockReturnValueOnce(mockPreAnalyser)
-      .mockReturnValueOnce(mockPostAnalyser);
+      .mockReturnValueOnce(mockPostAnalyser)
+      .mockReturnValueOnce(mockInputAnalyserL)
+      .mockReturnValueOnce(mockInputAnalyserR);
     mockAudioContext.createGain.mockReturnValue(mockMeterSinkGain);
   });
 
@@ -134,13 +146,25 @@ describe('createLimiter', () => {
     expect(limiter.getLimiterNode()).toBe(mockCompressor);
   });
 
+  it('exposes input analyser nodes for stereo input metering', () => {
+    const limiter = createLimiter(
+      mockMasterGainNode as unknown as AudioNode,
+      mockMasterAnalyserNode as unknown as AudioNode,
+    );
+
+    expect(limiter.getInputAnalyserNodeL()).toBe(mockInputAnalyserL);
+    expect(limiter.getInputAnalyserNodeR()).toBe(mockInputAnalyserR);
+  });
+
   it('getReductionDb returns reduction in dB when output is quieter', () => {
     mockPreAnalyser = createMockAnalyser(1.0);
     mockPostAnalyser = createMockAnalyser(0.2);
     mockAudioContext.createAnalyser
       .mockReset()
       .mockReturnValueOnce(mockPreAnalyser)
-      .mockReturnValueOnce(mockPostAnalyser);
+      .mockReturnValueOnce(mockPostAnalyser)
+      .mockReturnValueOnce(createMockAnalyser(0))
+      .mockReturnValueOnce(createMockAnalyser(0));
 
     const limiter = createLimiter(
       mockMasterGainNode as unknown as AudioNode,
@@ -157,7 +181,9 @@ describe('createLimiter', () => {
     mockAudioContext.createAnalyser
       .mockReset()
       .mockReturnValueOnce(mockPreAnalyser)
-      .mockReturnValueOnce(mockPostAnalyser);
+      .mockReturnValueOnce(mockPostAnalyser)
+      .mockReturnValueOnce(createMockAnalyser(0))
+      .mockReturnValueOnce(createMockAnalyser(0));
 
     const limiter = createLimiter(
       mockMasterGainNode as unknown as AudioNode,
@@ -172,7 +198,9 @@ describe('createLimiter', () => {
     mockAudioContext.createAnalyser
       .mockReset()
       .mockReturnValueOnce(mockPreAnalyser)
-      .mockReturnValueOnce(mockPostAnalyser);
+      .mockReturnValueOnce(mockPostAnalyser)
+      .mockReturnValueOnce(createMockAnalyser(0))
+      .mockReturnValueOnce(createMockAnalyser(0));
 
     const limiter = createLimiter(
       mockMasterGainNode as unknown as AudioNode,

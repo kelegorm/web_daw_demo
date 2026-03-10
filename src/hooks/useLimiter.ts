@@ -14,6 +14,8 @@ export interface LimiterGraph {
    * Returns gain reduction in dB (>= 0).
    */
   getReductionDb: () => number;
+  getInputAnalyserNodeL: () => AnalyserNode;
+  getInputAnalyserNodeR: () => AnalyserNode;
   getLimiterNode: () => DynamicsCompressorNode;
 }
 
@@ -27,6 +29,9 @@ export function createLimiter(masterGainNode: AudioNode, masterAnalyserNode: Aud
   compressor.release.value = 0.1;
   const preLimiterAnalyser = audioContext.createAnalyser();
   const postLimiterAnalyser = audioContext.createAnalyser();
+  const inputChannelSplitter = audioContext.createChannelSplitter(2);
+  const inputAnalyserNodeL = audioContext.createAnalyser();
+  const inputAnalyserNodeR = audioContext.createAnalyser();
   preLimiterAnalyser.fftSize = 1024;
   postLimiterAnalyser.fftSize = 1024;
   preLimiterAnalyser.smoothingTimeConstant = 0;
@@ -48,6 +53,9 @@ export function createLimiter(masterGainNode: AudioNode, masterAnalyserNode: Aud
   preLimiterAnalyser.connect(compressor);
   compressor.connect(postLimiterAnalyser);
   postLimiterAnalyser.connect(masterAnalyserNode);
+  masterGainNode.connect(inputChannelSplitter);
+  inputChannelSplitter.connect(inputAnalyserNodeL, 0);
+  inputChannelSplitter.connect(inputAnalyserNodeR, 1);
 
   function setThreshold(db: number) {
     currentThreshold = db;
@@ -104,6 +112,8 @@ export function createLimiter(masterGainNode: AudioNode, masterAnalyserNode: Aud
     setThreshold,
     setEnabled,
     getReductionDb,
+    getInputAnalyserNodeL: () => inputAnalyserNodeL,
+    getInputAnalyserNodeR: () => inputAnalyserNodeR,
     getLimiterNode: () => compressor,
   };
 }
@@ -130,6 +140,8 @@ export function useLimiter(masterGainNode: AudioNode, masterAnalyserNode: AudioN
   }, []);
 
   const getReductionDb = useCallback(() => limiterRef.current!.getReductionDb(), []);
+  const getInputAnalyserNodeL = useCallback(() => limiterRef.current!.getInputAnalyserNodeL(), []);
+  const getInputAnalyserNodeR = useCallback(() => limiterRef.current!.getInputAnalyserNodeR(), []);
   const getLimiterNode = useCallback(() => limiterRef.current!.getLimiterNode(), []);
 
   return {
@@ -138,6 +150,8 @@ export function useLimiter(masterGainNode: AudioNode, masterAnalyserNode: AudioN
     setThreshold,
     setEnabled,
     getReductionDb,
+    getInputAnalyserNodeL,
+    getInputAnalyserNodeR,
     getLimiterNode,
   };
 }

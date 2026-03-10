@@ -232,6 +232,25 @@ test('drag Threshold knob on Master track changes displayed value', async ({ pag
   expect(finalVal).toBeGreaterThan(initialVal)
 })
 
+test('Limiter input threshold marker moves when Threshold knob changes', async ({ page }) => {
+  await page.goto('/')
+  await page.locator('.master-track').click()
+
+  const marker = page.locator('.limiter-input-threshold-line')
+  await expect(marker).toBeVisible()
+
+  const readBottomPercent = async () => {
+    const style = await marker.getAttribute('style')
+    const match = style?.match(/bottom:\s*calc\(([\d.]+)% - 1px\)/)
+    return match ? Number(match[1]) : 0
+  }
+
+  const initialBottom = await readBottomPercent()
+  await dragKnobBy(page, '[data-testid="knob-limiter-threshold"] .knob', -60)
+
+  await expect.poll(async () => readBottomPercent()).toBeGreaterThan(initialBottom + 1)
+})
+
 test('click synth1 then Master, Limiter visible and Polysynth not visible', async ({ page }) => {
   await page.goto('/')
   const trackRow = page.locator('.track-row')
