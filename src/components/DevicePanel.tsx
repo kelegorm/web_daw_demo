@@ -1,15 +1,18 @@
 import SynthDevice from './SynthDevice'
 import PannerDevice from './PannerDevice'
+import LimiterDevice from './LimiterDevice'
 import type { ToneSynthHook } from '../hooks/useToneSynth'
 import type { PannerHook } from '../hooks/usePanner'
+import type { LimiterHook } from '../hooks/useLimiter'
 import { useTrackSelectionContext } from '../hooks/useTrackSelection'
 
 interface Props {
   synth: ToneSynthHook
   panner: PannerHook
+  limiter: LimiterHook
 }
 
-export default function DevicePanel({ synth, panner }: Props) {
+export default function DevicePanel({ synth, panner, limiter }: Props) {
   const { selectedTrack } = useTrackSelectionContext()
   const selectedTrackName = selectedTrack === 'master' ? 'Master' : 'synth1'
 
@@ -93,18 +96,7 @@ export default function DevicePanel({ synth, panner }: Props) {
               <PannerDevice panner={panner} />
             </>
           ) : (
-            <div
-              className="device-panel-placeholder"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                color: 'var(--color-text-muted, #888899)',
-                fontSize: 13,
-                fontStyle: 'italic',
-              }}
-            >
-              Limiter — coming soon
-            </div>
+            <LimiterDevice limiter={limiter} />
           )}
         </div>
       </div>

@@ -95,15 +95,66 @@ test('click synth1 row, Polysynth device is visible', async ({ page }) => {
   expect(texts).toContain('Polysynth')
 })
 
-test('click Master row, Polysynth not visible and placeholder shown', async ({ page }) => {
+test('click Master row, Polysynth not visible and Limiter label is shown', async ({ page }) => {
   await page.goto('/')
   const masterTrack = page.locator('.master-track')
   await masterTrack.click()
 
   await expect(page.locator('.synth-device')).not.toBeVisible()
-  await expect(page.locator('.device-panel-placeholder')).toBeVisible()
-  const placeholderText = await page.locator('.device-panel-placeholder').textContent()
-  expect(placeholderText).toContain('Limiter — coming soon')
+  await expect(page.locator('.limiter-device')).toBeVisible()
+  const labels = page.locator('.device-label')
+  const texts = await labels.allTextContents()
+  expect(texts).toContain('Limiter')
+})
+
+test('click Master row, Limiter label visible and placeholder is gone', async ({ page }) => {
+  await page.goto('/')
+  const masterTrack = page.locator('.master-track')
+  await masterTrack.click()
+
+  await expect(page.locator('.limiter-device')).toBeVisible()
+  const labels = page.locator('.device-label')
+  const texts = await labels.allTextContents()
+  expect(texts).toContain('Limiter')
+  await expect(page.locator('.device-panel-placeholder')).not.toBeVisible()
+})
+
+test('drag Threshold knob on Master track changes displayed value', async ({ page }) => {
+  await page.goto('/')
+  const masterTrack = page.locator('.master-track')
+  await masterTrack.click()
+
+  const thresholdKnob = page.locator('[data-testid="knob-limiter-threshold"] .knob')
+  await expect(thresholdKnob).toBeVisible()
+
+  const valueEl = page.locator('[data-testid="knob-limiter-threshold"] .knob-value')
+  const initialText = await valueEl.textContent()
+  const initialVal = parseFloat(initialText ?? '0')
+
+  const box = await thresholdKnob.boundingBox()
+  if (!box) throw new Error('knob bounding box not found')
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - 60)
+  await page.mouse.up()
+
+  const finalText = await valueEl.textContent()
+  const finalVal = parseFloat(finalText ?? '0')
+  expect(finalVal).toBeGreaterThan(initialVal)
+})
+
+test('click synth1 then Master, Limiter visible and Polysynth not visible', async ({ page }) => {
+  await page.goto('/')
+  const trackRow = page.locator('.track-row')
+  await trackRow.click()
+  await expect(page.locator('.synth-device')).toBeVisible()
+
+  const masterTrack = page.locator('.master-track')
+  await masterTrack.click()
+
+  await expect(page.locator('.limiter-device')).toBeVisible()
+  await expect(page.locator('.synth-device')).not.toBeVisible()
 })
 
 test('panel label changes from synth1 to Master on track switch', async ({ page }) => {

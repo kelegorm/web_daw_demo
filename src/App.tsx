@@ -5,6 +5,7 @@ import DevicePanel from './components/DevicePanel'
 import MidiKeyboard from './components/MidiKeyboard'
 import { useToneSynth } from './hooks/useToneSynth'
 import { usePanner } from './hooks/usePanner'
+import { useLimiter } from './hooks/useLimiter'
 import { useTransportController } from './hooks/useTransportController'
 import { useTrackSelection, TrackSelectionContext } from './hooks/useTrackSelection'
 import './App.css'
@@ -20,6 +21,7 @@ declare global {
 function App() {
   const toneSynth = useToneSynth()
   const panner = usePanner()
+  const limiter = useLimiter(panner.getMasterGainNode(), panner.getMasterAnalyserNode())
   const transport = useTransportController(toneSynth, panner)
   const [isTrackRecEnabled, setIsTrackRecEnabled] = useState(true)
   const trackSelection = useTrackSelection()
@@ -83,7 +85,7 @@ function App() {
         getMasterAnalyserNodeR={panner.getMasterAnalyserNodeR}
         onMasterVolumeChange={panner.setMasterVolume}
       />
-      <DevicePanel synth={toneSynth} panner={panner} />
+      <DevicePanel synth={toneSynth} panner={panner} limiter={limiter} />
       <MidiKeyboard synth={toneSynth} enabled={isTrackRecEnabled} />
     </div>
     </TrackSelectionContext.Provider>

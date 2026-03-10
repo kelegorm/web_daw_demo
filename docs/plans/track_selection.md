@@ -56,16 +56,16 @@ Master limiter device, and track row click selection.
 - [x] Mark completed
 
 ### Task 5: Limiter device component
-- [ ] Create `src/components/LimiterDevice.tsx`
-- [ ] Same device block layout as SynthDevice and PannerDevice
-- [ ] Enable/disable toggle in top-left corner
-- [ ] Label "Limiter", type tag "Master FX"
-- [ ] One knob: Threshold (-30 to 0 dB, default -3 dB)
-- [ ] Gain reduction meter: small vertical bar showing `limiter.reduction` value in real time via `requestAnimationFrame`
-- [ ] Knob calls `useLimiter.setThreshold()` on change
-- [ ] Toggle calls `useLimiter.setEnabled(bool)`
-- [ ] Replace placeholder in DevicePanel with `<LimiterDevice />` when `selectedTrack === 'master'`
-- [ ] Write Playwright test: click Master row, verify "Limiter" label is visible and placeholder is gone
-- [ ] Write Playwright test: drag Threshold knob, verify displayed value changes
-- [ ] Write Playwright test: click synth1 row then Master row, verify "Limiter" is visible and "Polysynth" is not
-- [ ] Mark completed
+- [x] Create `src/components/LimiterDevice.tsx`
+- [x] Same device block layout as SynthDevice and PannerDevice
+- [x] Enable/disable toggle in top-left corner
+- [x] Label "Limiter", type tag "Master FX"
+- [x] One knob: Threshold (-30 to 0 dB, default -3 dB)
+- [x] Gain reduction meter: small vertical bar showing `limiter.reduction` value in real time via `requestAnimationFrame`
+- [x] Knob calls `useLimiter.setThreshold()` on change
+- [x] Toggle calls `useLimiter.setEnabled(bool)`
+- [x] Replace placeholder in DevicePanel with `<LimiterDevice />` when `selectedTrack === 'master'`
+- [x] Write Playwright test: click Master row, verify "Limiter" label is visible and placeholder is gone
+- [x] Write Playwright test: drag Threshold knob, verify displayed value changes
+- [x] Write Playwright test: click synth1 row then Master row, verify "Limiter" is visible and "Polysynth" is not
+- [x] Mark completed

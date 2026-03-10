@@ -1,33 +1,37 @@
 import { useRef, useState, useCallback } from 'react';
-import * as Tone from 'tone';
 
 export interface LimiterGraph {
   setThreshold: (db: number) => void;
   setEnabled: (enabled: boolean) => void;
   isEnabled: boolean;
   threshold: number;
-  getLimiterNode: () => Tone.Limiter;
+  getLimiterNode: () => DynamicsCompressorNode;
 }
 
 export function createLimiter(masterGainNode: AudioNode, masterAnalyserNode: AudioNode): LimiterGraph {
-  const limiterNode = new Tone.Limiter(-3);
+  const audioContext = masterGainNode.context as AudioContext;
+  const compressor = audioContext.createDynamicsCompressor();
+  compressor.threshold.value = -3;
+  compressor.knee.value = 0;      // Hard knee
+  compressor.ratio.value = 20;    // High ratio ≈ limiter
+  compressor.attack.value = 0.001;
+  compressor.release.value = 0.1;
+
   let enabled = true;
   let currentThreshold = -3;
 
-  // Insert limiter: masterGain → limiter → masterAnalyser
-  // Disconnect existing masterGain → masterAnalyser connection
+  // Insert limiter: masterGain → compressor → masterAnalyser
   try {
     masterGainNode.disconnect(masterAnalyserNode);
   } catch {
     // No direct connection existed
   }
-  masterGainNode.connect(limiterNode.input as unknown as AudioNode);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (limiterNode as any).output.connect(masterAnalyserNode);
+  masterGainNode.connect(compressor);
+  compressor.connect(masterAnalyserNode);
 
   function setThreshold(db: number) {
     currentThreshold = db;
-    limiterNode.threshold.value = db;
+    compressor.threshold.value = db;
   }
 
   function setEnabled(isEnabled: boolean) {
@@ -35,13 +39,13 @@ export function createLimiter(masterGainNode: AudioNode, masterAnalyserNode: Aud
     enabled = isEnabled;
 
     if (!isEnabled) {
-      // Bypass: disconnect masterGain from limiter, connect directly to masterAnalyser
-      masterGainNode.disconnect(limiterNode.input as unknown as AudioNode);
+      // Bypass: masterGain connects directly to masterAnalyser
+      masterGainNode.disconnect(compressor);
       masterGainNode.connect(masterAnalyserNode);
     } else {
-      // Restore limiter in chain
+      // Restore compressor in chain
       masterGainNode.disconnect(masterAnalyserNode);
-      masterGainNode.connect(limiterNode.input as unknown as AudioNode);
+      masterGainNode.connect(compressor);
     }
   }
 
@@ -50,7 +54,7 @@ export function createLimiter(masterGainNode: AudioNode, masterAnalyserNode: Aud
     get threshold() { return currentThreshold; },
     setThreshold,
     setEnabled,
-    getLimiterNode: () => limiterNode,
+    getLimiterNode: () => compressor,
   };
 }
 
