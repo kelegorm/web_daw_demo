@@ -11,10 +11,9 @@ export interface LimiterGraph {
   isEnabled: boolean;
   threshold: number;
   /**
-   * Returns normalized gain reduction in range [0..1].
-   * 0 means no reduction, 1 means full-scale reduction for the configured meter window.
+   * Returns gain reduction in dB (>= 0).
    */
-  getReductionNorm: () => number;
+  getReductionDb: () => number;
   getLimiterNode: () => DynamicsCompressorNode;
 }
 
@@ -83,7 +82,7 @@ export function createLimiter(masterGainNode: AudioNode, masterAnalyserNode: Aud
     return 20 * Math.log10(safe);
   }
 
-  function getReductionNorm(): number {
+  function getReductionDb(): number {
     if (!enabled) return 0;
 
     const inDb = peakDb(preLimiterAnalyser, preData);
@@ -104,7 +103,7 @@ export function createLimiter(masterGainNode: AudioNode, masterAnalyserNode: Aud
     get threshold() { return currentThreshold; },
     setThreshold,
     setEnabled,
-    getReductionNorm,
+    getReductionDb,
     getLimiterNode: () => compressor,
   };
 }
@@ -130,7 +129,7 @@ export function useLimiter(masterGainNode: AudioNode, masterAnalyserNode: AudioN
     setIsEnabledState(enabled);
   }, []);
 
-  const getReductionNorm = useCallback(() => limiterRef.current!.getReductionNorm(), []);
+  const getReductionDb = useCallback(() => limiterRef.current!.getReductionDb(), []);
   const getLimiterNode = useCallback(() => limiterRef.current!.getLimiterNode(), []);
 
   return {
@@ -138,7 +137,7 @@ export function useLimiter(masterGainNode: AudioNode, masterAnalyserNode: AudioN
     threshold,
     setThreshold,
     setEnabled,
-    getReductionNorm,
+    getReductionDb,
     getLimiterNode,
   };
 }

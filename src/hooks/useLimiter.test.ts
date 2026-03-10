@@ -134,7 +134,7 @@ describe('createLimiter', () => {
     expect(limiter.getLimiterNode()).toBe(mockCompressor);
   });
 
-  it('getReductionNorm returns normalized reduction when output is quieter', () => {
+  it('getReductionDb returns reduction in dB when output is quieter', () => {
     mockPreAnalyser = createMockAnalyser(1.0);
     mockPostAnalyser = createMockAnalyser(0.2);
     mockAudioContext.createAnalyser
@@ -146,12 +146,12 @@ describe('createLimiter', () => {
       mockMasterGainNode as unknown as AudioNode,
       mockMasterAnalyserNode as unknown as AudioNode,
     );
-    const gr = limiter.getReductionNorm();
-    expect(gr).toBeGreaterThan(0.84);
-    expect(gr).toBeLessThan(0.91);
+    const gr = limiter.getReductionDb();
+    expect(gr).toBeGreaterThan(13.9);
+    expect(gr).toBeLessThan(14.1);
   });
 
-  it('getReductionNorm returns 0 when output is not quieter', () => {
+  it('getReductionDb returns 0 when output is not quieter', () => {
     mockPreAnalyser = createMockAnalyser(0.1);
     mockPostAnalyser = createMockAnalyser(0.3);
     mockAudioContext.createAnalyser
@@ -163,10 +163,10 @@ describe('createLimiter', () => {
       mockMasterGainNode as unknown as AudioNode,
       mockMasterAnalyserNode as unknown as AudioNode,
     );
-    expect(limiter.getReductionNorm()).toBe(0);
+    expect(limiter.getReductionDb()).toBe(0);
   });
 
-  it('getReductionNorm is capped to 1 for very strong attenuation', () => {
+  it('getReductionDb is not capped for very strong attenuation', () => {
     mockPreAnalyser = createMockAnalyser(1.0);   // 0 dBFS input peak
     mockPostAnalyser = createMockAnalyser(0.01); // unrealistic huge drop
     mockAudioContext.createAnalyser
@@ -178,8 +178,8 @@ describe('createLimiter', () => {
       mockMasterGainNode as unknown as AudioNode,
       mockMasterAnalyserNode as unknown as AudioNode,
     );
-    const gr = limiter.getReductionNorm();
-
-    expect(gr).toBe(1);
+    const gr = limiter.getReductionDb();
+    expect(gr).toBeGreaterThan(39.9);
+    expect(gr).toBeLessThan(40.1);
   });
 });

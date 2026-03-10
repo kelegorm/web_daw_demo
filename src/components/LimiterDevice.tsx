@@ -5,7 +5,6 @@ import { LIMITER_THRESHOLD_DEFAULT_DB } from '../audio/parameterDefaults'
 import {
   GR_METER_HEIGHT_PX,
   GR_METER_RANGE_DB,
-  gainReductionDbToPixels,
 } from '../audio/gainReductionMath'
 
 interface Props {
@@ -13,20 +12,20 @@ interface Props {
 }
 
 export default function LimiterDevice({ limiter }: Props) {
-  const [reductionNorm, setReductionNorm] = useState(0)
+  const [reductionDb, setReductionDb] = useState(0)
   const rafRef = useRef<number>(0)
-  const getReductionNorm = limiter.getReductionNorm
+  const getReductionDb = limiter.getReductionDb
 
   useEffect(() => {
     let running = true
     function tick() {
       if (!running) return
-      const nextReductionNorm = getReductionNorm()
-      setReductionNorm((prev) => {
-        const attack = 0.45
+      const nextReductionDb = getReductionDb()
+      setReductionDb((prev) => {
+        const attack = 0.6975
         const release = 0.18
-        const alpha = nextReductionNorm > prev ? attack : release
-        return prev + (nextReductionNorm - prev) * alpha
+        const alpha = nextReductionDb > prev ? attack : release
+        return prev + (nextReductionDb - prev) * alpha
       })
       rafRef.current = requestAnimationFrame(tick)
     }
@@ -35,7 +34,7 @@ export default function LimiterDevice({ limiter }: Props) {
       running = false
       cancelAnimationFrame(rafRef.current)
     }
-  }, [getReductionNorm])
+  }, [getReductionDb])
 
   const handleToggle = () => {
     const next = !limiter.isEnabled
@@ -46,12 +45,9 @@ export default function LimiterDevice({ limiter }: Props) {
     limiter.setThreshold(val)
   }
 
-  const reductionBarHeightPx = gainReductionDbToPixels(
-    reductionNorm,
-    GR_METER_HEIGHT_PX,
-  );
-  const reductionDb = reductionNorm * GR_METER_RANGE_DB;
-  const reductionBarColor = reductionNorm > 0.5 ? '#e04444' : '#f5a623';
+  const reductionNorm = Math.max(0, Math.min(1, reductionDb / GR_METER_RANGE_DB))
+  const reductionBarHeightPx = reductionNorm * GR_METER_HEIGHT_PX
+  const reductionBarColor = reductionNorm > 0.5 ? '#e04444' : '#f5a623'
 
   return (
     <div className="device limiter-device" style={{
@@ -134,7 +130,6 @@ export default function LimiterDevice({ limiter }: Props) {
                 right: 0,
                 height: `${reductionBarHeightPx}px`,
                 background: reductionBarColor,
-                transition: 'height 60ms linear',
               }}
             />
           </div>
