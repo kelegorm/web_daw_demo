@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ToneSynthHook } from '../hooks/useToneSynth'
 
 interface Props {
   synth: ToneSynthHook
+  enabled?: boolean
 }
 
 const NOTES_PER_OCTAVE = 12
@@ -44,17 +45,38 @@ const WHITE_KEY_COUNT = KEYS.filter((k) => !k.isBlack).length
 const WHITE_KEY_WIDTH = 40 // px
 const KEYBOARD_WIDTH = WHITE_KEY_COUNT * WHITE_KEY_WIDTH // 560px for 14 white keys
 
-export default function MidiKeyboard({ synth }: Props) {
+export default function MidiKeyboard({ synth, enabled = true }: Props) {
   const [pressedKeys, setPressedKeys] = useState<Set<number>>(new Set())
+  const [activeOutputNotes, setActiveOutputNotes] = useState<Set<number>>(new Set())
+
+  useEffect(() => {
+    if (enabled || activeOutputNotes.size === 0) return
+
+    activeOutputNotes.forEach((midi) => synth.noteOff(midi))
+    setActiveOutputNotes(new Set())
+  }, [enabled, activeOutputNotes, synth])
 
   function handleMouseDown(midi: number) {
-    synth.noteOn(midi, 100)
     setPressedKeys((prev) => new Set(prev).add(midi))
+
+    if (!enabled) return
+
+    synth.noteOn(midi, 100)
+    setActiveOutputNotes((prev) => new Set(prev).add(midi))
   }
 
   function handleMouseUp(midi: number) {
-    synth.noteOff(midi)
     setPressedKeys((prev) => {
+      const next = new Set(prev)
+      next.delete(midi)
+      return next
+    })
+
+    if (!enabled) return
+    if (!activeOutputNotes.has(midi)) return
+
+    synth.noteOff(midi)
+    setActiveOutputNotes((prev) => {
       const next = new Set(prev)
       next.delete(midi)
       return next
@@ -63,8 +85,17 @@ export default function MidiKeyboard({ synth }: Props) {
 
   function handleMouseLeave(midi: number) {
     if (pressedKeys.has(midi)) {
-      synth.noteOff(midi)
       setPressedKeys((prev) => {
+        const next = new Set(prev)
+        next.delete(midi)
+        return next
+      })
+
+      if (!enabled) return
+      if (!activeOutputNotes.has(midi)) return
+
+      synth.noteOff(midi)
+      setActiveOutputNotes((prev) => {
         const next = new Set(prev)
         next.delete(midi)
         return next

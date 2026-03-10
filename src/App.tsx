@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Toolbar from './components/Toolbar'
 import TrackZone from './components/TrackZone'
 import DevicePanel from './components/DevicePanel'
@@ -20,6 +20,7 @@ function App() {
   const toneSynth = useToneSynth()
   const panner = usePanner()
   const transport = useTransportController(toneSynth, panner)
+  const [isTrackRecEnabled, setIsTrackRecEnabled] = useState(true)
 
   // Wire synth output through panner graph (once)
   const audioRoutedRef = useRef(false)
@@ -69,7 +70,9 @@ function App() {
         bpm={transport.bpm}
         loop={transport.loop}
         isTrackMuted={transport.isTrackMuted}
+        isTrackRecEnabled={isTrackRecEnabled}
         onMuteToggle={transport.setTrackMute}
+        onRecToggle={setIsTrackRecEnabled}
         getAnalyserNodeL={panner.getAnalyserNodeL}
         getAnalyserNodeR={panner.getAnalyserNodeR}
         onVolumeChange={toneSynth.setVolume}
@@ -78,7 +81,7 @@ function App() {
         onMasterVolumeChange={panner.setMasterVolume}
       />
       <DevicePanel synth={toneSynth} panner={panner} />
-      <MidiKeyboard synth={toneSynth} />
+      <MidiKeyboard synth={toneSynth} enabled={isTrackRecEnabled} />
     </div>
   )
 }

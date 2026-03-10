@@ -35,7 +35,9 @@ interface Props {
   bpm: number
   loop?: boolean
   isTrackMuted?: boolean
+  isTrackRecEnabled?: boolean
   onMuteToggle?: (muted: boolean) => void
+  onRecToggle?: (recEnabled: boolean) => void
   getAnalyserNodeL?: () => AnalyserNode | null
   getAnalyserNodeR?: () => AnalyserNode | null
   onVolumeChange?: (db: number) => void
@@ -44,8 +46,7 @@ interface Props {
   onMasterVolumeChange?: (db: number) => void
 }
 
-export default function TrackZone({ playbackState, bpm, loop = false, isTrackMuted = false, onMuteToggle, getAnalyserNodeL, getAnalyserNodeR, onVolumeChange, getMasterAnalyserNodeL, getMasterAnalyserNodeR, onMasterVolumeChange }: Props) {
-  const [rec, setRec] = useState(true)
+export default function TrackZone({ playbackState, bpm, loop = false, isTrackMuted = false, isTrackRecEnabled = true, onMuteToggle, onRecToggle, getAnalyserNodeL, getAnalyserNodeR, onVolumeChange, getMasterAnalyserNodeL, getMasterAnalyserNodeR, onMasterVolumeChange }: Props) {
   const [volumeDb, setVolumeDb] = useState(0)
   const [masterVolumeDb, setMasterVolumeDb] = useState(0)
   const [playheadPos, setPlayheadPos] = useState(0)
@@ -240,8 +241,8 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
               >
                 <button
                   className="track-rec"
-                  aria-pressed={rec}
-                  onClick={() => setRec((r) => !r)}
+                  aria-pressed={isTrackRecEnabled}
+                  onClick={() => onRecToggle?.(!isTrackRecEnabled)}
                   style={{
                     width: 26,
                     height: 26,
@@ -249,12 +250,12 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
                     fontSize: '0.7rem',
                     fontWeight: 700,
                     lineHeight: 1,
-                    background: rec
+                    background: isTrackRecEnabled
                       ? 'linear-gradient(180deg, #df4747 0%, #d13d3d 52%, #c53a3a 100%)'
                       : 'linear-gradient(180deg, #3c3c4e 0%, #353546 52%, #313142 100%)',
-                    color: rec ? '#fff3f3' : '#e1e6f4',
+                    color: isTrackRecEnabled ? '#fff3f3' : '#e1e6f4',
                     border: '1px solid',
-                    borderColor: rec ? '#ff9a9a #dd5a5a #7f1f1f #e26363' : '#9090ac #64647c #343447 #6c6c87',
+                    borderColor: isTrackRecEnabled ? '#ff9a9a #dd5a5a #7f1f1f #e26363' : '#9090ac #64647c #343447 #6c6c87',
                     borderRadius: 4,
                     cursor: 'pointer',
                     boxShadow: '0 1px 3px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(0,0,0,0.3)',
