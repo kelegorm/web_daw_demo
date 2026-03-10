@@ -44,3 +44,29 @@ test('mouseup on C3 removes pressed from C3 but E3 retains it', async ({ page })
   await expect(c3).not.toHaveClass(/pressed/)
   await expect(e3).toHaveClass(/pressed/)
 })
+
+test('at 1600px width keyboard element has fixed pixel width', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.goto('/')
+
+  const keyboard = page.locator('.midi-keyboard')
+  const box = await keyboard.boundingBox()
+  expect(box).not.toBeNull()
+  // 14 white keys × 40px = 560px
+  expect(box!.width).toBeCloseTo(560, -1)
+})
+
+test('at 1600px width left and right gutter elements are visible', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.goto('/')
+
+  const gutterLeft = page.getByTestId('keyboard-gutter-left')
+  const gutterRight = page.getByTestId('keyboard-gutter-right')
+  await expect(gutterLeft).toBeVisible()
+  await expect(gutterRight).toBeVisible()
+
+  const leftBox = await gutterLeft.boundingBox()
+  const rightBox = await gutterRight.boundingBox()
+  expect(leftBox!.width).toBeGreaterThan(0)
+  expect(rightBox!.width).toBeGreaterThan(0)
+})

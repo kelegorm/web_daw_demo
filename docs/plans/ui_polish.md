@@ -48,13 +48,13 @@ No audio engine changes.
 - [x] Mark completed
 
 ### Task 5: MIDI keyboard width fixed, side gutters shown
-- [ ] MIDI keyboard strip has fixed pixel width (fits exactly 2 octaves C3–B4)
-- [ ] Keyboard is horizontally centered in the strip
-- [ ] When viewport is wider than keyboard width, show gutter panels left and right
-- [ ] Gutters use surface background color from design tokens, no content
-- [ ] Write Playwright test: at viewport width 1600px, verify keyboard element width is unchanged
-- [ ] Write Playwright test: at viewport width 1600px, verify left and right gutter elements are visible
-- [ ] Mark completed
+- [x] MIDI keyboard strip has fixed pixel width (fits exactly 2 octaves C3–B4)
+- [x] Keyboard is horizontally centered in the strip
+- [x] When viewport is wider than keyboard width, show gutter panels left and right
+- [x] Gutters use surface background color from design tokens, no content
+- [x] Write Playwright test: at viewport width 1600px, verify keyboard element width is unchanged
+- [x] Write Playwright test: at viewport width 1600px, verify left and right gutter elements are visible
+- [x] Mark completed
 
 ### Task 6: VU meter color zones matching DAW convention
 - [ ] Below -10 dB: green (#4caf74)

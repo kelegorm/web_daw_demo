@@ -41,6 +41,8 @@ function buildKeys(): KeyDef[] {
 
 const KEYS = buildKeys()
 const WHITE_KEY_COUNT = KEYS.filter((k) => !k.isBlack).length
+const WHITE_KEY_WIDTH = 40 // px
+const KEYBOARD_WIDTH = WHITE_KEY_COUNT * WHITE_KEY_WIDTH // 560px for 14 white keys
 
 export default function MidiKeyboard({ synth }: Props) {
   const [pressedKeys, setPressedKeys] = useState<Set<number>>(new Set())
@@ -70,75 +72,98 @@ export default function MidiKeyboard({ synth }: Props) {
     }
   }
 
-  const wPct = 100 / WHITE_KEY_COUNT
-  const bPct = wPct * 0.6
+  const wPx = WHITE_KEY_WIDTH
+  const bPx = wPx * 0.6
 
   return (
     <div
-      className="midi-keyboard"
+      className="midi-keyboard-strip"
+      data-testid="midi-keyboard-strip"
       style={{
-        position: 'relative',
         width: '100%',
         height: 100,
-        background: 'var(--color-surface)',
-        userSelect: 'none',
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'stretch',
         flexShrink: 0,
+        background: 'var(--color-surface)',
       }}
     >
-      {KEYS.filter((k) => !k.isBlack).map((key) => {
-        const pressed = pressedKeys.has(key.midi)
-        return (
-          <div
-            key={key.midi}
-            data-midi={key.midi}
-            data-note={key.label}
-            className={`piano-key white-key${pressed ? ' pressed' : ''}`}
-            style={{
-              position: 'absolute',
-              left: `${key.whiteIndex * wPct}%`,
-              top: 0,
-              width: `calc(${wPct}% - 1px)`,
-              height: '100%',
-              background: pressed ? '#c8c8c8' : '#f5f5f5',
-              border: '1px solid #666',
-              borderRadius: '0 0 4px 4px',
-              cursor: 'pointer',
-              boxSizing: 'border-box',
-              zIndex: 1,
-            }}
-            onMouseDown={() => handleMouseDown(key.midi)}
-            onMouseUp={() => handleMouseUp(key.midi)}
-            onMouseLeave={() => handleMouseLeave(key.midi)}
-          />
-        )
-      })}
-      {KEYS.filter((k) => k.isBlack).map((key) => {
-        const pressed = pressedKeys.has(key.midi)
-        return (
-          <div
-            key={key.midi}
-            data-midi={key.midi}
-            data-note={key.label}
-            className={`piano-key black-key${pressed ? ' pressed' : ''}`}
-            style={{
-              position: 'absolute',
-              left: `calc(${(key.whiteIndex + 0.5) * wPct}% - ${bPct / 2}%)`,
-              top: 0,
-              width: `${bPct}%`,
-              height: '62%',
-              background: pressed ? '#555' : '#1a1a1f',
-              border: '1px solid #000',
-              borderRadius: '0 0 3px 3px',
-              cursor: 'pointer',
-              boxSizing: 'border-box',
-              zIndex: 2,
-            }}
-            onMouseDown={() => handleMouseDown(key.midi)}
-            onMouseUp={() => handleMouseUp(key.midi)}
-            onMouseLeave={() => handleMouseLeave(key.midi)}
-          />
-        )
-      })}
+      <div
+        className="keyboard-gutter"
+        data-testid="keyboard-gutter-left"
+        style={{ flex: 1, background: 'var(--color-surface)' }}
+      />
+      <div
+        className="midi-keyboard"
+        style={{
+          position: 'relative',
+          width: KEYBOARD_WIDTH,
+          flexShrink: 0,
+          height: '100%',
+          userSelect: 'none',
+        }}
+      >
+        {KEYS.filter((k) => !k.isBlack).map((key) => {
+          const pressed = pressedKeys.has(key.midi)
+          return (
+            <div
+              key={key.midi}
+              data-midi={key.midi}
+              data-note={key.label}
+              className={`piano-key white-key${pressed ? ' pressed' : ''}`}
+              style={{
+                position: 'absolute',
+                left: key.whiteIndex * wPx,
+                top: 0,
+                width: wPx - 1,
+                height: '100%',
+                background: pressed ? '#c8c8c8' : '#f5f5f5',
+                border: '1px solid #666',
+                borderRadius: '0 0 4px 4px',
+                cursor: 'pointer',
+                boxSizing: 'border-box',
+                zIndex: 1,
+              }}
+              onMouseDown={() => handleMouseDown(key.midi)}
+              onMouseUp={() => handleMouseUp(key.midi)}
+              onMouseLeave={() => handleMouseLeave(key.midi)}
+            />
+          )
+        })}
+        {KEYS.filter((k) => k.isBlack).map((key) => {
+          const pressed = pressedKeys.has(key.midi)
+          return (
+            <div
+              key={key.midi}
+              data-midi={key.midi}
+              data-note={key.label}
+              className={`piano-key black-key${pressed ? ' pressed' : ''}`}
+              style={{
+                position: 'absolute',
+                left: (key.whiteIndex + 0.5) * wPx - bPx / 2,
+                top: 0,
+                width: bPx,
+                height: '62%',
+                background: pressed ? '#555' : '#1a1a1f',
+                border: '1px solid #000',
+                borderRadius: '0 0 3px 3px',
+                cursor: 'pointer',
+                boxSizing: 'border-box',
+                zIndex: 2,
+              }}
+              onMouseDown={() => handleMouseDown(key.midi)}
+              onMouseUp={() => handleMouseUp(key.midi)}
+              onMouseLeave={() => handleMouseLeave(key.midi)}
+            />
+          )
+        })}
+      </div>
+      <div
+        className="keyboard-gutter"
+        data-testid="keyboard-gutter-right"
+        style={{ flex: 1, background: 'var(--color-surface)' }}
+      />
     </div>
   )
 }
