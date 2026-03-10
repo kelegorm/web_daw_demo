@@ -328,7 +328,7 @@ export default function TrackZone({
         </div>
         {getAnalyserNodeL && getAnalyserNodeR && (
           <div style={{ width: 16, flexShrink: 0, display: 'flex', alignItems: 'stretch' }}>
-            <VUMeter getAnalyserNodeL={getAnalyserNodeL} getAnalyserNodeR={getAnalyserNodeR} muted={isTrackMuted} />
+            <VUMeter getAnalyserNodeL={getAnalyserNodeL} getAnalyserNodeR={getAnalyserNodeR} />
           </div>
         )}
       </div>

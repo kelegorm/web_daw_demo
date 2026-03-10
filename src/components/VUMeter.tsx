@@ -10,12 +10,10 @@ declare global {
 interface Props {
   getAnalyserNodeL: () => AnalyserNode | null
   getAnalyserNodeR: () => AnalyserNode | null
-  muted?: boolean
 }
 
 const DB_MIN = AUDIO_DB_MIN
-const DB_MAX = AUDIO_DB_MAX
-const DB_RANGE = DB_MAX - DB_MIN
+const DB_RANGE = AUDIO_DB_MAX - DB_MIN
 
 function dbToNorm(db: number): number {
   if (!isFinite(db) || db <= DB_MIN) return 0
@@ -92,7 +90,7 @@ function readSignalMetrics(analyser: AnalyserNode, buf: Uint8Array): SignalMetri
   }
 }
 
-export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = false }: Props) {
+export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR }: Props) {
   const [left, setLeft] = useState<ChannelState>({ level: 0, peakNorm: 0, peakDb: -Infinity })
   const [right, setRight] = useState<ChannelState>({ level: 0, peakNorm: 0, peakDb: -Infinity })
 
@@ -108,22 +106,6 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
   const rmsRRef = useRef({ norm: 0, db: -Infinity, heldAt: 0, decaying: false })
 
   useEffect(() => {
-    if (muted) {
-      setLeft({ level: 0, peakNorm: 0, peakDb: -Infinity })
-      setRight({ level: 0, peakNorm: 0, peakDb: -Infinity })
-      peakLRef.current = { norm: 0, db: -Infinity, heldAt: 0, decaying: false }
-      peakRRef.current = { norm: 0, db: -Infinity, heldAt: 0, decaying: false }
-      rmsLRef.current = { norm: 0, db: -Infinity, heldAt: 0, decaying: false }
-      rmsRRef.current = { norm: 0, db: -Infinity, heldAt: 0, decaying: false }
-      window.__vuMeterLevel = 0
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current)
-        rafRef.current = null
-      }
-      lastFrameNowRef.current = null
-      return
-    }
-
     function tick(now: number) {
       const lastNow = lastFrameNowRef.current ?? now
       const dtMs = Math.max(0, Math.min(100, now - lastNow))
@@ -263,7 +245,7 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
       lastFrameNowRef.current = null
     }
-  }, [getAnalyserNodeL, getAnalyserNodeR, muted])
+  }, [getAnalyserNodeL, getAnalyserNodeR])
 
   return (
     <div
