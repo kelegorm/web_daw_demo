@@ -110,11 +110,25 @@ export default function TrackZone({ playbackState, bpm, loop = false, isTrackMut
         className="track-list"
         style={{
           flex: 1,
+          position: 'relative',
           overflowY: 'auto',
           background: 'var(--color-track-content-bg, var(--color-bg))',
           boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.025)',
         }}
       >
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          left: 'var(--track-header-width)',
+          width: 1,
+          background: 'var(--color-track-divider, #5d5d76)',
+          pointerEvents: 'none',
+          zIndex: 3,
+        }}
+      />
       <div
         className="track-row"
         style={{

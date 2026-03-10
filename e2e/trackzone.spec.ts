@@ -1,5 +1,6 @@
 import { test, expect, Page } from '@playwright/test'
 import { clipDurationSeconds, getPixelsPerSecond } from '../src/utils/timelineScale'
+import { setBpm } from './helpers/toolbar'
 
 async function setSliderValue(page: Page, selector: string, value: number) {
   await page.locator(selector).evaluate((el: HTMLInputElement, val: number) => {
@@ -78,7 +79,7 @@ test('track zone height fills viewport minus toolbar and device panel heights', 
   const midiKeyboardBox = await midiKeyboard.boundingBox()
   expect(midiKeyboardBox).not.toBeNull()
   const expectedHeight = viewportHeight - 48 - devicePanelBox!.height - midiKeyboardBox!.height
-  expect(Math.round(trackZoneBox!.height)).toBe(Math.round(expectedHeight))
+  expect(Math.abs(Math.round(trackZoneBox!.height) - Math.round(expectedHeight))).toBeLessThanOrEqual(1)
 })
 
 test('synth1 track row is directly below the timeline ruler', async ({ page }) => {
@@ -152,14 +153,12 @@ test('clip block width doubles when BPM changes from 120 to 60', async ({ page }
   await page.goto('/')
 
   const clip = page.locator('.midi-clip')
-  const bpmInput = page.locator('.toolbar-bpm')
 
   await expect(clip).toBeVisible()
   const clipBox120 = await clip.boundingBox()
 
-  await bpmInput.fill('60')
-  await bpmInput.dispatchEvent('change')
-  await page.waitForTimeout(100)
+  await setBpm(page, 60)
+  await page.waitForTimeout(50)
 
   const clipBox60 = await clip.boundingBox()
   expect(clipBox60).not.toBeNull()

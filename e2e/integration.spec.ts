@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { expectPlayState } from './helpers/toolbar'
 
 test('smoke: open app, click Play, press C3, meter reacts, sequencer advances, no console errors', async ({ page }) => {
   const errors: string[] = []
@@ -16,7 +17,7 @@ test('smoke: open app, click Play, press C3, meter reacts, sequencer advances, n
   const playBtn = page.locator('.toolbar-play-pause')
   await expect(playBtn).toBeVisible()
   await playBtn.click()
-  await expect(playBtn).toHaveText('Pause')
+  await expectPlayState(playBtn, 'pause')
 
   // Wait for at least 2 different sequencer steps to become active
   await page.waitForFunction(

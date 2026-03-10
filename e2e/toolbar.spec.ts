@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { expectPlayState, setBpm } from './helpers/toolbar'
 
 test('transport buttons are positioned to the right of title and left of viewport center', async ({ page }) => {
   await page.goto('/')
@@ -42,22 +43,17 @@ test('click Play on toolbar changes button label to Pause', async ({ page }) => 
 
   const btn = page.locator('.toolbar-play-pause')
   await expect(btn).toBeVisible()
-  await expect(btn).toHaveText('Play')
+  await expectPlayState(btn, 'play')
 
   await btn.click()
-  await expect(btn).toHaveText('Pause')
+  await expectPlayState(btn, 'pause')
 })
 
 test('change toolbar BPM input to 140, verify displayed value is 140', async ({ page }) => {
   await page.goto('/')
 
-  const bpmInput = page.locator('.toolbar-bpm')
-  await expect(bpmInput).toBeVisible()
-
-  await bpmInput.fill('140')
-  await bpmInput.blur()
-
-  await expect(bpmInput).toHaveValue('140')
+  await setBpm(page, 140)
+  await expect(page.locator('.toolbar-bpm')).toHaveAttribute('aria-valuenow', '140')
 })
 
 test('click toolbar Panic releases all active notes', async ({ page }) => {

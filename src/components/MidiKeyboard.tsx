@@ -154,6 +154,10 @@ export default function MidiKeyboard({ synth }: Props) {
                 cursor: 'pointer',
                 boxSizing: 'border-box',
                 zIndex: 2,
+                boxShadow: pressed
+                  ? '0 1px 2px rgba(0,0,0,0.34), 0 0 0.5px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.04)'
+                  : '0 4px 5px rgba(0,0,0,0.5), 0.5px 0 1.5px rgba(0,0,0,0.28), -0.5px 0 1.5px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06)',
+                transition: 'box-shadow 0.08s ease, background 0.08s ease',
               }}
               onMouseDown={() => handleMouseDown(key.midi)}
               onMouseUp={() => handleMouseUp(key.midi)}

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { expectPlayState } from './helpers/toolbar'
 
 test('click Play, wait 1000ms at 120 BPM, verify at least 2 different step indicators highlighted', async ({ page }) => {
   await page.goto('/')
@@ -6,7 +7,7 @@ test('click Play, wait 1000ms at 120 BPM, verify at least 2 different step indic
   // Click Play via toolbar
   const playBtn = page.locator('.toolbar-play-pause')
   await playBtn.click()
-  await expect(playBtn).toHaveText('Pause')
+  await expectPlayState(playBtn, 'pause')
 
   // Wait for at least 2 different step indicators to have been highlighted.
   // BPM=120, 8th note=250ms. Wait ~1000ms for 4 beats.
@@ -25,7 +26,7 @@ test('click Play, wait 1000ms at 120 BPM, verify at least 2 different step indic
 
   // Click Pause
   await playBtn.click()
-  await expect(playBtn).toHaveText('Play')
+  await expectPlayState(playBtn, 'play')
 })
 
 test('single Stop allows next Play to resume sequencing', async ({ page }) => {
@@ -35,17 +36,17 @@ test('single Stop allows next Play to resume sequencing', async ({ page }) => {
   const stopBtn = page.locator('.toolbar-stop')
 
   await playBtn.click()
-  await expect(playBtn).toHaveText('Pause')
+  await expectPlayState(playBtn, 'pause')
 
   await page.waitForFunction(() => (window.__activeSteps ?? []).length >= 1, { timeout: 5000 })
 
   await stopBtn.click()
-  await expect(playBtn).toHaveText('Play')
+  await expectPlayState(playBtn, 'play')
 
   const stepsAfterStop = await page.evaluate(() => (window.__activeSteps ?? []).length)
 
   await playBtn.click()
-  await expect(playBtn).toHaveText('Pause')
+  await expectPlayState(playBtn, 'pause')
 
   await page.waitForFunction(
     (prevLen) => (window.__activeSteps ?? []).length > prevLen,
@@ -66,7 +67,7 @@ test('with Loop off, sequence plays one clip length without repeating notes', as
   await expect(loopBtn).toHaveAttribute('aria-pressed', 'false')
 
   await playBtn.click()
-  await expect(playBtn).toHaveText('Pause')
+  await expectPlayState(playBtn, 'pause')
 
   await page.waitForFunction(() => (window.__activeSteps ?? []).length >= 2, { timeout: 5000 })
   await page.waitForTimeout(4200)
@@ -88,7 +89,7 @@ test('with Loop on, sequence repeats beyond one clip length', async ({ page }) =
   await expect(loopBtn).toHaveAttribute('aria-pressed', 'true')
 
   await playBtn.click()
-  await expect(playBtn).toHaveText('Pause')
+  await expectPlayState(playBtn, 'pause')
 
   await page.waitForFunction(() => (window.__activeSteps ?? []).length >= 2, { timeout: 5000 })
   await page.waitForTimeout(4200)

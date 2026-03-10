@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { getPixelsPerSecond, barDurationSeconds } from '../src/utils/timelineScale'
+import { setBpm } from './helpers/toolbar'
 
 test('timeline ruler is visible above track row', async ({ page }) => {
   await page.goto('/')
@@ -50,7 +51,6 @@ test('bar number "2" is visible at correct pixel offset for 120 BPM', async ({ p
 test('change BPM to 60, verify bar "2" position has shifted right (wider bars)', async ({ page }) => {
   await page.goto('/')
 
-  const bpmInput = page.locator('.toolbar-bpm')
   const rulerArea = page.locator('.timeline-ruler-area')
   const bar2 = page.locator('.timeline-ruler-bar[data-bar="2"]')
 
@@ -61,9 +61,8 @@ test('change BPM to 60, verify bar "2" position has shifted right (wider bars)',
   const offset120 = bar2Box120!.x - rulerAreaBox120!.x
 
   // Change BPM to 60
-  await bpmInput.fill('60')
-  await bpmInput.dispatchEvent('change')
-  await page.waitForTimeout(100)
+  await setBpm(page, 60)
+  await page.waitForTimeout(50)
 
   // Get bar 2 position at 60 BPM
   const rulerAreaBox60 = await rulerArea.boundingBox()
