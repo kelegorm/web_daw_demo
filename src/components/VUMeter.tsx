@@ -21,26 +21,34 @@ function dbToNorm(db: number): number {
   return Math.max(0, Math.min(1, (db - DB_MIN) / DB_RANGE))
 }
 
-// Zone boundary percentages in the bar gradient (measured from bottom)
-const GREEN_MAX_PCT = ((-10 - DB_MIN) / DB_RANGE) * 100
-const YELLOW_MAX_PCT = ((0 - DB_MIN) / DB_RANGE) * 100
+function dbToPct(db: number): number {
+  return ((db - DB_MIN) / DB_RANGE) * 100
+}
 
-const GREEN = '#4caf74'
-const YELLOW = '#f5c842'
+const GREEN_DARK = '#2f7f56'
+const GREEN_LIGHT = '#69c788'
+const YELLOW = '#f5d54a'
+const ORANGE = '#f5a623'
 const RED = '#e83b3b'
+const RED_DARK = '#c92a2a'
 
-const BAR_GRADIENT = [
-  `linear-gradient(to top,`,
-  `${GREEN} 0%,`,
-  `${GREEN} ${GREEN_MAX_PCT.toFixed(2)}%,`,
-  `${YELLOW} ${GREEN_MAX_PCT.toFixed(2)}%,`,
-  `${YELLOW} ${YELLOW_MAX_PCT.toFixed(2)}%,`,
-  `${RED} ${YELLOW_MAX_PCT.toFixed(2)}%,`,
-  `${RED} 100%)`,
+const RMS_GREEN_LIGHT_DB = -30
+const RMS_YELLOW_DB = -22
+const RMS_ORANGE_DB = -16
+const RMS_RED_DB = -6
+
+const RMS_BAR_GRADIENT = [
+  'linear-gradient(to top,',
+  `${GREEN_DARK} 0%,`,
+  `${GREEN_LIGHT} ${dbToPct(RMS_GREEN_LIGHT_DB).toFixed(2)}%,`,
+  `${YELLOW} ${dbToPct(RMS_YELLOW_DB).toFixed(2)}%,`,
+  `${ORANGE} ${dbToPct(RMS_ORANGE_DB).toFixed(2)}%,`,
+  `${RED} ${dbToPct(RMS_RED_DB).toFixed(2)}%,`,
+  `${RED_DARK} 100%)`,
 ].join(' ')
 
 function zoneColor(db: number): string {
-  if (db < -10) return GREEN
+  if (db < -10) return GREEN_LIGHT
   if (db < 0) return YELLOW
   return RED
 }
@@ -51,6 +59,8 @@ const ZERO_DB_PCT = ((0 - DB_MIN) / DB_RANGE) * 100
 const PEAK_HOLD_MS = 180
 const PEAK_ATTACK_ALPHA = 0.55 // fast but non-zero attack for smoother peak rise
 const PEAK_DECAY_NORM_PER_MS = 0.75 / 1000 // smoother fall after hold; avoids jumpy drop perception
+const RMS_HOLD_MS = PEAK_HOLD_MS / 2
+const RMS_DECAY_NORM_PER_MS = PEAK_DECAY_NORM_PER_MS * 2 // RMS fall is intentionally faster than peak
 const PEAK_HOLD_RESET_EPSILON = 0.015 // keep stability but react a bit earlier to new peaks
 
 interface ChannelState {
@@ -165,11 +175,11 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
           rmsL.decaying = false
         }
       } else {
-        if (!rmsL.decaying && now - rmsL.heldAt > PEAK_HOLD_MS) {
+        if (!rmsL.decaying && now - rmsL.heldAt > RMS_HOLD_MS) {
           rmsL.decaying = true
         }
         if (rmsL.decaying) {
-          rmsL.norm = Math.max(0, rmsL.norm - PEAK_DECAY_NORM_PER_MS * dtMs)
+          rmsL.norm = Math.max(0, rmsL.norm - RMS_DECAY_NORM_PER_MS * dtMs)
           if (rmsL.norm <= 0) rmsL.db = -Infinity
         }
       }
@@ -186,11 +196,11 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
           rmsR.decaying = false
         }
       } else {
-        if (!rmsR.decaying && now - rmsR.heldAt > PEAK_HOLD_MS) {
+        if (!rmsR.decaying && now - rmsR.heldAt > RMS_HOLD_MS) {
           rmsR.decaying = true
         }
         if (rmsR.decaying) {
-          rmsR.norm = Math.max(0, rmsR.norm - PEAK_DECAY_NORM_PER_MS * dtMs)
+          rmsR.norm = Math.max(0, rmsR.norm - RMS_DECAY_NORM_PER_MS * dtMs)
           if (rmsR.norm <= 0) rmsR.db = -Infinity
         }
       }
@@ -300,8 +310,12 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
             left: 0,
             width: '100%',
             height: `${left.level * 100}%`,
-            background: BAR_GRADIENT,
+            background: RMS_BAR_GRADIENT,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'bottom',
+            backgroundSize: `100% ${left.level > 0 ? (100 / left.level).toFixed(2) : '100'}%`,
             minHeight: 1,
+            zIndex: 0,
           }}
         />
         {left.peakNorm > 0 && (
@@ -333,8 +347,12 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = fa
             left: 0,
             width: '100%',
             height: `${right.level * 100}%`,
-            background: BAR_GRADIENT,
+            background: RMS_BAR_GRADIENT,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'bottom',
+            backgroundSize: `100% ${right.level > 0 ? (100 / right.level).toFixed(2) : '100'}%`,
             minHeight: 1,
+            zIndex: 0,
           }}
         />
         {right.peakNorm > 0 && (
