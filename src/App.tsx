@@ -71,6 +71,8 @@ function App() {
         onMuteToggle={transport.setTrackMute}
         getAnalyserNode={panner.getAnalyserNode}
         onVolumeChange={toneSynth.setVolume}
+        getMasterAnalyserNode={panner.getMasterAnalyserNode}
+        onMasterVolumeChange={panner.setMasterVolume}
       />
       <DevicePanel synth={toneSynth} panner={panner} />
       <MidiKeyboard synth={toneSynth} />

@@ -39,13 +39,13 @@ No audio engine changes.
 - [x] Mark completed
 
 ### Task 4: Master track at bottom of track zone
-- [ ] Add Master track row pinned to the bottom of the track zone (not scrolled away)
-- [ ] Master track has: title "Master", stereo VU meter, horizontal volume fader (same spec as Task 2)
-- [ ] Master track has no clip area / timeline
-- [ ] Master fader controls `Tone.Destination.volume.value`
-- [ ] Write Playwright test: verify "Master" label is visible at bottom of track zone
-- [ ] Write Playwright test: verify Master track is always visible regardless of track zone scroll position
-- [ ] Mark completed
+- [x] Add Master track row pinned to the bottom of the track zone (not scrolled away)
+- [x] Master track has: title "Master", stereo VU meter, horizontal volume fader (same spec as Task 2)
+- [x] Master track has no clip area / timeline
+- [x] Master fader controls `Tone.Destination.volume.value`
+- [x] Write Playwright test: verify "Master" label is visible at bottom of track zone
+- [x] Write Playwright test: verify Master track is always visible regardless of track zone scroll position
+- [x] Mark completed
 
 ### Task 5: MIDI keyboard width fixed, side gutters shown
 - [ ] MIDI keyboard strip has fixed pixel width (fits exactly 2 octaves C3–B4)

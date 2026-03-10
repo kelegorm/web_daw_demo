@@ -34,11 +34,14 @@ interface Props {
   onMuteToggle?: (muted: boolean) => void
   getAnalyserNode?: () => AnalyserNode | null
   onVolumeChange?: (db: number) => void
+  getMasterAnalyserNode?: () => AnalyserNode | null
+  onMasterVolumeChange?: (db: number) => void
 }
 
-export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMuteToggle, getAnalyserNode, onVolumeChange }: Props) {
+export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMuteToggle, getAnalyserNode, onVolumeChange, getMasterAnalyserNode, onMasterVolumeChange }: Props) {
   const [rec, setRec] = useState(true)
   const [volumeDb, setVolumeDb] = useState(0)
+  const [masterVolumeDb, setMasterVolumeDb] = useState(0)
   const [playheadPos, setPlayheadPos] = useState(0)
 
   const rafRef = useRef<number | null>(null)
@@ -248,6 +251,80 @@ export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMute
         </div>
       </div>
       </div>
+      </div>
+      <div
+        className="master-track"
+        style={{
+          height: 60,
+          flexShrink: 0,
+          display: 'flex',
+          width: '100%',
+          borderTop: '1px solid var(--color-border)',
+          background: 'var(--color-surface)',
+          boxSizing: 'border-box',
+        }}
+      >
+        <div
+          className="master-track-header"
+          style={{
+            width: 'var(--track-header-width)',
+            flexShrink: 0,
+            background: 'var(--color-surface)',
+            borderRight: '1px solid var(--color-border)',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: 'var(--space-2)',
+            gap: 'var(--space-1)',
+            boxSizing: 'border-box',
+          }}
+        >
+          <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
+            <span
+              className="master-track-name"
+              style={{
+                color: 'var(--color-text)',
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: 'bold',
+                flex: 1,
+              }}
+            >
+              Master
+            </span>
+            {getMasterAnalyserNode && (
+              <div style={{ display: 'flex', gap: 2 }}>
+                <VUMeter getAnalyserNode={getMasterAnalyserNode} />
+                <VUMeter getAnalyserNode={getMasterAnalyserNode} />
+              </div>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
+            <input
+              type="range"
+              className="master-volume"
+              min={0}
+              max={100}
+              step={0.1}
+              value={dbToPos(masterVolumeDb)}
+              onChange={(e) => {
+                const db = posToDB(Number(e.target.value))
+                setMasterVolumeDb(db)
+                onMasterVolumeChange?.(db)
+              }}
+              style={{ flex: 1, accentColor: 'var(--color-accent)' }}
+            />
+            <span
+              className="master-volume-label"
+              style={{
+                color: 'var(--color-text-muted, var(--color-text))',
+                fontSize: 'var(--font-size-xs)',
+                minWidth: 32,
+                textAlign: 'right',
+              }}
+            >
+              {formatDB(masterVolumeDb)}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   )

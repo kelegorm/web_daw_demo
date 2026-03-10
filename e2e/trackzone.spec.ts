@@ -112,3 +112,38 @@ test('click Play then playhead moves within 500ms', async ({ page }) => {
 
   expect(movedLeft).not.toEqual(initialLeft)
 })
+
+test('Master track label is visible at bottom of track zone', async ({ page }) => {
+  await page.goto('/')
+  const masterLabel = page.locator('.master-track-name')
+  await expect(masterLabel).toBeVisible()
+  await expect(masterLabel).toHaveText('Master')
+
+  const trackZone = page.locator('.track-zone')
+  const masterTrack = page.locator('.master-track')
+
+  const trackZoneBox = await trackZone.boundingBox()
+  const masterTrackBox = await masterTrack.boundingBox()
+
+  expect(trackZoneBox).not.toBeNull()
+  expect(masterTrackBox).not.toBeNull()
+
+  // Master track bottom should align with track zone bottom
+  const trackZoneBottom = Math.round(trackZoneBox!.y + trackZoneBox!.height)
+  const masterTrackBottom = Math.round(masterTrackBox!.y + masterTrackBox!.height)
+  expect(masterTrackBottom).toBe(trackZoneBottom)
+})
+
+test('Master track is always visible regardless of track zone scroll position', async ({ page }) => {
+  await page.goto('/')
+  const masterTrack = page.locator('.master-track')
+  const trackList = page.locator('.track-list')
+
+  // Scroll the track list to the bottom
+  await trackList.evaluate((el) => { el.scrollTop = el.scrollHeight })
+  await expect(masterTrack).toBeVisible()
+
+  // Scroll the track list to the top
+  await trackList.evaluate((el) => { el.scrollTop = 0 })
+  await expect(masterTrack).toBeVisible()
+})

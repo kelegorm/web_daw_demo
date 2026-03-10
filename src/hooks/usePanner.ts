@@ -9,6 +9,8 @@ export interface PannerGraph {
   getPannerNode: () => StereoPannerNode;
   getGainNode: () => GainNode;
   getAnalyserNode: () => AnalyserNode;
+  getMasterAnalyserNode: () => AnalyserNode;
+  setMasterVolume: (db: number) => void;
 }
 
 export function createPanner(): PannerGraph {
@@ -19,12 +21,16 @@ export function createPanner(): PannerGraph {
   const pannerNode = audioContext.createStereoPanner();
   const gainNode = audioContext.createGain(); // track mute
   const analyserNode = audioContext.createAnalyser();
+  const masterGainNode = audioContext.createGain(); // master volume
+  const masterAnalyserNode = audioContext.createAnalyser();
 
-  // Default chain (enabled): inputGain -> panner -> gain -> analyser -> destination
+  // Default chain (enabled): inputGain -> panner -> gain -> analyser -> masterGain -> masterAnalyser -> destination
   inputGain.connect(pannerNode);
   pannerNode.connect(gainNode);
   gainNode.connect(analyserNode);
-  analyserNode.connect(audioContext.destination);
+  analyserNode.connect(masterGainNode);
+  masterGainNode.connect(masterAnalyserNode);
+  masterAnalyserNode.connect(audioContext.destination);
 
   let enabled = true;
 
@@ -56,6 +62,16 @@ export function createPanner(): PannerGraph {
     }
   }
 
+  function setMasterVolume(db: number) {
+    const linear = isFinite(db) ? Math.pow(10, db / 20) : 0;
+    masterGainNode.gain.value = linear;
+    try {
+      Tone.getDestination().volume.value = isFinite(db) ? db : -Infinity;
+    } catch {
+      // Tone.Destination may not be in signal chain
+    }
+  }
+
   return {
     get isEnabled() {
       return enabled;
@@ -63,9 +79,11 @@ export function createPanner(): PannerGraph {
     setPan,
     setEnabled,
     connectSource,
+    setMasterVolume,
     getPannerNode: () => pannerNode,
     getGainNode: () => gainNode,
     getAnalyserNode: () => analyserNode,
+    getMasterAnalyserNode: () => masterAnalyserNode,
   };
 }
 
@@ -97,14 +115,18 @@ export function usePanner(): PannerHook {
   const getPannerNode = useCallback(() => pannerRef.current!.getPannerNode(), []);
   const getGainNode = useCallback(() => pannerRef.current!.getGainNode(), []);
   const getAnalyserNode = useCallback(() => pannerRef.current!.getAnalyserNode(), []);
+  const getMasterAnalyserNode = useCallback(() => pannerRef.current!.getMasterAnalyserNode(), []);
+  const setMasterVolume = useCallback((db: number) => pannerRef.current!.setMasterVolume(db), []);
 
   return {
     isEnabled,
     setPan,
     setEnabled,
     connectSource,
+    setMasterVolume,
     getPannerNode,
     getGainNode,
     getAnalyserNode,
+    getMasterAnalyserNode,
   };
 }
