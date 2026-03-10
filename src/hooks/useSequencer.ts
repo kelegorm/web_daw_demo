@@ -68,7 +68,9 @@ export function createSequencer(
     _isPlaying = false;
     _currentStep = -1;
     _partStarted = false;
-    part.stop();
+    // Clear scheduled start/stop state so the next play starts cleanly.
+    part.stop(0);
+    part.cancel(0);
     Tone.getTransport().stop();
     panic();
     onStepChange?.(-1);

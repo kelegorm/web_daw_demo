@@ -27,3 +27,29 @@ test('click Play, wait 1000ms at 120 BPM, verify at least 2 different step indic
   await playBtn.click()
   await expect(playBtn).toHaveText('Play')
 })
+
+test('single Stop allows next Play to resume sequencing', async ({ page }) => {
+  await page.goto('/')
+
+  const playBtn = page.locator('.toolbar-play-pause')
+  const stopBtn = page.locator('.toolbar-stop')
+
+  await playBtn.click()
+  await expect(playBtn).toHaveText('Pause')
+
+  await page.waitForFunction(() => (window.__activeSteps ?? []).length >= 1, { timeout: 5000 })
+
+  await stopBtn.click()
+  await expect(playBtn).toHaveText('Play')
+
+  const stepsAfterStop = await page.evaluate(() => (window.__activeSteps ?? []).length)
+
+  await playBtn.click()
+  await expect(playBtn).toHaveText('Pause')
+
+  await page.waitForFunction(
+    (prevLen) => (window.__activeSteps ?? []).length > prevLen,
+    stepsAfterStop,
+    { timeout: 5000 },
+  )
+})

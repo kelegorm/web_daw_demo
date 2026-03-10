@@ -8,6 +8,7 @@ const { mockState } = vi.hoisted(() => ({
     part: {
       start: vi.fn(),
       stop: vi.fn(),
+      cancel: vi.fn(),
       loop: false,
       loopEnd: '',
     },
@@ -98,6 +99,24 @@ describe('createSequencer (Tone.js)', () => {
     expect(panic).toHaveBeenCalledOnce();
     expect(seq.currentStep()).toBe(-1);
     expect(mockState.transport.stop).toHaveBeenCalled();
+    expect(mockState.part.cancel).toHaveBeenCalledWith(0);
+  });
+
+  it('play after a single stop schedules notes again', () => {
+    const noteOn = vi.fn();
+    const noteOff = vi.fn();
+    const panic = vi.fn();
+
+    const seq = createSequencer(noteOn, noteOff, panic);
+    seq.start();
+    mockState.callback!(0, mockState.events[0][1]);
+    expect(noteOn).toHaveBeenCalledTimes(1);
+
+    seq.stop();
+    seq.start();
+
+    mockState.callback!(0, mockState.events[0][1]);
+    expect(noteOn).toHaveBeenCalledTimes(2);
   });
 
   it('pause does not call panic and preserves current step', () => {

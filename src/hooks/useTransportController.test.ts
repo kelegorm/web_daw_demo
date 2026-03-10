@@ -9,6 +9,7 @@ const { mockState } = vi.hoisted(() => ({
     part: {
       start: vi.fn(),
       stop: vi.fn(),
+      cancel: vi.fn(),
       loop: false,
       loopEnd: '',
     },
