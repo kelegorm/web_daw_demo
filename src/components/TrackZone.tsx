@@ -31,7 +31,7 @@ function formatDB(db: number): string {
 }
 
 interface Props {
-  isPlaying: boolean
+  playbackState: 'playing' | 'paused' | 'stopped'
   bpm: number
   loop?: boolean
   isTrackMuted?: boolean
@@ -44,44 +44,50 @@ interface Props {
   onMasterVolumeChange?: (db: number) => void
 }
 
-export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted = false, onMuteToggle, getAnalyserNodeL, getAnalyserNodeR, onVolumeChange, getMasterAnalyserNodeL, getMasterAnalyserNodeR, onMasterVolumeChange }: Props) {
+export default function TrackZone({ playbackState, bpm, loop = false, isTrackMuted = false, onMuteToggle, getAnalyserNodeL, getAnalyserNodeR, onVolumeChange, getMasterAnalyserNodeL, getMasterAnalyserNodeR, onMasterVolumeChange }: Props) {
   const [rec, setRec] = useState(true)
   const [volumeDb, setVolumeDb] = useState(0)
   const [masterVolumeDb, setMasterVolumeDb] = useState(0)
   const [playheadPos, setPlayheadPos] = useState(0)
 
   const rafRef = useRef<number | null>(null)
-  const bpmRef = useRef(bpm)
-  bpmRef.current = bpm
-  const loopRef = useRef(loop)
-  loopRef.current = loop
 
   const clipWidth = clipDurationSeconds(bpm, SEQUENCE_NOTES.length) * getPixelsPerSecond(bpm)
 
   useEffect(() => {
-    if (isPlaying) {
-      const animate = () => {
-        const seconds = Tone.getTransport().seconds
-        const pps = getPixelsPerSecond(bpmRef.current)
-        let px = seconds * pps
-        if (loopRef.current) {
-          const loopEndPx = clipDurationSeconds(bpmRef.current, SEQUENCE_NOTES.length) * pps
-          if (loopEndPx > 0) {
-            px = px % loopEndPx
-          }
+    const getPlayheadPx = () => {
+      if (playbackState === 'stopped') {
+        return 0
+      }
+
+      const seconds = Tone.getTransport().seconds
+      const pps = getPixelsPerSecond(bpm)
+      let px = seconds * pps
+
+      if (loop) {
+        const loopEndPx = clipWidth
+        if (loopEndPx > 0) {
+          px = px % loopEndPx
         }
-        setPlayheadPos(px)
+      }
+
+      return px
+    }
+
+    if (playbackState === 'playing') {
+      const animate = () => {
+        setPlayheadPos(getPlayheadPx())
         rafRef.current = requestAnimationFrame(animate)
       }
       rafRef.current = requestAnimationFrame(animate)
     } else {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
-      setPlayheadPos(0)
+      setPlayheadPos(getPlayheadPx())
     }
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
     }
-  }, [isPlaying])
+  }, [playbackState, bpm, loop, clipWidth])
 
   const pitchRange = MAX_PITCH - MIN_PITCH
 
@@ -99,7 +105,7 @@ export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted =
         boxSizing: 'border-box',
       }}
     >
-      <TimelineRuler bpm={bpm} />
+      <TimelineRuler bpm={bpm} loop={loop} loopRegionWidth={clipWidth} />
       <div
         className="track-list"
         style={{
@@ -257,6 +263,22 @@ export default function TrackZone({ isPlaying, bpm, loop = false, isTrackMuted =
           boxShadow: 'inset 1px 0 0 rgba(255, 255, 255, 0.03)',
         }}
       >
+        {loop && (
+          <div
+            className="timeline-loop-region-track"
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: clipWidth,
+              border: '1px dashed rgba(65, 180, 120, 0.65)',
+              boxSizing: 'border-box',
+              background: 'rgba(65, 180, 120, 0.08)',
+              pointerEvents: 'none',
+            }}
+          />
+        )}
         <div
           className="midi-clip"
           style={{

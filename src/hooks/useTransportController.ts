@@ -4,8 +4,11 @@ import { createSequencer, Sequencer } from './useSequencer';
 import type { ToneSynthHook } from './useToneSynth';
 import type { PannerHook } from './usePanner';
 
+export type PlaybackState = 'playing' | 'paused' | 'stopped';
+
 export interface TransportControllerState {
   isPlaying: boolean;
+  playbackState: PlaybackState;
   bpm: number;
   loop: boolean;
   isTrackMuted: boolean;
@@ -86,7 +89,7 @@ export function createTransportCore(deps: TransportCoreDeps): TransportCore {
   }
 
   function setLoop(loop: boolean) {
-    Tone.getTransport().loop = loop;
+    seq.setLoop(loop);
   }
 
   function setTrackMute(muted: boolean) {
@@ -118,9 +121,9 @@ export function useTransportController(
   toneSynth: ToneSynthHook,
   panner: PannerHook,
 ): TransportController {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackState, setPlaybackState] = useState<PlaybackState>('stopped');
   const [bpm, setBpmState] = useState(120);
-  const [loop, setLoopState] = useState(false);
+  const [loop, setLoopState] = useState(true);
   const [isTrackMuted, setIsTrackMutedState] = useState(false);
   const [currentStep, setCurrentStep] = useState(-1);
 
@@ -144,17 +147,17 @@ export function useTransportController(
   const play = useCallback(async () => {
     await Tone.start();
     coreRef.current!.play();
-    setIsPlaying(true);
+    setPlaybackState('playing');
   }, []);
 
   const pause = useCallback(() => {
     coreRef.current!.pause();
-    setIsPlaying(false);
+    setPlaybackState('paused');
   }, []);
 
   const stop = useCallback(() => {
     coreRef.current!.stop();
-    setIsPlaying(false);
+    setPlaybackState('stopped');
     setCurrentStep(-1);
   }, []);
 
@@ -191,8 +194,11 @@ export function useTransportController(
     };
   }, []);
 
+  const isPlaying = playbackState === 'playing';
+
   return {
     isPlaying,
+    playbackState,
     bpm,
     loop,
     isTrackMuted,

@@ -201,6 +201,41 @@ test('clip block left edge aligns with bar 1 marker on ruler within 2px', async 
   expect(Math.abs(clipRelativeLeft - bar1RelativeLeft)).toBeLessThanOrEqual(2)
 })
 
+test('loop region indicator appears when Loop is enabled and matches clip width', async ({ page }) => {
+  await page.goto('/')
+
+  const loopBtn = page.locator('.toolbar-loop')
+  const clip = page.locator('.midi-clip')
+  const rulerLoopRegion = page.locator('.timeline-loop-region')
+  const trackLoopRegion = page.locator('.timeline-loop-region-track')
+
+  await expect(loopBtn).toHaveAttribute('aria-pressed', 'true')
+  await expect(rulerLoopRegion).toBeVisible()
+  await expect(trackLoopRegion).toBeVisible()
+
+  await loopBtn.click()
+  await expect(loopBtn).toHaveAttribute('aria-pressed', 'false')
+  await expect(rulerLoopRegion).toHaveCount(0)
+  await expect(trackLoopRegion).toHaveCount(0)
+
+  await loopBtn.click()
+  await expect(loopBtn).toHaveAttribute('aria-pressed', 'true')
+
+  await expect(rulerLoopRegion).toBeVisible()
+  await expect(trackLoopRegion).toBeVisible()
+
+  const clipBox = await clip.boundingBox()
+  const rulerRegionBox = await rulerLoopRegion.boundingBox()
+  const trackRegionBox = await trackLoopRegion.boundingBox()
+
+  expect(clipBox).not.toBeNull()
+  expect(rulerRegionBox).not.toBeNull()
+  expect(trackRegionBox).not.toBeNull()
+
+  expect(Math.abs(rulerRegionBox!.width - clipBox!.width)).toBeLessThanOrEqual(2)
+  expect(Math.abs(trackRegionBox!.width - clipBox!.width)).toBeLessThanOrEqual(2)
+})
+
 test('Master track is always visible regardless of track zone scroll position', async ({ page }) => {
   await page.goto('/')
   const masterTrack = page.locator('.master-track')

@@ -18,6 +18,8 @@ const { mockState } = vi.hoisted(() => ({
       stop: vi.fn(),
       state: 'stopped',
       loop: false,
+      loopStart: 0,
+      loopEnd: '0:0:0',
     },
   },
 }));
@@ -151,5 +153,22 @@ describe('createSequencer (Tone.js)', () => {
     // Time mock: 0.25s * 0.8 * 1000 = 200ms
     vi.advanceTimersByTime(200);
     expect(noteOff).toHaveBeenCalledOnce();
+  });
+
+  it('setLoop toggles loop mode for part and transport', () => {
+    const noteOn = vi.fn();
+    const noteOff = vi.fn();
+    const panic = vi.fn();
+
+    const seq = createSequencer(noteOn, noteOff, panic);
+
+    seq.setLoop(true);
+    expect(mockState.part.loop).toBe(true);
+    expect(mockState.transport.loop).toBe(true);
+    expect(mockState.transport.loopEnd).toBe('1m');
+
+    seq.setLoop(false);
+    expect(mockState.part.loop).toBe(false);
+    expect(mockState.transport.loop).toBe(false);
   });
 });

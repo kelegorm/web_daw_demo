@@ -65,7 +65,7 @@ function App() {
         onLoopToggle={() => transport.setLoop(!transport.loop)}
       />
       <TrackZone
-        isPlaying={transport.isPlaying}
+        playbackState={transport.playbackState}
         bpm={transport.bpm}
         loop={transport.loop}
         isTrackMuted={transport.isTrackMuted}

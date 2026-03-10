@@ -53,3 +53,46 @@ test('single Stop allows next Play to resume sequencing', async ({ page }) => {
     { timeout: 5000 },
   )
 })
+
+test('with Loop off, sequence plays one clip length without repeating notes', async ({ page }) => {
+  await page.goto('/')
+
+  const playBtn = page.locator('.toolbar-play-pause')
+  const loopBtn = page.locator('.toolbar-loop')
+
+  if ((await loopBtn.getAttribute('aria-pressed')) !== 'false') {
+    await loopBtn.click()
+  }
+  await expect(loopBtn).toHaveAttribute('aria-pressed', 'false')
+
+  await playBtn.click()
+  await expect(playBtn).toHaveText('Pause')
+
+  await page.waitForFunction(() => (window.__activeSteps ?? []).length >= 2, { timeout: 5000 })
+  await page.waitForTimeout(4200)
+
+  const stepCount = await page.evaluate(() => (window.__activeSteps ?? []).length)
+  expect(stepCount).toBeGreaterThanOrEqual(8)
+  expect(stepCount).toBeLessThanOrEqual(8)
+})
+
+test('with Loop on, sequence repeats beyond one clip length', async ({ page }) => {
+  await page.goto('/')
+
+  const playBtn = page.locator('.toolbar-play-pause')
+  const loopBtn = page.locator('.toolbar-loop')
+
+  if ((await loopBtn.getAttribute('aria-pressed')) !== 'true') {
+    await loopBtn.click()
+  }
+  await expect(loopBtn).toHaveAttribute('aria-pressed', 'true')
+
+  await playBtn.click()
+  await expect(playBtn).toHaveText('Pause')
+
+  await page.waitForFunction(() => (window.__activeSteps ?? []).length >= 2, { timeout: 5000 })
+  await page.waitForTimeout(4200)
+
+  const stepCount = await page.evaluate(() => (window.__activeSteps ?? []).length)
+  expect(stepCount).toBeGreaterThan(8)
+})

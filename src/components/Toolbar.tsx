@@ -91,6 +91,22 @@ export default function Toolbar({
           Stop
         </button>
         <button
+          className="toolbar-loop"
+          onClick={onLoopToggle}
+          aria-pressed={loop}
+          style={{
+            padding: '4px 10px',
+            background: loop ? 'var(--color-accent-dim)' : 'var(--color-surface-raised)',
+            color: loop ? '#fff' : 'var(--color-text-muted)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-md)',
+            cursor: 'pointer',
+            fontSize: 'var(--font-size-sm)',
+          }}
+        >
+          Loop
+        </button>
+        <button
           className="toolbar-panic"
           onClick={onPanic}
           style={{
@@ -136,32 +152,6 @@ export default function Toolbar({
             }}
           />
         </label>
-      </div>
-
-      <div
-        style={{
-          flex: '1 0 0',
-          display: 'flex',
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-        }}
-      >
-        <button
-          className="toolbar-loop"
-          onClick={onLoopToggle}
-          aria-pressed={loop}
-          style={{
-            padding: '4px 10px',
-            background: loop ? 'var(--color-accent-dim)' : 'var(--color-surface-raised)',
-            color: loop ? '#fff' : 'var(--color-text-muted)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-md)',
-            cursor: 'pointer',
-            fontSize: 'var(--font-size-sm)',
-          }}
-        >
-          Loop
-        </button>
       </div>
     </div>
   )

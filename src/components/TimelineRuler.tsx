@@ -3,11 +3,13 @@ import { getPixelsPerSecond, barDurationSeconds, beatDurationSeconds } from '../
 
 interface Props {
   bpm: number
+  loop?: boolean
+  loopRegionWidth?: number
 }
 
 const RULER_HEIGHT = 24
 
-export default function TimelineRuler({ bpm }: Props) {
+export default function TimelineRuler({ bpm, loop = false, loopRegionWidth = 0 }: Props) {
   const timelineRef = useRef<HTMLDivElement>(null)
   const [timelineWidth, setTimelineWidth] = useState(600)
 
@@ -46,6 +48,7 @@ export default function TimelineRuler({ bpm }: Props) {
           bottom: 0,
           width: barWidth,
           pointerEvents: 'none',
+          zIndex: 2,
         }}
       >
         <div
@@ -128,6 +131,24 @@ export default function TimelineRuler({ bpm }: Props) {
           boxShadow: 'inset 1px 0 0 rgba(255, 255, 255, 0.03)',
         }}
       >
+        {loop && loopRegionWidth > 0 && (
+          <div
+            className="timeline-loop-region"
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: Math.min(loopRegionWidth, timelineWidth),
+              pointerEvents: 'none',
+              background: 'rgba(65, 180, 120, 0.12)',
+              borderTop: '2px solid var(--color-success, #2a7)',
+              borderRight: '1px solid rgba(65, 180, 120, 0.6)',
+              zIndex: 1,
+              boxSizing: 'border-box',
+            }}
+          />
+        )}
         {bars}
       </div>
     </div>

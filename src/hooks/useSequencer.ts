@@ -14,6 +14,7 @@ export interface Sequencer {
   start: () => void;
   pause: () => void;
   stop: () => void;
+  setLoop: (loop: boolean) => void;
 }
 
 export function createSequencer(
@@ -26,6 +27,7 @@ export function createSequencer(
   let _isPlaying = false;
   let _active = false;
   let _partStarted = false;
+  const loopEnd = '1m';
 
   const events: [string, StepEvent][] = SEQUENCER_NOTES.map((note, i) => {
     const beat = Math.floor(i / 2);
@@ -45,8 +47,17 @@ export function createSequencer(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }, events as any);
 
-  part.loop = true;
-  part.loopEnd = '1m';
+  function setLoop(loop: boolean) {
+    part.loop = loop;
+    part.loopEnd = loopEnd;
+
+    const transport = Tone.getTransport();
+    transport.loop = loop;
+    transport.loopStart = 0;
+    transport.loopEnd = loopEnd;
+  }
+
+  setLoop(true);
 
   function start() {
     _active = true;
@@ -82,6 +93,7 @@ export function createSequencer(
     start,
     pause,
     stop,
+    setLoop,
   };
 }
 
@@ -147,7 +159,7 @@ export function useSequencer(
   }, [start, pause]);
 
   const setLoop = useCallback((loop: boolean) => {
-    Tone.getTransport().loop = loop;
+    sequencerRef.current!.setLoop(loop);
   }, []);
 
   useEffect(() => {

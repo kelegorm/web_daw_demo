@@ -191,9 +191,11 @@ describe('createTransportCore', () => {
     const core = createTransportCore(deps);
 
     core.setLoop(true);
+    expect(mockState.part.loop).toBe(true);
     expect(mockState.transport.loop).toBe(true);
 
     core.setLoop(false);
+    expect(mockState.part.loop).toBe(false);
     expect(mockState.transport.loop).toBe(false);
   });
 
