@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import VUMeter from './VUMeter'
+import TimelineRuler from './TimelineRuler'
 
 const SEQUENCE_NOTES = [60, 62, 64, 65, 67, 69, 71, 72]
 const MIN_PITCH = 60
@@ -89,6 +90,7 @@ export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMute
         boxSizing: 'border-box',
       }}
     >
+      <TimelineRuler bpm={bpm} />
       <div
         className="track-list"
         style={{

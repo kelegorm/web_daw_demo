@@ -3,11 +3,11 @@
  * All components (TimelineRuler, clip block, playhead) must import from here.
  */
 
-/** Pixels rendered per second of audio at the given BPM. */
-export function getPixelsPerSecond(bpm: number): number {
-  // At 120 BPM, one bar = 2 s → 120 px; so pps = 60 px/s.
-  // Scale linearly so the visible bar width stays constant across BPMs.
-  return (bpm / 120) * 60
+/** Pixels rendered per second of audio. Fixed at 60 px/s so bar widths change with BPM. */
+export function getPixelsPerSecond(_bpm: number): number {
+  // 60 px/s constant: at 120 BPM one bar = 2s × 60 = 120 px;
+  // at 60 BPM one bar = 4s × 60 = 240 px (wider bars at slower tempo).
+  return 60
 }
 
 /** Duration in seconds of one 4/4 bar at the given BPM. */

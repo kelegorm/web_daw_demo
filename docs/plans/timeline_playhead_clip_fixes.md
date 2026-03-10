@@ -27,19 +27,19 @@ they share the same pixels-per-second scale constant.
 - [x] Mark completed
 
 ### Task 2: Timeline ruler above track zone
-- [ ] Create `src/components/TimelineRuler.tsx`
-- [ ] Positioned above the synth1 track row, aligned to the clip/timeline column only (not the track header column)
-- [ ] Track header column has empty placeholder of same width on the left
-- [ ] Ruler shows bar numbers (1, 2, 3...) at each bar boundary
-- [ ] Ruler shows beat tick marks (shorter lines) at each beat within a bar (4/4: 3 ticks between bar numbers)
-- [ ] Bar and beat positions calculated using `getPixelsPerSecond` and `barDurationSeconds` from Task 1
-- [ ] Ruler width matches timeline area width
-- [ ] When BPM changes, ruler re-renders with updated bar/beat positions
-- [ ] Write Playwright test: verify bar number "1" is visible in ruler at leftmost position
-- [ ] Write Playwright test: verify bar number "2" is visible at correct pixel offset for 120 BPM
-- [ ] Write Playwright test: change BPM to 60, verify bar "2" position has shifted right (wider bars)
-- [ ] Write Playwright test: verify 3 beat tick marks are visible between bar 1 and bar 2
-- [ ] Mark completed
+- [x] Create `src/components/TimelineRuler.tsx`
+- [x] Positioned above the synth1 track row, aligned to the clip/timeline column only (not the track header column)
+- [x] Track header column has empty placeholder of same width on the left
+- [x] Ruler shows bar numbers (1, 2, 3...) at each bar boundary
+- [x] Ruler shows beat tick marks (shorter lines) at each beat within a bar (4/4: 3 ticks between bar numbers)
+- [x] Bar and beat positions calculated using `getPixelsPerSecond` and `barDurationSeconds` from Task 1
+- [x] Ruler width matches timeline area width
+- [x] When BPM changes, ruler re-renders with updated bar/beat positions
+- [x] Write Playwright test: verify bar number "1" is visible in ruler at leftmost position
+- [x] Write Playwright test: verify bar number "2" is visible at correct pixel offset for 120 BPM
+- [x] Write Playwright test: change BPM to 60, verify bar "2" position has shifted right (wider bars)
+- [x] Write Playwright test: verify 3 beat tick marks are visible between bar 1 and bar 2
+- [x] Mark completed
 
 ### Task 3: MIDI clip block width synced to timeline scale
 - [ ] Clip block width calculated as: `clipDurationSeconds(bpm, 8) * getPixelsPerSecond(bpm)`

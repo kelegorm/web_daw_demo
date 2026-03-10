@@ -80,19 +80,19 @@ test('track zone height fills viewport minus toolbar and device panel heights', 
   expect(Math.round(trackZoneBox!.height)).toBe(Math.round(expectedHeight))
 })
 
-test('synth1 track row is at the top of the track zone', async ({ page }) => {
+test('synth1 track row is directly below the timeline ruler', async ({ page }) => {
   await page.goto('/')
-  const trackZone = page.locator('.track-zone')
+  const ruler = page.locator('.timeline-ruler')
   const trackRow = page.locator('.track-list .track-row')
 
-  const trackZoneBox = await trackZone.boundingBox()
+  const rulerBox = await ruler.boundingBox()
   const trackRowBox = await trackRow.boundingBox()
 
-  expect(trackZoneBox).not.toBeNull()
+  expect(rulerBox).not.toBeNull()
   expect(trackRowBox).not.toBeNull()
 
-  // synth1 row should be at the top of track zone
-  expect(Math.round(trackRowBox!.y)).toBe(Math.round(trackZoneBox!.y))
+  // synth1 row top should be at or just below the ruler bottom
+  expect(Math.round(trackRowBox!.y)).toBe(Math.round(rulerBox!.y + rulerBox!.height))
 })
 
 test('click Play then playhead moves within 500ms', async ({ page }) => {
