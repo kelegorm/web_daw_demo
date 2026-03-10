@@ -69,9 +69,11 @@ function App() {
         bpm={transport.bpm}
         isTrackMuted={transport.isTrackMuted}
         onMuteToggle={transport.setTrackMute}
-        getAnalyserNode={panner.getAnalyserNode}
+        getAnalyserNodeL={panner.getAnalyserNodeL}
+        getAnalyserNodeR={panner.getAnalyserNodeR}
         onVolumeChange={toneSynth.setVolume}
-        getMasterAnalyserNode={panner.getMasterAnalyserNode}
+        getMasterAnalyserNodeL={panner.getMasterAnalyserNodeL}
+        getMasterAnalyserNodeR={panner.getMasterAnalyserNodeR}
         onMasterVolumeChange={panner.setMasterVolume}
       />
       <DevicePanel synth={toneSynth} panner={panner} />

@@ -7,11 +7,12 @@ declare global {
 }
 
 interface Props {
-  getAnalyserNode: () => AnalyserNode | null
+  getAnalyserNodeL: () => AnalyserNode | null
+  getAnalyserNodeR: () => AnalyserNode | null
   muted?: boolean
 }
 
-const DB_MIN = -48
+const DB_MIN = -60
 const DB_MAX = 6
 const DB_RANGE = DB_MAX - DB_MIN
 
@@ -21,8 +22,8 @@ function dbToNorm(db: number): number {
 }
 
 // Zone boundary percentages in the bar gradient (measured from bottom)
-const GREEN_MAX_PCT = ((-10 - DB_MIN) / DB_RANGE) * 100  // ≈ 70.4%
-const YELLOW_MAX_PCT = ((0 - DB_MIN) / DB_RANGE) * 100   // ≈ 88.9%
+const GREEN_MAX_PCT = ((-10 - DB_MIN) / DB_RANGE) * 100
+const YELLOW_MAX_PCT = ((0 - DB_MIN) / DB_RANGE) * 100
 
 const GREEN = '#4caf74'
 const YELLOW = '#f5c842'
@@ -44,24 +45,47 @@ function zoneColor(db: number): string {
   return RED
 }
 
-const PEAK_HOLD_MS = 2000
+// 0 dB position from bottom as percentage
+const ZERO_DB_PCT = ((0 - DB_MIN) / DB_RANGE) * 100
 
-export default function VUMeter({ getAnalyserNode, muted = false }: Props) {
-  const [level, setLevel] = useState(0)
-  const [peakNorm, setPeakNorm] = useState(0)
-  const [peakDb, setPeakDb] = useState(-Infinity)
+const PEAK_HOLD_MS = 1500
+const PEAK_DECAY_NORM_PER_MS = 0.3 / 1000 // 0.3 normalized units per second
+
+interface ChannelState {
+  level: number
+  peakNorm: number
+  peakDb: number
+}
+
+function readRms(analyser: AnalyserNode, buf: Uint8Array): number {
+  if (buf.length !== analyser.fftSize) return 0
+  analyser.getByteTimeDomainData(buf)
+  let sum = 0
+  for (let i = 0; i < buf.length; i++) {
+    const s = (buf[i] - 128) / 128
+    sum += s * s
+  }
+  return Math.sqrt(sum / buf.length)
+}
+
+export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR, muted = false }: Props) {
+  const [left, setLeft] = useState<ChannelState>({ level: 0, peakNorm: 0, peakDb: -Infinity })
+  const [right, setRight] = useState<ChannelState>({ level: 0, peakNorm: 0, peakDb: -Infinity })
 
   const rafRef = useRef<number | null>(null)
-  const dataRef = useRef<Uint8Array | null>(null)
-  const peakNormRef = useRef(0)
-  const peakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const bufLRef = useRef<Uint8Array | null>(null)
+  const bufRRef = useRef<Uint8Array | null>(null)
+
+  // Peak hold state — stored in refs to avoid triggering re-renders on every frame
+  const peakLRef = useRef({ norm: 0, db: -Infinity, heldAt: 0, decaying: false })
+  const peakRRef = useRef({ norm: 0, db: -Infinity, heldAt: 0, decaying: false })
 
   useEffect(() => {
     if (muted) {
-      setLevel(0)
-      setPeakNorm(0)
-      setPeakDb(-Infinity)
-      peakNormRef.current = 0
+      setLeft({ level: 0, peakNorm: 0, peakDb: -Infinity })
+      setRight({ level: 0, peakNorm: 0, peakDb: -Infinity })
+      peakLRef.current = { norm: 0, db: -Infinity, heldAt: 0, decaying: false }
+      peakRRef.current = { norm: 0, db: -Infinity, heldAt: 0, decaying: false }
       window.__vuMeterLevel = 0
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current)
@@ -70,87 +94,176 @@ export default function VUMeter({ getAnalyserNode, muted = false }: Props) {
       return
     }
 
-    function tick() {
-      const analyser = getAnalyserNode()
-      if (analyser) {
-        if (!dataRef.current || dataRef.current.length !== analyser.fftSize) {
-          dataRef.current = new Uint8Array(analyser.fftSize)
-        }
-        analyser.getByteTimeDomainData(dataRef.current)
-        let sum = 0
-        for (let i = 0; i < dataRef.current.length; i++) {
-          const sample = (dataRef.current[i] - 128) / 128
-          sum += sample * sample
-        }
-        const rms = Math.sqrt(sum / dataRef.current.length)
-        const db = rms > 1e-6 ? 20 * Math.log10(rms) : -Infinity
-        const norm = dbToNorm(db)
+    function tick(now: number) {
+      const analyserL = getAnalyserNodeL()
+      const analyserR = getAnalyserNodeR()
 
-        setLevel(norm)
-        window.__vuMeterLevel = norm
+      let normL = 0
+      let dbL = -Infinity
+      let normR = 0
+      let dbR = -Infinity
 
-        if (norm > peakNormRef.current) {
-          peakNormRef.current = norm
-          setPeakNorm(norm)
-          setPeakDb(db)
-          if (peakTimerRef.current) clearTimeout(peakTimerRef.current)
-          peakTimerRef.current = setTimeout(() => {
-            peakNormRef.current = 0
-            setPeakNorm(0)
-            setPeakDb(-Infinity)
-          }, PEAK_HOLD_MS)
+      if (analyserL) {
+        if (!bufLRef.current || bufLRef.current.length !== analyserL.fftSize) {
+          bufLRef.current = new Uint8Array(analyserL.fftSize)
+        }
+        const rms = readRms(analyserL, bufLRef.current)
+        dbL = rms > 1e-6 ? 20 * Math.log10(rms) : -Infinity
+        normL = dbToNorm(dbL)
+      }
+
+      if (analyserR) {
+        if (!bufRRef.current || bufRRef.current.length !== analyserR.fftSize) {
+          bufRRef.current = new Uint8Array(analyserR.fftSize)
+        }
+        const rms = readRms(analyserR, bufRRef.current)
+        dbR = rms > 1e-6 ? 20 * Math.log10(rms) : -Infinity
+        normR = dbToNorm(dbR)
+      }
+
+      // Update peak L
+      const pkL = peakLRef.current
+      if (normL >= pkL.norm) {
+        pkL.norm = normL
+        pkL.db = dbL
+        pkL.heldAt = now
+        pkL.decaying = false
+      } else {
+        if (!pkL.decaying && now - pkL.heldAt > PEAK_HOLD_MS) {
+          pkL.decaying = true
+        }
+        if (pkL.decaying) {
+          // approximate dt as 16ms (60fps)
+          pkL.norm = Math.max(0, pkL.norm - PEAK_DECAY_NORM_PER_MS * 16)
+          if (pkL.norm <= 0) pkL.db = -Infinity
         }
       }
+
+      // Update peak R
+      const pkR = peakRRef.current
+      if (normR >= pkR.norm) {
+        pkR.norm = normR
+        pkR.db = dbR
+        pkR.heldAt = now
+        pkR.decaying = false
+      } else {
+        if (!pkR.decaying && now - pkR.heldAt > PEAK_HOLD_MS) {
+          pkR.decaying = true
+        }
+        if (pkR.decaying) {
+          pkR.norm = Math.max(0, pkR.norm - PEAK_DECAY_NORM_PER_MS * 16)
+          if (pkR.norm <= 0) pkR.db = -Infinity
+        }
+      }
+
+      setLeft({ level: normL, peakNorm: pkL.norm, peakDb: pkL.db })
+      setRight({ level: normR, peakNorm: pkR.norm, peakDb: pkR.db })
+      window.__vuMeterLevel = Math.max(normL, normR)
+
       rafRef.current = requestAnimationFrame(tick)
     }
+
     rafRef.current = requestAnimationFrame(tick)
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
-      if (peakTimerRef.current) clearTimeout(peakTimerRef.current)
     }
-  }, [getAnalyserNode, muted])
-
-  const pct = level * 100
+  }, [getAnalyserNodeL, getAnalyserNodeR, muted])
 
   return (
     <div
       className="vu-meter"
       data-testid="vu-meter"
       style={{
-        width: 24,
+        display: 'flex',
+        gap: 2,
+        width: 28,
         height: 120,
         background: '#111',
         border: '1px solid #444',
         borderRadius: 3,
         position: 'relative',
-        overflow: 'hidden',
+        padding: '2px 3px',
+        boxSizing: 'border-box',
+        overflow: 'visible',
       }}
     >
+      {/* 0 dB marker line — spans the full width, at ZERO_DB_PCT from bottom */}
       <div
-        className="vu-meter-bar"
+        className="vu-meter-zero-db"
+        data-testid="vu-meter-zero-db"
         style={{
           position: 'absolute',
-          bottom: 0,
+          bottom: `calc(${ZERO_DB_PCT.toFixed(2)}% - 1px)`,
           left: 0,
-          width: '100%',
-          height: `${pct}%`,
-          background: BAR_GRADIENT,
-          minHeight: 1,
+          right: 0,
+          height: 1,
+          background: 'rgba(255,255,255,0.5)',
+          pointerEvents: 'none',
+          zIndex: 1,
         }}
       />
-      {peakNorm > 0 && (
+
+      {/* Left channel bar */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', borderRadius: 2 }}>
         <div
-          className="vu-meter-peak"
+          className="vu-meter-bar"
+          data-testid="vu-meter-bar-l"
           style={{
             position: 'absolute',
-            bottom: `${peakNorm * 100}%`,
+            bottom: 0,
             left: 0,
             width: '100%',
-            height: 2,
-            background: zoneColor(peakDb),
+            height: `${left.level * 100}%`,
+            background: BAR_GRADIENT,
+            minHeight: 1,
           }}
         />
-      )}
+        {left.peakNorm > 0 && (
+          <div
+            className="vu-meter-peak"
+            data-testid="vu-meter-peak-l"
+            style={{
+              position: 'absolute',
+              bottom: `${left.peakNorm * 100}%`,
+              left: 0,
+              width: '100%',
+              height: 2,
+              background: zoneColor(left.peakDb),
+            }}
+          />
+        )}
+      </div>
+
+      {/* Right channel bar */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', borderRadius: 2 }}>
+        <div
+          className="vu-meter-bar"
+          data-testid="vu-meter-bar-r"
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width: '100%',
+            height: `${right.level * 100}%`,
+            background: BAR_GRADIENT,
+            minHeight: 1,
+          }}
+        />
+        {right.peakNorm > 0 && (
+          <div
+            className="vu-meter-peak"
+            data-testid="vu-meter-peak-r"
+            style={{
+              position: 'absolute',
+              bottom: `${right.peakNorm * 100}%`,
+              left: 0,
+              width: '100%',
+              height: 2,
+              background: zoneColor(right.peakDb),
+            }}
+          />
+        )}
+      </div>
     </div>
   )
 }

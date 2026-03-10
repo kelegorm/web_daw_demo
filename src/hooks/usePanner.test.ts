@@ -24,10 +24,16 @@ const mockInputGain = {
   gain: { value: 1 },
 };
 
+const mockChannelSplitter = {
+  connect: vi.fn(),
+  disconnect: vi.fn(),
+};
+
 const mockAudioContext = {
   createStereoPanner: vi.fn(() => mockPannerNode),
   createGain: vi.fn(() => mockGainNode),
   createAnalyser: vi.fn(() => mockAnalyserNode),
+  createChannelSplitter: vi.fn(() => mockChannelSplitter),
   destination: {},
 };
 

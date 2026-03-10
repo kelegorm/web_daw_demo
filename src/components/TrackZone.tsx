@@ -32,13 +32,15 @@ interface Props {
   bpm: number
   isTrackMuted?: boolean
   onMuteToggle?: (muted: boolean) => void
-  getAnalyserNode?: () => AnalyserNode | null
+  getAnalyserNodeL?: () => AnalyserNode | null
+  getAnalyserNodeR?: () => AnalyserNode | null
   onVolumeChange?: (db: number) => void
-  getMasterAnalyserNode?: () => AnalyserNode | null
+  getMasterAnalyserNodeL?: () => AnalyserNode | null
+  getMasterAnalyserNodeR?: () => AnalyserNode | null
   onMasterVolumeChange?: (db: number) => void
 }
 
-export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMuteToggle, getAnalyserNode, onVolumeChange, getMasterAnalyserNode, onMasterVolumeChange }: Props) {
+export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMuteToggle, getAnalyserNodeL, getAnalyserNodeR, onVolumeChange, getMasterAnalyserNodeL, getMasterAnalyserNodeR, onMasterVolumeChange }: Props) {
   const [rec, setRec] = useState(true)
   const [volumeDb, setVolumeDb] = useState(0)
   const [masterVolumeDb, setMasterVolumeDb] = useState(0)
@@ -131,8 +133,8 @@ export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMute
           >
             synth1
           </span>
-          {getAnalyserNode && (
-            <VUMeter getAnalyserNode={getAnalyserNode} muted={isTrackMuted} />
+          {getAnalyserNodeL && getAnalyserNodeR && (
+            <VUMeter getAnalyserNodeL={getAnalyserNodeL} getAnalyserNodeR={getAnalyserNodeR} muted={isTrackMuted} />
           )}
         </div>
         <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
@@ -290,11 +292,8 @@ export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMute
             >
               Master
             </span>
-            {getMasterAnalyserNode && (
-              <div style={{ display: 'flex', gap: 2 }}>
-                <VUMeter getAnalyserNode={getMasterAnalyserNode} />
-                <VUMeter getAnalyserNode={getMasterAnalyserNode} />
-              </div>
+            {getMasterAnalyserNodeL && getMasterAnalyserNodeR && (
+              <VUMeter getAnalyserNodeL={getMasterAnalyserNodeL} getAnalyserNodeR={getMasterAnalyserNodeR} />
             )}
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>

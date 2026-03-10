@@ -9,7 +9,11 @@ export interface PannerGraph {
   getPannerNode: () => StereoPannerNode;
   getGainNode: () => GainNode;
   getAnalyserNode: () => AnalyserNode;
+  getAnalyserNodeL: () => AnalyserNode;
+  getAnalyserNodeR: () => AnalyserNode;
   getMasterAnalyserNode: () => AnalyserNode;
+  getMasterAnalyserNodeL: () => AnalyserNode;
+  getMasterAnalyserNodeR: () => AnalyserNode;
   setMasterVolume: (db: number) => void;
 }
 
@@ -21,8 +25,14 @@ export function createPanner(): PannerGraph {
   const pannerNode = audioContext.createStereoPanner();
   const gainNode = audioContext.createGain(); // track mute
   const analyserNode = audioContext.createAnalyser();
+  const channelSplitter = audioContext.createChannelSplitter(2);
+  const analyserNodeL = audioContext.createAnalyser();
+  const analyserNodeR = audioContext.createAnalyser();
   const masterGainNode = audioContext.createGain(); // master volume
   const masterAnalyserNode = audioContext.createAnalyser();
+  const masterChannelSplitter = audioContext.createChannelSplitter(2);
+  const masterAnalyserNodeL = audioContext.createAnalyser();
+  const masterAnalyserNodeR = audioContext.createAnalyser();
 
   // Default chain (enabled): inputGain -> panner -> gain -> analyser -> masterGain -> masterAnalyser -> destination
   inputGain.connect(pannerNode);
@@ -31,6 +41,15 @@ export function createPanner(): PannerGraph {
   analyserNode.connect(masterGainNode);
   masterGainNode.connect(masterAnalyserNode);
   masterAnalyserNode.connect(audioContext.destination);
+
+  // Stereo per-channel analysis branches (silent — no downstream connection needed)
+  analyserNode.connect(channelSplitter);
+  channelSplitter.connect(analyserNodeL, 0);
+  channelSplitter.connect(analyserNodeR, 1);
+
+  masterAnalyserNode.connect(masterChannelSplitter);
+  masterChannelSplitter.connect(masterAnalyserNodeL, 0);
+  masterChannelSplitter.connect(masterAnalyserNodeR, 1);
 
   let enabled = true;
 
@@ -83,7 +102,11 @@ export function createPanner(): PannerGraph {
     getPannerNode: () => pannerNode,
     getGainNode: () => gainNode,
     getAnalyserNode: () => analyserNode,
+    getAnalyserNodeL: () => analyserNodeL,
+    getAnalyserNodeR: () => analyserNodeR,
     getMasterAnalyserNode: () => masterAnalyserNode,
+    getMasterAnalyserNodeL: () => masterAnalyserNodeL,
+    getMasterAnalyserNodeR: () => masterAnalyserNodeR,
   };
 }
 
@@ -115,7 +138,11 @@ export function usePanner(): PannerHook {
   const getPannerNode = useCallback(() => pannerRef.current!.getPannerNode(), []);
   const getGainNode = useCallback(() => pannerRef.current!.getGainNode(), []);
   const getAnalyserNode = useCallback(() => pannerRef.current!.getAnalyserNode(), []);
+  const getAnalyserNodeL = useCallback(() => pannerRef.current!.getAnalyserNodeL(), []);
+  const getAnalyserNodeR = useCallback(() => pannerRef.current!.getAnalyserNodeR(), []);
   const getMasterAnalyserNode = useCallback(() => pannerRef.current!.getMasterAnalyserNode(), []);
+  const getMasterAnalyserNodeL = useCallback(() => pannerRef.current!.getMasterAnalyserNodeL(), []);
+  const getMasterAnalyserNodeR = useCallback(() => pannerRef.current!.getMasterAnalyserNodeR(), []);
   const setMasterVolume = useCallback((db: number) => pannerRef.current!.setMasterVolume(db), []);
 
   return {
@@ -127,6 +154,10 @@ export function usePanner(): PannerHook {
     getPannerNode,
     getGainNode,
     getAnalyserNode,
+    getAnalyserNodeL,
+    getAnalyserNodeR,
     getMasterAnalyserNode,
+    getMasterAnalyserNodeL,
+    getMasterAnalyserNodeR,
   };
 }
