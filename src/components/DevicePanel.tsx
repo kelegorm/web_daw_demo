@@ -2,6 +2,7 @@ import SynthDevice from './SynthDevice'
 import PannerDevice from './PannerDevice'
 import type { ToneSynthHook } from '../hooks/useToneSynth'
 import type { PannerHook } from '../hooks/usePanner'
+import { useTrackSelectionContext } from '../hooks/useTrackSelection'
 
 interface Props {
   synth: ToneSynthHook
@@ -9,7 +10,8 @@ interface Props {
 }
 
 export default function DevicePanel({ synth, panner }: Props) {
-  const selectedTrackName = 'synth1'
+  const { selectedTrack } = useTrackSelectionContext()
+  const selectedTrackName = selectedTrack === 'master' ? 'Master' : 'synth1'
 
   return (
     <div
@@ -69,6 +71,7 @@ export default function DevicePanel({ synth, panner }: Props) {
         </div>
 
         <div
+          key={selectedTrack}
           className="device-panel-content"
           style={{
             display: 'flex',
@@ -81,10 +84,28 @@ export default function DevicePanel({ synth, panner }: Props) {
             padding: 9,
             boxSizing: 'border-box',
             overflowX: 'auto',
+            animation: 'devicePanelFadeIn 120ms ease',
           }}
         >
-          <SynthDevice synth={synth} />
-          <PannerDevice panner={panner} />
+          {selectedTrack === 'synth1' ? (
+            <>
+              <SynthDevice synth={synth} />
+              <PannerDevice panner={panner} />
+            </>
+          ) : (
+            <div
+              className="device-panel-placeholder"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                color: 'var(--color-text-muted, #888899)',
+                fontSize: 13,
+                fontStyle: 'italic',
+              }}
+            >
+              Limiter — coming soon
+            </div>
+          )}
         </div>
       </div>
     </div>

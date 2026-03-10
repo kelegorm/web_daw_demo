@@ -1,13 +1,16 @@
 import { test, expect } from '@playwright/test'
 
-test('DevicePanel shows Polysynth and Panner labels', async ({ page }) => {
+test('DevicePanel shows Polysynth device when synth1 is selected', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('.device-panel')).toBeVisible()
+
+  // Click synth1 track row to select it
+  const trackRow = page.locator('.track-row')
+  await trackRow.click()
 
   const labels = page.locator('.device-label')
   const texts = await labels.allTextContents()
   expect(texts).toContain('Polysynth')
-  expect(texts).toContain('Panner')
 })
 
 test('click Synth section disable toggle sets aria-pressed to false', async ({ page }) => {
@@ -79,4 +82,40 @@ test('knob labels and values do not overflow device card bounds', async ({ page 
       expect(textBox.y + textBox.height).toBeLessThanOrEqual(deviceBox.y + deviceBox.height + eps)
     }
   }
+})
+
+test('click synth1 row, Polysynth device is visible', async ({ page }) => {
+  await page.goto('/')
+  const trackRow = page.locator('.track-row')
+  await trackRow.click()
+
+  await expect(page.locator('.synth-device')).toBeVisible()
+  const labels = page.locator('.device-label')
+  const texts = await labels.allTextContents()
+  expect(texts).toContain('Polysynth')
+})
+
+test('click Master row, Polysynth not visible and placeholder shown', async ({ page }) => {
+  await page.goto('/')
+  const masterTrack = page.locator('.master-track')
+  await masterTrack.click()
+
+  await expect(page.locator('.synth-device')).not.toBeVisible()
+  await expect(page.locator('.device-panel-placeholder')).toBeVisible()
+  const placeholderText = await page.locator('.device-panel-placeholder').textContent()
+  expect(placeholderText).toContain('Limiter — coming soon')
+})
+
+test('panel label changes from synth1 to Master on track switch', async ({ page }) => {
+  await page.goto('/')
+  const trackName = page.locator('.device-panel-track-name')
+
+  // Default is synth1 (text-transform: uppercase is CSS only; DOM content is lowercase)
+  await expect(trackName).toHaveText('synth1')
+
+  // Click Master track
+  const masterTrack = page.locator('.master-track')
+  await masterTrack.click()
+
+  await expect(trackName).toHaveText('Master')
 })

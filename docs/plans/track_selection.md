@@ -44,16 +44,16 @@ Master limiter device, and track row click selection.
 - [x] Mark completed
 
 ### Task 4: Device panel switches content on track selection
-- [ ] Delete or rewrite existing test in `e2e/devicepanel.spec.ts` that asserts Polysynth and Panner visible simultaneously — this contract no longer holds after track selection
-- [ ] In `DevicePanel.tsx`: read `selectedTrack` from `TrackSelectionContext`
-- [ ] When `selectedTrack === 'synth1'`: show SynthDevice + PannerDevice
-- [ ] When `selectedTrack === 'master'`: show placeholder div with text "Limiter — coming soon"
-- [ ] Panel title/label updates to match selected track: "synth1" or "Master"
-- [ ] Switching between tracks uses a fade transition (opacity 0 → 1, 120ms)
-- [ ] Write Playwright test: click synth1 row, verify "Polysynth" device is visible
-- [ ] Write Playwright test: click Master row, verify "Polysynth" is not visible, placeholder "Limiter — coming soon" is visible
-- [ ] Write Playwright test: verify panel label changes from "synth1" to "Master" on track switch
-- [ ] Mark completed
+- [x] Delete or rewrite existing test in `e2e/devicepanel.spec.ts` that asserts Polysynth and Panner visible simultaneously — this contract no longer holds after track selection
+- [x] In `DevicePanel.tsx`: read `selectedTrack` from `TrackSelectionContext`
+- [x] When `selectedTrack === 'synth1'`: show SynthDevice + PannerDevice
+- [x] When `selectedTrack === 'master'`: show placeholder div with text "Limiter — coming soon"
+- [x] Panel title/label updates to match selected track: "synth1" or "Master"
+- [x] Switching between tracks uses a fade transition (opacity 0 → 1, 120ms)
+- [x] Write Playwright test: click synth1 row, verify "Polysynth" device is visible
+- [x] Write Playwright test: click Master row, verify "Polysynth" is not visible, placeholder "Limiter — coming soon" is visible
+- [x] Write Playwright test: verify panel label changes from "synth1" to "Master" on track switch
+- [x] Mark completed
 
 ### Task 5: Limiter device component
 - [ ] Create `src/components/LimiterDevice.tsx`
