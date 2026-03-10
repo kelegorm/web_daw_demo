@@ -236,7 +236,9 @@ test('Limiter input threshold marker moves when Threshold knob changes', async (
   await page.goto('/')
   await page.locator('.master-track').click()
 
-  const marker = page.locator('.limiter-input-threshold-line')
+  const markers = page.locator('.limiter-input-threshold-line')
+  await expect(markers).toHaveCount(2)
+  const marker = markers.first()
   await expect(marker).toBeVisible()
 
   const readBottomPercent = async () => {

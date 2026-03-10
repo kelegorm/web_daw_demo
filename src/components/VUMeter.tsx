@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { AUDIO_DB_MAX, AUDIO_DB_MIN } from '../audio/parameterDefaults'
 
 declare global {
   interface Window {
@@ -12,8 +13,8 @@ interface Props {
   muted?: boolean
 }
 
-const DB_MIN = -60
-const DB_MAX = 6
+const DB_MIN = AUDIO_DB_MIN
+const DB_MAX = AUDIO_DB_MAX
 const DB_RANGE = DB_MAX - DB_MIN
 
 function dbToNorm(db: number): number {

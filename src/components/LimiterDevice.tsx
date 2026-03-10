@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import Knob from './Knob'
 import VUMeter from './VUMeter'
 import type { LimiterHook } from '../hooks/useLimiter'
-import { LIMITER_THRESHOLD_DEFAULT_DB } from '../audio/parameterDefaults'
+import {
+  AUDIO_DB_MAX,
+  AUDIO_DB_MIN,
+  LIMITER_THRESHOLD_DEFAULT_DB,
+} from '../audio/parameterDefaults'
 import {
   GR_METER_RANGE_DB,
 } from '../audio/gainReductionMath'
@@ -18,9 +22,17 @@ export default function LimiterDevice({ limiter }: Props) {
   const KNOB_COLUMN_HEIGHT_PX = 108
   const GR_METER_GAP_PX = 4
   const GR_LABEL_HEIGHT_PX = 10
-  const INPUT_METER_DB_MIN = -60
-  const INPUT_METER_DB_MAX = 6
-  const INPUT_METER_DB_RANGE = INPUT_METER_DB_MAX - INPUT_METER_DB_MIN
+  const INPUT_METER_TRACK_WIDTH_PX = 16
+  const INPUT_METER_SIDE_PADDING_PX = 7
+  const INPUT_METER_MARKER_SEGMENT_WIDTH_PX = 5
+  const INPUT_METER_MARKER_GAP_PX = 0
+  const INPUT_METER_DB_RANGE = AUDIO_DB_MAX - AUDIO_DB_MIN
+  const inputMeterFrameWidthPx =
+    INPUT_METER_TRACK_WIDTH_PX + INPUT_METER_SIDE_PADDING_PX * 2
+  const inputMeterMarkerInsetPx = Math.max(
+    0,
+    INPUT_METER_SIDE_PADDING_PX - INPUT_METER_MARKER_SEGMENT_WIDTH_PX - INPUT_METER_MARKER_GAP_PX,
+  )
   const grMeterTrackHeightPx =
     KNOB_COLUMN_HEIGHT_PX - GR_METER_GAP_PX - GR_LABEL_HEIGHT_PX
 
@@ -58,7 +70,7 @@ export default function LimiterDevice({ limiter }: Props) {
   const reductionBarColor = reductionNorm > 0.5 ? '#e04444' : '#f5a623'
   const thresholdNorm = Math.max(
     0,
-    Math.min(1, (limiter.threshold - INPUT_METER_DB_MIN) / INPUT_METER_DB_RANGE),
+    Math.min(1, (limiter.threshold - AUDIO_DB_MIN) / INPUT_METER_DB_RANGE),
   )
 
   return (
@@ -165,29 +177,61 @@ export default function LimiterDevice({ limiter }: Props) {
         >
           <div
             style={{
-              width: 16,
+              width: inputMeterFrameWidthPx,
               height: grMeterTrackHeightPx,
               position: 'relative',
             }}
           >
-            <VUMeter
-              getAnalyserNodeL={limiter.getInputAnalyserNodeL}
-              getAnalyserNodeR={limiter.getInputAnalyserNodeR}
-            />
             <div
-              className="limiter-input-threshold-line"
               style={{
                 position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: INPUT_METER_SIDE_PADDING_PX,
+                width: INPUT_METER_TRACK_WIDTH_PX,
+              }}
+            >
+              <VUMeter
+                getAnalyserNodeL={limiter.getInputAnalyserNodeL}
+                getAnalyserNodeR={limiter.getInputAnalyserNodeR}
+              />
+            </div>
+            <div
+              style={{
+                position: 'absolute',
+                top: 1,
+                bottom: 1,
                 left: 0,
                 right: 0,
-                bottom: `calc(${(thresholdNorm * 100).toFixed(2)}% - 1px)`,
-                height: 2,
-                background: 'rgba(245, 166, 35, 0.95)',
-                boxShadow: '0 0 4px rgba(245, 166, 35, 0.45)',
                 pointerEvents: 'none',
                 zIndex: 3,
               }}
-            />
+            >
+              <div
+                className="limiter-input-threshold-line"
+                style={{
+                  position: 'absolute',
+                  left: inputMeterMarkerInsetPx,
+                  width: INPUT_METER_MARKER_SEGMENT_WIDTH_PX,
+                  bottom: `calc(${(thresholdNorm * 100).toFixed(2)}% - 1px)`,
+                  height: 1,
+                  background: 'rgba(245, 166, 35, 0.95)',
+                  boxShadow: '0 0 4px rgba(245, 166, 35, 0.45)',
+                }}
+              />
+              <div
+                className="limiter-input-threshold-line"
+                style={{
+                  position: 'absolute',
+                  right: inputMeterMarkerInsetPx,
+                  width: INPUT_METER_MARKER_SEGMENT_WIDTH_PX,
+                  bottom: `calc(${(thresholdNorm * 100).toFixed(2)}% - 1px)`,
+                  height: 1,
+                  background: 'rgba(245, 166, 35, 0.95)',
+                  boxShadow: '0 0 4px rgba(245, 166, 35, 0.45)',
+                }}
+              />
+            </div>
           </div>
           <span style={{ color: 'var(--color-text-muted, #888899)', fontSize: 9, lineHeight: `${GR_LABEL_HEIGHT_PX}px` }}>
             IN
