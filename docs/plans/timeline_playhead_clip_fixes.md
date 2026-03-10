@@ -42,15 +42,15 @@ they share the same pixels-per-second scale constant.
 - [x] Mark completed
 
 ### Task 3: MIDI clip block width synced to timeline scale
-- [ ] Clip block width calculated as: `clipDurationSeconds(bpm, 8) * getPixelsPerSecond(bpm)`
-- [ ] Both values imported from `timelineScale.ts` — no local calculation
-- [ ] When BPM changes, clip block width updates reactively
-- [ ] Clip block left edge aligns with bar 1 position on the ruler
-- [ ] Mini piano-roll note bars inside clip block scale proportionally with clip width
-- [ ] Write Playwright test: at 120 BPM, measure clip block width in pixels, verify it matches `clipDurationSeconds(120, 8) * pixelsPerSecond`
-- [ ] Write Playwright test: change BPM to 60, verify clip block width has doubled
-- [ ] Write Playwright test: verify clip block left edge aligns with bar 1 marker on ruler (within 2px)
-- [ ] Mark completed
+- [x] Clip block width calculated as: `clipDurationSeconds(bpm, 8) * getPixelsPerSecond(bpm)`
+- [x] Both values imported from `timelineScale.ts` — no local calculation
+- [x] When BPM changes, clip block width updates reactively
+- [x] Clip block left edge aligns with bar 1 position on the ruler
+- [x] Mini piano-roll note bars inside clip block scale proportionally with clip width
+- [x] Write Playwright test: at 120 BPM, measure clip block width in pixels, verify it matches `clipDurationSeconds(120, 8) * pixelsPerSecond`
+- [x] Write Playwright test: change BPM to 60, verify clip block width has doubled
+- [x] Write Playwright test: verify clip block left edge aligns with bar 1 marker on ruler (within 2px)
+- [x] Mark completed
 
 ### Task 4: Playhead synced to Tone.Transport and timeline scale
 - [ ] Remove any manual time tracking or `Date.now()`-based playhead calculation

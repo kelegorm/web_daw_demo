@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test'
+import { clipDurationSeconds, getPixelsPerSecond } from '../src/utils/timelineScale'
 
 async function setSliderValue(page: Page, selector: string, value: number) {
   await page.locator(selector).evaluate((el: HTMLInputElement, val: number) => {
@@ -132,6 +133,72 @@ test('Master track label is visible at bottom of track zone', async ({ page }) =
   const trackZoneBottom = Math.round(trackZoneBox!.y + trackZoneBox!.height)
   const masterTrackBottom = Math.round(masterTrackBox!.y + masterTrackBox!.height)
   expect(masterTrackBottom).toBe(trackZoneBottom)
+})
+
+test('clip block width matches clipDurationSeconds * pixelsPerSecond at 120 BPM', async ({ page }) => {
+  await page.goto('/')
+
+  const clip = page.locator('.midi-clip')
+  await expect(clip).toBeVisible()
+
+  const clipBox = await clip.boundingBox()
+  expect(clipBox).not.toBeNull()
+
+  const expectedWidth = clipDurationSeconds(120, 8) * getPixelsPerSecond(120)
+  expect(clipBox!.width).toBeCloseTo(expectedWidth, 0)
+})
+
+test('clip block width doubles when BPM changes from 120 to 60', async ({ page }) => {
+  await page.goto('/')
+
+  const clip = page.locator('.midi-clip')
+  const bpmInput = page.locator('.toolbar-bpm')
+
+  await expect(clip).toBeVisible()
+  const clipBox120 = await clip.boundingBox()
+
+  await bpmInput.fill('60')
+  await bpmInput.dispatchEvent('change')
+  await page.waitForTimeout(100)
+
+  const clipBox60 = await clip.boundingBox()
+  expect(clipBox60).not.toBeNull()
+  expect(clipBox120).not.toBeNull()
+
+  const expectedWidth60 = clipDurationSeconds(60, 8) * getPixelsPerSecond(60)
+  expect(clipBox60!.width).toBeCloseTo(expectedWidth60, 0)
+  expect(clipBox60!.width).toBeCloseTo(clipBox120!.width * 2, 0)
+})
+
+test('clip block left edge aligns with bar 1 marker on ruler within 2px', async ({ page }) => {
+  await page.goto('/')
+
+  const clip = page.locator('.midi-clip')
+  const rulerArea = page.locator('.timeline-ruler-area')
+  const bar1 = page.locator('.timeline-ruler-bar[data-bar="1"]')
+  const trackTimeline = page.locator('.track-timeline')
+
+  await expect(clip).toBeVisible()
+  await expect(bar1).toBeVisible()
+
+  const clipBox = await clip.boundingBox()
+  const rulerAreaBox = await rulerArea.boundingBox()
+  const bar1Box = await bar1.boundingBox()
+  const trackTimelineBox = await trackTimeline.boundingBox()
+
+  expect(clipBox).not.toBeNull()
+  expect(rulerAreaBox).not.toBeNull()
+  expect(bar1Box).not.toBeNull()
+  expect(trackTimelineBox).not.toBeNull()
+
+  // Bar 1 left edge relative to ruler area (should be ~0)
+  const bar1RelativeLeft = bar1Box!.x - rulerAreaBox!.x
+  // Clip left edge relative to track timeline
+  const clipRelativeLeft = clipBox!.x - trackTimelineBox!.x
+
+  // Both should be at the same horizontal offset from their respective containers
+  // which are aligned after the track header
+  expect(Math.abs(clipRelativeLeft - bar1RelativeLeft)).toBeLessThanOrEqual(2)
 })
 
 test('Master track is always visible regardless of track zone scroll position', async ({ page }) => {

@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import VUMeter from './VUMeter'
 import TimelineRuler from './TimelineRuler'
+import { clipDurationSeconds, getPixelsPerSecond } from '../utils/timelineScale'
 
 const SEQUENCE_NOTES = [60, 62, 64, 65, 67, 69, 71, 72]
 const MIN_PITCH = 60
@@ -52,6 +53,7 @@ export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMute
 
   const stepDuration = (60 / bpm) * 1000
   const totalDuration = stepDuration * SEQUENCE_NOTES.length
+  const clipWidth = clipDurationSeconds(bpm, SEQUENCE_NOTES.length) * getPixelsPerSecond(bpm)
 
   useEffect(() => {
     if (isPlaying) {
@@ -214,8 +216,8 @@ export default function TrackZone({ isPlaying, bpm, isTrackMuted = false, onMute
           style={{
             position: 'absolute',
             top: 8,
-            left: 8,
-            width: 240,
+            left: 0,
+            width: clipWidth,
             bottom: 8,
             background: '#1e3a5f',
             border: '1px solid #3a6090',
