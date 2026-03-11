@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Browser-based synthesizer demo. Stack: React + TypeScript + Vite, Web Audio API, AudioWorklet, WASM DSP (compiled from C++ via Emscripten). No Tone.js — raw Web Audio API throughout.
+Browser-based DAW demo. Active stack: React + TypeScript + Vite + Tone.js + native Web Audio nodes.
+
+Important: AudioWorklet/WASM is not the active runtime path right now. `build:wasm` remains as an experimental legacy script and is not wired into the app runtime.
 
 ## Commands
 
@@ -13,70 +15,62 @@ npm run dev          # Vite dev server
 npm run build        # Production build
 npm run test         # Vitest unit tests
 npm run test:e2e     # Playwright E2E tests
-```
-
-To build the WASM module (requires Emscripten):
-```bash
-emcc src/wasm/synth.cpp -O2 -s WASM=1 -s EXPORTED_FUNCTIONS="['_process','_noteOn','_noteOff','_panic','_setFilterCutoff','_setVoiceSpread','_setReverbMix']" -o public/synth.js
+npm run build:wasm   # Experimental legacy script (not part of active runtime)
 ```
 
 ## Architecture
 
-### Ownership boundary — this is strict:
-- **JS layer**: transport, sequencer timing, MIDI event scheduling, AudioParam management, UI state
-- **WASM layer**: audio rendering only — accepts `noteOn/noteOff/setParam`, produces samples, nothing else
+### Composition root
+- `src/engine/audioEngine.ts` is the graph composition root.
+- `createAudioEngine()` assembles and validates the module graph.
+- Current chain: `synth -> panner -> track-strip -> limiter -> master-strip -> destination`.
+- Engine exposes meter taps for track/master strips and limiter input.
 
-### Data flow
-```
-React Components
-  → useAudioEngine hook (src/hooks/useAudioEngine.ts)
-    → AudioWorklet MessagePort
-      → synth-processor.js (src/worklets/)
-        → WASM module (public/synth.wasm)
-          → Web Audio destination + AnalyserNode → VUMeter
-```
+### Module responsibilities
+- `src/hooks/useToneSynth.ts`
+  - `createToneSynth()` builds the instrument (`Tone.PolySynth` + `Tone.Filter`).
+  - Owns note triggering (`noteOn`, `noteOff`, `panic`) and synth params.
+- `src/hooks/usePanner.ts`
+  - Pan stage only (`StereoPannerNode` + bypass toggle).
+- `src/hooks/useTrackStrip.ts`
+  - Track gain + track mute + stereo analyser taps.
+- `src/hooks/useLimiter.ts`
+  - Limiter stage (`DynamicsCompressorNode`) + gain-reduction meter + input analyser taps.
+- `src/hooks/useMasterStrip.ts`
+  - Master gain + stereo analyser taps.
+
+### Orchestration / UI integration
+- `src/App.tsx`
+  - Creates one engine instance via `useRef` and passes modules into UI hooks.
+- `src/hooks/useTransportController.ts`
+  - Owns playback UI state (`playing/paused/stopped`, bpm, loop, mute, currentStep).
+  - Uses `createTransportCore(...)` and delegates sequencing to `createSequencer(...)`.
+- `src/hooks/useSequencer.ts`
+  - Schedules the 8-note sequence via `Tone.Part` + `Tone.getTransport()`.
+
+### Current refactor debt (intentional target)
+- Engine lifecycle is still render-managed in `App.tsx` (no dedicated `useAudioEngine` + explicit dispose flow).
+- Public UI-facing hooks still expose `AudioNode` / `Tone.*` details.
+- `noteOff` timing in sequencer still uses wall-clock `setTimeout`.
+- `TrackZone` playhead still reads `Tone.getTransport().seconds` directly.
+- `VUMeter` still consumes raw `AnalyserNode` getters.
 
 ### Key files
-- `src/hooks/useAudioEngine.ts` — AudioContext lifecycle, worklet loading, exposes `noteOn(midi)`, `noteOff(midi)`, `panic()`, `setParam(name, value)`, `analyserNode`
-- `src/hooks/useSequencer.ts` — sole owner of transport state; schedules 8-note melody [60,62,64,65,67,69,71,72] using `audioContext.currentTime` lookahead (100ms ahead)
-- `src/worklets/synth-processor.js` — AudioWorklet processor; bridges MessagePort messages to WASM calls each audio block
-- `src/wasm/synth.cpp` — DSP only: sine oscillator at gain 0.3, frequency from last `noteOn`
-
-### WASM API
-```cpp
-void process(float* out, int blockSize);
-void noteOn(int midiNote);
-void noteOff();
-void panic();
-void setFilterCutoff(float hz);   // 20–20000 Hz
-void setVoiceSpread(float v);     // 0–1
-void setReverbMix(float v);       // 0–1
-```
-
-### AudioWorklet receives these MessagePort messages
-```js
-{ type: 'noteOn', note: 60 }
-{ type: 'noteOff' }
-{ type: 'panic' }
-```
-AudioParams (`filterCutoff`, `voiceSpread`, `reverbMix`) are passed to WASM each processing block.
-
-### Components
-- `PianoKeyboard.tsx` — 2 octaves C3–B4; mousedown → `noteOn`, mouseup/leave → `noteOff`
-- `Transport.tsx` — Play/Pause toggle (controls `useSequencer`), Panic button (calls `useAudioEngine.panic()`)
-- `Knob.tsx` — drag up/down to change value; used by `ParameterPanel.tsx`
-- `SequencerDisplay.tsx` — 8 step indicators, highlights current step
-- `VUMeter.tsx` — reads RMS from `AnalyserNode` via `requestAnimationFrame`
-
-### Layout (App.tsx)
-VU meter (top-right) → knob row → sequencer display → transport buttons → piano keyboard (bottom). Dark theme CSS, no UI framework.
+- `src/engine/audioEngine.ts` — graph assembly, validation, module wiring
+- `src/engine/types.ts` — shared engine-level contracts (`AudioModule`)
+- `src/hooks/useTransportController.ts` — transport orchestration policy
+- `src/hooks/useSequencer.ts` — step sequencing and transport scheduling
+- `src/components/TrackZone.tsx` — timeline/playhead + track/master strip UI
+- `src/components/VUMeter.tsx` — stereo meter visualization
 
 ## Testing Strategy
 
-Unit tests (Vitest): mock the AudioWorklet port and verify messages sent by hooks; test WASM loads and `noteOn`/`noteOff` produce non-zero/silent output.
+Unit tests (Vitest): graph assembly/validation, hook behavior, transport/sequencer control transitions.
 
-E2E tests (Playwright): full browser integration — worklet registration, audio output non-silence, UI interactions (key press CSS state, Play/Pause label toggle, knob drag changes value, meter reacts within 200ms of note).
+E2E tests (Playwright): transport flow, track/mixer controls, device panel controls, and meter activity.
 
 ## Implementation Plan
 
-See `docs/plans/initial_demo.md` for the 10-task breakdown with checkbox progress tracking.
+Primary active plan: `docs/plans/audio_graph_refactor.md`.
+
+Completed historical plans are stored in `docs/plans/completed/`.
