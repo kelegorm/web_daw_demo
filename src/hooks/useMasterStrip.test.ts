@@ -55,6 +55,10 @@ vi.mock('tone', () => ({
   })),
 }));
 
+vi.mock('../engine/meterSource', () => ({
+  createMeterSource: vi.fn(() => ({ subscribe: vi.fn(() => vi.fn()) })),
+}));
+
 describe('createMasterStrip', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -76,14 +80,14 @@ describe('createMasterStrip', () => {
     expect(mockMasterGainNode.gain.value).toBeCloseTo(Math.pow(10, -6 / 20), 6);
   });
 
-  it('getOutputNode returns output gain node', () => {
+  it('output property returns output gain node', () => {
     const strip = createMasterStrip();
-    expect(strip.getOutputNode()).toBe(mockOutputGain);
+    expect(strip.output).toBe(mockOutputGain);
   });
 
-  it('exposes stereo analyser taps', () => {
+  it('exposes a meterSource', () => {
     const strip = createMasterStrip();
-    expect(strip.getAnalyserNodeL()).toBe(mockMasterAnalyserL);
-    expect(strip.getAnalyserNodeR()).toBe(mockMasterAnalyserR);
+    expect(strip.meterSource).toBeDefined();
+    expect(typeof strip.meterSource.subscribe).toBe('function');
   });
 });

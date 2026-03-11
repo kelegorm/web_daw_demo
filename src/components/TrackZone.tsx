@@ -10,6 +10,7 @@ import {
   MASTER_VOLUME_DEFAULT_DB,
   TRACK_VOLUME_DEFAULT_DB,
 } from '../audio/parameterDefaults'
+import type { MeterSource } from '../engine/types'
 
 const SEQUENCE_NOTES = [60, 62, 64, 65, 67, 69, 71, 72]
 const MIN_PITCH = 60
@@ -45,12 +46,10 @@ interface Props {
   isTrackRecEnabled?: boolean
   onMuteToggle?: (muted: boolean) => void
   onRecToggle?: (recEnabled: boolean) => void
-  getAnalyserNodeL?: () => AnalyserNode | null
-  getAnalyserNodeR?: () => AnalyserNode | null
+  trackMeterSource?: MeterSource | null
   trackVolumeDb?: number
   onVolumeChange?: (db: number) => void
-  getMasterAnalyserNodeL?: () => AnalyserNode | null
-  getMasterAnalyserNodeR?: () => AnalyserNode | null
+  masterMeterSource?: MeterSource | null
   masterVolumeDb?: number
   onMasterVolumeChange?: (db: number) => void
 }
@@ -63,12 +62,10 @@ export default function TrackZone({
   isTrackRecEnabled = true,
   onMuteToggle,
   onRecToggle,
-  getAnalyserNodeL,
-  getAnalyserNodeR,
+  trackMeterSource,
   trackVolumeDb = 0,
   onVolumeChange,
-  getMasterAnalyserNodeL,
-  getMasterAnalyserNodeR,
+  masterMeterSource,
   masterVolumeDb = 0,
   onMasterVolumeChange,
 }: Props) {
@@ -326,9 +323,9 @@ export default function TrackZone({
             </span>
           </div>
         </div>
-        {getAnalyserNodeL && getAnalyserNodeR && (
+        {trackMeterSource && (
           <div style={{ width: 16, flexShrink: 0, display: 'flex', alignItems: 'stretch' }}>
-            <VUMeter getAnalyserNodeL={getAnalyserNodeL} getAnalyserNodeR={getAnalyserNodeR} />
+            <VUMeter meterSource={trackMeterSource} />
           </div>
         )}
       </div>
@@ -501,9 +498,9 @@ export default function TrackZone({
               </span>
             </div>
           </div>
-          {getMasterAnalyserNodeL && getMasterAnalyserNodeR && (
+          {masterMeterSource && (
             <div style={{ width: 16, flexShrink: 0, display: 'flex', alignItems: 'stretch' }}>
-              <VUMeter getAnalyserNodeL={getMasterAnalyserNodeL} getAnalyserNodeR={getMasterAnalyserNodeR} />
+              <VUMeter meterSource={masterMeterSource} />
             </div>
           )}
         </div>

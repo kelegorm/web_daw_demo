@@ -191,10 +191,7 @@ export default function LimiterDevice({ limiter }: Props) {
                 width: INPUT_METER_TRACK_WIDTH_PX,
               }}
             >
-              <VUMeter
-                getAnalyserNodeL={limiter.getInputAnalyserNodeL}
-                getAnalyserNodeR={limiter.getInputAnalyserNodeR}
-              />
+              <VUMeter meterSource={limiter.meterSource} />
             </div>
             <div
               style={{

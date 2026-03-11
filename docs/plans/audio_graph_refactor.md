@@ -65,15 +65,15 @@ Invariant status is updated in **Task 6** only, when there is linked automated p
 
 ### Task 3: Intent-level contracts (after engine/lifecycle)
 
-- [ ] Adopt the `AudioModule` declared in Task 1 as the only engine-internal module shape across all `create*` modules
-- [ ] Define `MeterFrame` in `src/engine/types.ts`: `{ leftRms: number; rightRms: number; leftPeak: number; rightPeak: number }`
-- [ ] Define `MeterSource` in `src/engine/types.ts`: `{ subscribe(cb: (frame: MeterFrame) => void): () => void }`
-- [ ] Expose meter data from engine modules via `MeterSource` instead of leaking `AnalyserNode`
-- [ ] Hide `get*Node()` / `Tone.*` from public UI contracts (`useToneSynth`, `usePanner`, `useTrackStrip`, `useMasterStrip`, `useLimiter`)
-- [ ] Switch `VUMeter` and `TrackZone` to intent-level meter contracts directly (no temporary adapters)
-- [ ] Add type-level tests (`expectTypeOf`): public UI-hook types must not include `AudioNode` / `Tone.*`
-- [ ] Add Vitest test: `MeterSource` emits valid frames (`0..1` for RMS/Peak)
-- [ ] Mark completed
+- [x] Adopt the `AudioModule` declared in Task 1 as the only engine-internal module shape across all `create*` modules
+- [x] Define `MeterFrame` in `src/engine/types.ts`: `{ leftRms: number; rightRms: number; leftPeak: number; rightPeak: number }`
+- [x] Define `MeterSource` in `src/engine/types.ts`: `{ subscribe(cb: (frame: MeterFrame) => void): () => void }`
+- [x] Expose meter data from engine modules via `MeterSource` instead of leaking `AnalyserNode`
+- [x] Hide `get*Node()` / `Tone.*` from public UI contracts (`useToneSynth`, `usePanner`, `useTrackStrip`, `useMasterStrip`, `useLimiter`)
+- [x] Switch `VUMeter` and `TrackZone` to intent-level meter contracts directly (no temporary adapters)
+- [x] Add type-level tests (`expectTypeOf`): public UI-hook types must not include `AudioNode` / `Tone.*`
+- [x] Add Vitest test: `MeterSource` emits valid frames (`0..1` for RMS/Peak)
+- [x] Mark completed
 
 ### Task 4: Transport service — remove direct Tone calls from UI
 

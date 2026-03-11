@@ -6,14 +6,26 @@ import {
 } from '../audio/parameterDefaults';
 
 export interface PannerGraph {
-  pan: number;
-  setPan: (value: number) => void;
-  setEnabled: (enabled: boolean) => void;
-  isEnabled: boolean;
-  getInputNode: () => GainNode;
-  getOutputNode: () => GainNode;
-  connectSource: (source: AudioNode | Tone.ToneAudioNode) => void;
-  getPannerNode: () => StereoPannerNode;
+  readonly input: GainNode;
+  readonly output: GainNode;
+  readonly pan: number;
+  readonly isEnabled: boolean;
+  setPan(value: number): void;
+  setEnabled(enabled: boolean): void;
+  connectSource(source: AudioNode | Tone.ToneAudioNode): void;
+  dispose(): void;
+}
+
+export interface PannerHook {
+  readonly pan: number;
+  readonly isEnabled: boolean;
+  setPan(value: number): void;
+  setEnabled(enabled: boolean): void;
+}
+
+function safeDisconnect(node: { disconnect?: () => void } | null | undefined): void {
+  if (!node?.disconnect) return;
+  try { node.disconnect(); } catch { /* ignore */ }
 }
 
 export function createPanner(audioContext?: AudioContext): PannerGraph {
@@ -58,60 +70,44 @@ export function createPanner(audioContext?: AudioContext): PannerGraph {
   }
 
   return {
-    get pan() {
-      return pan;
-    },
-    get isEnabled() {
-      return enabled;
-    },
+    get input() { return inputGain; },
+    get output() { return outputGain; },
+    get pan() { return pan; },
+    get isEnabled() { return enabled; },
     setPan,
     setEnabled,
-    getInputNode: () => inputGain,
-    getOutputNode: () => outputGain,
     connectSource,
-    getPannerNode: () => pannerNode,
+    dispose() {
+      safeDisconnect(inputGain);
+      safeDisconnect(pannerNode);
+      safeDisconnect(outputGain);
+    },
   };
 }
 
-export interface PannerHook extends PannerGraph {
-  isEnabled: boolean;
-  pan: number;
-}
-
-export function usePanner(existingPanner: PannerGraph): PannerHook {
-  const pannerRef = useRef<PannerGraph>(existingPanner);
+export function usePanner(existingPanner: PannerHook): PannerHook {
+  const pannerRef = useRef<PannerHook>(existingPanner);
   pannerRef.current = existingPanner;
 
-  const [isEnabled, setIsEnabledState] = useState(() => pannerRef.current!.isEnabled);
-  const [pan, setPanState] = useState(() => pannerRef.current!.pan);
+  const [isEnabled, setIsEnabledState] = useState(() => pannerRef.current.isEnabled);
+  const [pan, setPanState] = useState(() => pannerRef.current.pan);
 
   const setPan = useCallback((value: number) => {
-    const panner = pannerRef.current!;
+    const panner = pannerRef.current;
     panner.setPan(value);
     setPanState(panner.pan);
   }, []);
 
   const setEnabled = useCallback((enabled: boolean) => {
-    const panner = pannerRef.current!;
+    const panner = pannerRef.current;
     panner.setEnabled(enabled);
     setIsEnabledState(panner.isEnabled);
   }, []);
-
-  const getInputNode = useCallback(() => pannerRef.current!.getInputNode(), []);
-  const getOutputNode = useCallback(() => pannerRef.current!.getOutputNode(), []);
-  const connectSource = useCallback((source: AudioNode | Tone.ToneAudioNode) => {
-    pannerRef.current!.connectSource(source);
-  }, []);
-  const getPannerNode = useCallback(() => pannerRef.current!.getPannerNode(), []);
 
   return {
     isEnabled,
     pan,
     setPan,
     setEnabled,
-    getInputNode,
-    getOutputNode,
-    connectSource,
-    getPannerNode,
   };
 }

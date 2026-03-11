@@ -5,21 +5,32 @@ import {
   AUDIO_DB_MIN,
   MASTER_VOLUME_DEFAULT_DB,
 } from '../audio/parameterDefaults';
+import { createMeterSource } from '../engine/meterSource';
+import type { MeterSource } from '../engine/types';
 
 export interface MasterStripGraph {
-  masterVolume: number;
-  setMasterVolume: (db: number) => void;
-  getInputNode: () => GainNode;
-  getOutputNode: () => GainNode;
-  getMasterGainNode: () => GainNode;
-  getAnalyserNode: () => AnalyserNode;
-  getAnalyserNodeL: () => AnalyserNode;
-  getAnalyserNodeR: () => AnalyserNode;
+  readonly input: GainNode;
+  readonly output: GainNode;
+  readonly masterVolume: number;
+  setMasterVolume(db: number): void;
+  readonly meterSource: MeterSource;
+  dispose(): void;
+}
+
+export interface MasterStripHook {
+  readonly masterVolume: number;
+  setMasterVolume(db: number): void;
+  readonly meterSource: MeterSource;
 }
 
 function dbToLinear(db: number): number {
   if (!isFinite(db)) return 0;
   return Math.pow(10, db / 20);
+}
+
+function safeDisconnect(node: { disconnect?: () => void } | null | undefined): void {
+  if (!node?.disconnect) return;
+  try { node.disconnect(); } catch { /* ignore */ }
 }
 
 export function createMasterStrip(audioContext?: AudioContext): MasterStripGraph {
@@ -52,49 +63,41 @@ export function createMasterStrip(audioContext?: AudioContext): MasterStripGraph
 
   setMasterVolume(masterVolume);
 
+  const meterSource = createMeterSource(analyserNodeL, analyserNodeR);
+
   return {
-    get masterVolume() {
-      return masterVolume;
-    },
+    get input() { return inputGain; },
+    get output() { return outputGain; },
+    get masterVolume() { return masterVolume; },
     setMasterVolume,
-    getInputNode: () => inputGain,
-    getOutputNode: () => outputGain,
-    getMasterGainNode: () => masterGainNode,
-    getAnalyserNode: () => analyserNode,
-    getAnalyserNodeL: () => analyserNodeL,
-    getAnalyserNodeR: () => analyserNodeR,
+    meterSource,
+    dispose() {
+      safeDisconnect(inputGain);
+      safeDisconnect(masterGainNode);
+      safeDisconnect(analyserNode);
+      safeDisconnect(channelSplitter);
+      safeDisconnect(analyserNodeL);
+      safeDisconnect(analyserNodeR);
+      safeDisconnect(outputGain);
+    },
   };
 }
 
-export interface MasterStripHook extends MasterStripGraph {}
-
-export function useMasterStrip(existingMasterStrip: MasterStripGraph): MasterStripHook {
-  const masterStripRef = useRef<MasterStripGraph>(existingMasterStrip);
+export function useMasterStrip(existingMasterStrip: MasterStripHook): MasterStripHook {
+  const masterStripRef = useRef<MasterStripHook>(existingMasterStrip);
   masterStripRef.current = existingMasterStrip;
 
-  const [masterVolume, setMasterVolumeState] = useState(() => masterStripRef.current!.masterVolume);
+  const [masterVolume, setMasterVolumeState] = useState(() => masterStripRef.current.masterVolume);
 
   const setMasterVolume = useCallback((db: number) => {
-    const strip = masterStripRef.current!;
+    const strip = masterStripRef.current;
     strip.setMasterVolume(db);
     setMasterVolumeState(strip.masterVolume);
   }, []);
 
-  const getInputNode = useCallback(() => masterStripRef.current!.getInputNode(), []);
-  const getOutputNode = useCallback(() => masterStripRef.current!.getOutputNode(), []);
-  const getMasterGainNode = useCallback(() => masterStripRef.current!.getMasterGainNode(), []);
-  const getAnalyserNode = useCallback(() => masterStripRef.current!.getAnalyserNode(), []);
-  const getAnalyserNodeL = useCallback(() => masterStripRef.current!.getAnalyserNodeL(), []);
-  const getAnalyserNodeR = useCallback(() => masterStripRef.current!.getAnalyserNodeR(), []);
-
   return {
     masterVolume,
     setMasterVolume,
-    getInputNode,
-    getOutputNode,
-    getMasterGainNode,
-    getAnalyserNode,
-    getAnalyserNodeL,
-    getAnalyserNodeR,
+    get meterSource() { return masterStripRef.current.meterSource; },
   };
 }

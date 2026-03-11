@@ -55,6 +55,10 @@ vi.mock('tone', () => ({
   })),
 }));
 
+vi.mock('../engine/meterSource', () => ({
+  createMeterSource: vi.fn(() => ({ subscribe: vi.fn(() => vi.fn()) })),
+}));
+
 describe('createTrackStrip', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -91,14 +95,14 @@ describe('createTrackStrip', () => {
     expect(mockTrackGainNode.gain.value).toBeCloseTo(beforeMute, 6);
   });
 
-  it('getOutputNode returns output gain node', () => {
+  it('output property returns output gain node', () => {
     const strip = createTrackStrip();
-    expect(strip.getOutputNode()).toBe(mockOutputGain);
+    expect(strip.output).toBe(mockOutputGain);
   });
 
-  it('exposes stereo analyser taps', () => {
+  it('exposes a meterSource', () => {
     const strip = createTrackStrip();
-    expect(strip.getAnalyserNodeL()).toBe(mockTrackAnalyserL);
-    expect(strip.getAnalyserNodeR()).toBe(mockTrackAnalyserR);
+    expect(strip.meterSource).toBeDefined();
+    expect(typeof strip.meterSource.subscribe).toBe('function');
   });
 });

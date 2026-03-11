@@ -4,21 +4,33 @@ import {
   LIMITER_ENABLED_DEFAULT,
   LIMITER_THRESHOLD_DEFAULT_DB,
 } from '../audio/parameterDefaults';
+import { createMeterSource } from '../engine/meterSource';
+import type { MeterSource } from '../engine/types';
 
 export interface LimiterGraph {
-  setThreshold: (db: number) => void;
-  setEnabled: (enabled: boolean) => void;
-  isEnabled: boolean;
-  threshold: number;
-  /**
-   * Returns gain reduction in dB (>= 0).
-   */
-  getReductionDb: () => number;
-  getInputAnalyserNodeL: () => AnalyserNode;
-  getInputAnalyserNodeR: () => AnalyserNode;
-  getLimiterNode: () => DynamicsCompressorNode;
-  getInputNode: () => AudioNode;
-  getOutputNode: () => AudioNode;
+  readonly input: AudioNode;
+  readonly output: AudioNode;
+  readonly isEnabled: boolean;
+  readonly threshold: number;
+  setThreshold(db: number): void;
+  setEnabled(enabled: boolean): void;
+  getReductionDb(): number;
+  readonly meterSource: MeterSource;
+  dispose(): void;
+}
+
+export interface LimiterHook {
+  readonly isEnabled: boolean;
+  readonly threshold: number;
+  setThreshold(db: number): void;
+  setEnabled(enabled: boolean): void;
+  getReductionDb(): number;
+  readonly meterSource: MeterSource;
+}
+
+function safeDisconnect(node: { disconnect?: () => void } | null | undefined): void {
+  if (!node?.disconnect) return;
+  try { node.disconnect(); } catch { /* ignore */ }
 }
 
 export function createLimiter(audioContext?: AudioContext): LimiterGraph {
@@ -75,45 +87,46 @@ export function createLimiter(audioContext?: AudioContext): LimiterGraph {
     return reductionDb;
   }
 
+  const meterSource = createMeterSource(inputAnalyserNodeL, inputAnalyserNodeR);
+
   return {
+    get input() { return inputNode; },
+    get output() { return outputNode; },
     get isEnabled() { return enabled; },
     get threshold() { return currentThreshold; },
     setThreshold,
     setEnabled,
     getReductionDb,
-    getInputAnalyserNodeL: () => inputAnalyserNodeL,
-    getInputAnalyserNodeR: () => inputAnalyserNodeR,
-    getLimiterNode: () => compressor,
-    getInputNode: () => inputNode,
-    getOutputNode: () => outputNode,
+    meterSource,
+    dispose() {
+      safeDisconnect(inputNode);
+      safeDisconnect(compressor);
+      safeDisconnect(inputChannelSplitter);
+      safeDisconnect(inputAnalyserNodeL);
+      safeDisconnect(inputAnalyserNodeR);
+      safeDisconnect(outputNode);
+    },
   };
 }
 
-export interface LimiterHook extends LimiterGraph {}
-
-export function useLimiter(existingLimiter: LimiterGraph): LimiterHook {
-  const limiterRef = useRef<LimiterGraph>(existingLimiter);
+export function useLimiter(existingLimiter: LimiterHook): LimiterHook {
+  const limiterRef = useRef<LimiterHook>(existingLimiter);
   limiterRef.current = existingLimiter;
 
-  const [isEnabled, setIsEnabledState] = useState(() => limiterRef.current!.isEnabled);
-  const [threshold, setThresholdState] = useState(() => limiterRef.current!.threshold);
+  const [isEnabled, setIsEnabledState] = useState(() => limiterRef.current.isEnabled);
+  const [threshold, setThresholdState] = useState(() => limiterRef.current.threshold);
 
   const setThreshold = useCallback((db: number) => {
-    limiterRef.current!.setThreshold(db);
-    setThresholdState(limiterRef.current!.threshold);
+    limiterRef.current.setThreshold(db);
+    setThresholdState(limiterRef.current.threshold);
   }, []);
 
   const setEnabled = useCallback((enabled: boolean) => {
-    limiterRef.current!.setEnabled(enabled);
-    setIsEnabledState(limiterRef.current!.isEnabled);
+    limiterRef.current.setEnabled(enabled);
+    setIsEnabledState(limiterRef.current.isEnabled);
   }, []);
 
-  const getReductionDb = useCallback(() => limiterRef.current!.getReductionDb(), []);
-  const getInputAnalyserNodeL = useCallback(() => limiterRef.current!.getInputAnalyserNodeL(), []);
-  const getInputAnalyserNodeR = useCallback(() => limiterRef.current!.getInputAnalyserNodeR(), []);
-  const getLimiterNode = useCallback(() => limiterRef.current!.getLimiterNode(), []);
-  const getInputNode = useCallback(() => limiterRef.current!.getInputNode(), []);
-  const getOutputNode = useCallback(() => limiterRef.current!.getOutputNode(), []);
+  const getReductionDb = useCallback(() => limiterRef.current.getReductionDb(), []);
 
   return {
     isEnabled,
@@ -121,10 +134,6 @@ export function useLimiter(existingLimiter: LimiterGraph): LimiterHook {
     setThreshold,
     setEnabled,
     getReductionDb,
-    getInputAnalyserNodeL,
-    getInputAnalyserNodeR,
-    getLimiterNode,
-    getInputNode,
-    getOutputNode,
+    get meterSource() { return limiterRef.current.meterSource; },
   };
 }

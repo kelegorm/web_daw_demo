@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AUDIO_DB_MAX, AUDIO_DB_MIN } from '../audio/parameterDefaults'
+import type { MeterFrame, MeterSource } from '../engine/types'
 
 declare global {
   interface Window {
@@ -8,8 +9,7 @@ declare global {
 }
 
 interface Props {
-  getAnalyserNodeL: () => AnalyserNode | null
-  getAnalyserNodeR: () => AnalyserNode | null
+  meterSource: MeterSource | null
 }
 
 const DB_MIN = AUDIO_DB_MIN
@@ -68,82 +68,35 @@ interface ChannelState {
   peakDb: number
 }
 
-interface SignalMetrics {
-  rms: number
-  peak: number
-}
-
-function readSignalMetrics(analyser: AnalyserNode, buf: Uint8Array): SignalMetrics {
-  if (buf.length !== analyser.fftSize) return { rms: 0, peak: 0 }
-  analyser.getByteTimeDomainData(buf)
-  let sum = 0
-  let peak = 0
-  for (let i = 0; i < buf.length; i++) {
-    const s = (buf[i] - 128) / 128
-    const abs = Math.abs(s)
-    if (abs > peak) peak = abs
-    sum += s * s
-  }
-  return {
-    rms: Math.sqrt(sum / buf.length),
-    peak,
-  }
-}
-
-export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR }: Props) {
+export default function VUMeter({ meterSource }: Props) {
   const [left, setLeft] = useState<ChannelState>({ level: 0, peakNorm: 0, peakDb: -Infinity })
   const [right, setRight] = useState<ChannelState>({ level: 0, peakNorm: 0, peakDb: -Infinity })
-
-  const rafRef = useRef<number | null>(null)
-  const lastFrameNowRef = useRef<number | null>(null)
-  const bufLRef = useRef<Uint8Array | null>(null)
-  const bufRRef = useRef<Uint8Array | null>(null)
 
   // Peak hold state — stored in refs to avoid triggering re-renders on every frame
   const peakLRef = useRef({ norm: 0, db: -Infinity, heldAt: 0, decaying: false })
   const peakRRef = useRef({ norm: 0, db: -Infinity, heldAt: 0, decaying: false })
   const rmsLRef = useRef({ norm: 0, db: -Infinity, heldAt: 0, decaying: false })
   const rmsRRef = useRef({ norm: 0, db: -Infinity, heldAt: 0, decaying: false })
+  const lastFrameNowRef = useRef<number | null>(null)
 
   useEffect(() => {
-    function tick(now: number) {
+    if (!meterSource) return
+
+    const unsubscribe = meterSource.subscribe((frame: MeterFrame) => {
+      const now = performance.now()
       const lastNow = lastFrameNowRef.current ?? now
       const dtMs = Math.max(0, Math.min(100, now - lastNow))
       lastFrameNowRef.current = now
 
-      const analyserL = getAnalyserNodeL()
-      const analyserR = getAnalyserNodeR()
+      const rmsNormL = frame.leftRms > 1e-6 ? dbToNorm(20 * Math.log10(frame.leftRms)) : 0
+      const rmsDbL = frame.leftRms > 1e-6 ? 20 * Math.log10(frame.leftRms) : -Infinity
+      const peakNormL = frame.leftPeak > 1e-6 ? dbToNorm(20 * Math.log10(frame.leftPeak)) : 0
+      const peakDbL = frame.leftPeak > 1e-6 ? 20 * Math.log10(frame.leftPeak) : -Infinity
 
-      let rmsNormL = 0
-      let rmsDbL = -Infinity
-      let peakNormL = 0
-      let peakDbL = -Infinity
-      let rmsNormR = 0
-      let rmsDbR = -Infinity
-      let peakNormR = 0
-      let peakDbR = -Infinity
-
-      if (analyserL) {
-        if (!bufLRef.current || bufLRef.current.length !== analyserL.fftSize) {
-          bufLRef.current = new Uint8Array(analyserL.fftSize)
-        }
-        const metrics = readSignalMetrics(analyserL, bufLRef.current)
-        rmsDbL = metrics.rms > 1e-6 ? 20 * Math.log10(metrics.rms) : -Infinity
-        rmsNormL = dbToNorm(rmsDbL)
-        peakDbL = metrics.peak > 1e-6 ? 20 * Math.log10(metrics.peak) : -Infinity
-        peakNormL = dbToNorm(peakDbL)
-      }
-
-      if (analyserR) {
-        if (!bufRRef.current || bufRRef.current.length !== analyserR.fftSize) {
-          bufRRef.current = new Uint8Array(analyserR.fftSize)
-        }
-        const metrics = readSignalMetrics(analyserR, bufRRef.current)
-        rmsDbR = metrics.rms > 1e-6 ? 20 * Math.log10(metrics.rms) : -Infinity
-        rmsNormR = dbToNorm(rmsDbR)
-        peakDbR = metrics.peak > 1e-6 ? 20 * Math.log10(metrics.peak) : -Infinity
-        peakNormR = dbToNorm(peakDbR)
-      }
+      const rmsNormR = frame.rightRms > 1e-6 ? dbToNorm(20 * Math.log10(frame.rightRms)) : 0
+      const rmsDbR = frame.rightRms > 1e-6 ? 20 * Math.log10(frame.rightRms) : -Infinity
+      const peakNormR = frame.rightPeak > 1e-6 ? dbToNorm(20 * Math.log10(frame.rightPeak)) : 0
+      const peakDbR = frame.rightPeak > 1e-6 ? 20 * Math.log10(frame.rightPeak) : -Infinity
 
       // RMS bar follows the same attack/hold/release ballistics as peak indicator.
       const rmsL = rmsLRef.current
@@ -235,17 +188,14 @@ export default function VUMeter({ getAnalyserNodeL, getAnalyserNodeR }: Props) {
       setLeft({ level: rmsL.norm, peakNorm: pkL.norm, peakDb: pkL.db })
       setRight({ level: rmsR.norm, peakNorm: pkR.norm, peakDb: pkR.db })
       // Expose raw RMS activity for tests/debugging; visual bars keep ballistic smoothing.
-      window.__vuMeterLevel = Math.max(rmsNormL, rmsNormR)
+      window.__vuMeterLevel = Math.max(frame.leftRms, frame.rightRms)
+    })
 
-      rafRef.current = requestAnimationFrame(tick)
-    }
-
-    rafRef.current = requestAnimationFrame(tick)
     return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+      unsubscribe()
       lastFrameNowRef.current = null
     }
-  }, [getAnalyserNodeL, getAnalyserNodeR])
+  }, [meterSource])
 
   return (
     <div

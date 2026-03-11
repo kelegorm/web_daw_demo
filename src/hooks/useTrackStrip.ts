@@ -5,23 +5,36 @@ import {
   AUDIO_DB_MIN,
   TRACK_VOLUME_DEFAULT_DB,
 } from '../audio/parameterDefaults';
+import { createMeterSource } from '../engine/meterSource';
+import type { MeterSource } from '../engine/types';
 
 export interface TrackStripGraph {
-  trackVolume: number;
-  isTrackMuted: boolean;
-  setTrackVolume: (db: number) => void;
-  setTrackMuted: (muted: boolean) => void;
-  getInputNode: () => GainNode;
-  getOutputNode: () => GainNode;
-  getTrackGainNode: () => GainNode;
-  getAnalyserNode: () => AnalyserNode;
-  getAnalyserNodeL: () => AnalyserNode;
-  getAnalyserNodeR: () => AnalyserNode;
+  readonly input: GainNode;
+  readonly output: GainNode;
+  readonly trackVolume: number;
+  readonly isTrackMuted: boolean;
+  setTrackVolume(db: number): void;
+  setTrackMuted(muted: boolean): void;
+  readonly meterSource: MeterSource;
+  dispose(): void;
+}
+
+export interface TrackStripHook {
+  readonly trackVolume: number;
+  readonly isTrackMuted: boolean;
+  setTrackVolume(db: number): void;
+  setTrackMuted(muted: boolean): void;
+  readonly meterSource: MeterSource;
 }
 
 function dbToLinear(db: number): number {
   if (!isFinite(db)) return 0;
   return Math.pow(10, db / 20);
+}
+
+function safeDisconnect(node: { disconnect?: () => void } | null | undefined): void {
+  if (!node?.disconnect) return;
+  try { node.disconnect(); } catch { /* ignore */ }
 }
 
 export function createTrackStrip(audioContext?: AudioContext): TrackStripGraph {
@@ -65,62 +78,52 @@ export function createTrackStrip(audioContext?: AudioContext): TrackStripGraph {
 
   setTrackVolume(trackVolume);
 
+  const meterSource = createMeterSource(analyserNodeL, analyserNodeR);
+
   return {
-    get trackVolume() {
-      return trackVolume;
-    },
-    get isTrackMuted() {
-      return trackMuted;
-    },
+    get input() { return inputGain; },
+    get output() { return outputGain; },
+    get trackVolume() { return trackVolume; },
+    get isTrackMuted() { return trackMuted; },
     setTrackVolume,
     setTrackMuted,
-    getInputNode: () => inputGain,
-    getOutputNode: () => outputGain,
-    getTrackGainNode: () => trackGainNode,
-    getAnalyserNode: () => analyserNode,
-    getAnalyserNodeL: () => analyserNodeL,
-    getAnalyserNodeR: () => analyserNodeR,
+    meterSource,
+    dispose() {
+      safeDisconnect(inputGain);
+      safeDisconnect(trackGainNode);
+      safeDisconnect(analyserNode);
+      safeDisconnect(channelSplitter);
+      safeDisconnect(analyserNodeL);
+      safeDisconnect(analyserNodeR);
+      safeDisconnect(outputGain);
+    },
   };
 }
 
-export interface TrackStripHook extends TrackStripGraph {}
-
-export function useTrackStrip(existingTrackStrip: TrackStripGraph): TrackStripHook {
-  const trackStripRef = useRef<TrackStripGraph>(existingTrackStrip);
+export function useTrackStrip(existingTrackStrip: TrackStripHook): TrackStripHook {
+  const trackStripRef = useRef<TrackStripHook>(existingTrackStrip);
   trackStripRef.current = existingTrackStrip;
 
-  const [trackVolume, setTrackVolumeState] = useState(() => trackStripRef.current!.trackVolume);
-  const [isTrackMuted, setIsTrackMutedState] = useState(() => trackStripRef.current!.isTrackMuted);
+  const [trackVolume, setTrackVolumeState] = useState(() => trackStripRef.current.trackVolume);
+  const [isTrackMuted, setIsTrackMutedState] = useState(() => trackStripRef.current.isTrackMuted);
 
   const setTrackVolume = useCallback((db: number) => {
-    const strip = trackStripRef.current!;
+    const strip = trackStripRef.current;
     strip.setTrackVolume(db);
     setTrackVolumeState(strip.trackVolume);
   }, []);
 
   const setTrackMuted = useCallback((muted: boolean) => {
-    const strip = trackStripRef.current!;
+    const strip = trackStripRef.current;
     strip.setTrackMuted(muted);
     setIsTrackMutedState(strip.isTrackMuted);
   }, []);
-
-  const getInputNode = useCallback(() => trackStripRef.current!.getInputNode(), []);
-  const getOutputNode = useCallback(() => trackStripRef.current!.getOutputNode(), []);
-  const getTrackGainNode = useCallback(() => trackStripRef.current!.getTrackGainNode(), []);
-  const getAnalyserNode = useCallback(() => trackStripRef.current!.getAnalyserNode(), []);
-  const getAnalyserNodeL = useCallback(() => trackStripRef.current!.getAnalyserNodeL(), []);
-  const getAnalyserNodeR = useCallback(() => trackStripRef.current!.getAnalyserNodeR(), []);
 
   return {
     trackVolume,
     isTrackMuted,
     setTrackVolume,
     setTrackMuted,
-    getInputNode,
-    getOutputNode,
-    getTrackGainNode,
-    getAnalyserNode,
-    getAnalyserNodeL,
-    getAnalyserNodeR,
+    get meterSource() { return trackStripRef.current.meterSource; },
   };
 }

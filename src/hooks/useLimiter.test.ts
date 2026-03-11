@@ -5,6 +5,10 @@ vi.mock('tone', () => ({
   getContext: vi.fn(),
 }));
 
+vi.mock('../engine/meterSource', () => ({
+  createMeterSource: vi.fn(() => ({ subscribe: vi.fn(() => vi.fn()) })),
+}));
+
 const mockCompressor = {
   threshold: { value: -3 },
   knee: { value: 0 },
@@ -112,22 +116,16 @@ describe('createLimiter', () => {
     expect(mockCompressor.connect).toHaveBeenCalledWith(mockOutputNode);
   });
 
-  it('getLimiterNode returns the compressor node', () => {
+  it('input/output properties return module ports', () => {
     const limiter = createLimiter(mockAudioContext as unknown as AudioContext);
-    expect(limiter.getLimiterNode()).toBe(mockCompressor);
+    expect(limiter.input).toBe(mockInputNode);
+    expect(limiter.output).toBe(mockOutputNode);
   });
 
-  it('getInputNode/getOutputNode return limiter module ports', () => {
+  it('exposes a meterSource for input signal metering', () => {
     const limiter = createLimiter(mockAudioContext as unknown as AudioContext);
-    expect(limiter.getInputNode()).toBe(mockInputNode);
-    expect(limiter.getOutputNode()).toBe(mockOutputNode);
-  });
-
-  it('exposes input analyser nodes for stereo input metering', () => {
-    const limiter = createLimiter(mockAudioContext as unknown as AudioContext);
-
-    expect(limiter.getInputAnalyserNodeL()).toBe(mockInputAnalyserL);
-    expect(limiter.getInputAnalyserNodeR()).toBe(mockInputAnalyserR);
+    expect(limiter.meterSource).toBeDefined();
+    expect(typeof limiter.meterSource.subscribe).toBe('function');
   });
 
   it('getReductionDb returns positive dB from compressor.reduction', () => {

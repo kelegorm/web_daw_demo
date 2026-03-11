@@ -8,8 +8,9 @@ import {
 import type { LimiterGraph } from '../hooks/useLimiter';
 import type { MasterStripGraph } from '../hooks/useMasterStrip';
 import type { PannerGraph } from '../hooks/usePanner';
-import type { ToneSynthHook } from '../hooks/useToneSynth';
+import type { ToneSynthGraph } from '../hooks/useToneSynth';
 import type { TrackStripGraph } from '../hooks/useTrackStrip';
+import type { MeterSource } from './types';
 
 type MockPort = {
   id: string;
@@ -30,13 +31,7 @@ type MockBuild = {
   masterStripInput: MockPort;
   masterStripOutput: MockPort;
   destinationInput: MockPort;
-  trackLeft: AnalyserNode;
-  trackRight: AnalyserNode;
-  masterLeft: AnalyserNode;
-  masterRight: AnalyserNode;
-  limiterLeft: AnalyserNode;
-  limiterRight: AnalyserNode;
-  synth: ToneSynthHook;
+  synth: ToneSynthGraph;
   panner: PannerGraph;
   trackStrip: TrackStripGraph;
   limiter: LimiterGraph;
@@ -50,6 +45,10 @@ function createPort(id: string, context?: AudioContext): MockPort {
     connect: vi.fn(),
     disconnect: vi.fn(),
   };
+}
+
+function createMockMeterSource(): MeterSource {
+  return { subscribe: vi.fn(() => vi.fn()) };
 }
 
 function createBuild(index: number): MockBuild {
@@ -67,14 +66,8 @@ function createBuild(index: number): MockBuild {
   const masterStripInput = createPort(`master-strip-input-${index}`, context);
   const masterStripOutput = createPort(`master-strip-output-${index}`, context);
   const destinationInput = context.destination as unknown as MockPort;
-  const trackLeft = createPort(`track-left-${index}`) as unknown as AnalyserNode;
-  const trackRight = createPort(`track-right-${index}`) as unknown as AnalyserNode;
-  const masterLeft = createPort(`master-left-${index}`) as unknown as AnalyserNode;
-  const masterRight = createPort(`master-right-${index}`) as unknown as AnalyserNode;
-  const limiterLeft = createPort(`limiter-left-${index}`) as unknown as AnalyserNode;
-  const limiterRight = createPort(`limiter-right-${index}`) as unknown as AnalyserNode;
 
-  const synth: ToneSynthHook = {
+  const synth: ToneSynthGraph = {
     isEnabled: true,
     filterCutoff: 2000,
     voiceSpread: 0,
@@ -87,7 +80,7 @@ function createBuild(index: number): MockBuild {
     setVolume: vi.fn(),
     setEnabled: vi.fn(),
     getSynth: vi.fn(() => null),
-    getOutput: vi.fn(() => synthOutput),
+    getOutput: vi.fn(() => synthOutput as unknown as import('tone').ToneAudioNode),
   };
 
   const panner: PannerGraph = {
@@ -95,10 +88,10 @@ function createBuild(index: number): MockBuild {
     isEnabled: true,
     setPan: vi.fn(),
     setEnabled: vi.fn(),
-    getInputNode: vi.fn(() => pannerInput),
-    getOutputNode: vi.fn(() => pannerOutput),
+    get input() { return pannerInput as unknown as GainNode; },
+    get output() { return pannerOutput as unknown as GainNode; },
     connectSource: vi.fn(),
-    getPannerNode: vi.fn(),
+    dispose: vi.fn(),
   };
 
   const trackStrip: TrackStripGraph = {
@@ -106,12 +99,10 @@ function createBuild(index: number): MockBuild {
     isTrackMuted: false,
     setTrackVolume: vi.fn(),
     setTrackMuted: vi.fn(),
-    getInputNode: vi.fn(() => trackStripInput),
-    getOutputNode: vi.fn(() => trackStripOutput),
-    getTrackGainNode: vi.fn(),
-    getAnalyserNode: vi.fn(),
-    getAnalyserNodeL: vi.fn(() => trackLeft),
-    getAnalyserNodeR: vi.fn(() => trackRight),
+    get input() { return trackStripInput as unknown as GainNode; },
+    get output() { return trackStripOutput as unknown as GainNode; },
+    meterSource: createMockMeterSource(),
+    dispose: vi.fn(),
   };
 
   const limiter: LimiterGraph = {
@@ -120,22 +111,19 @@ function createBuild(index: number): MockBuild {
     setThreshold: vi.fn(),
     setEnabled: vi.fn(),
     getReductionDb: vi.fn(() => 0),
-    getInputAnalyserNodeL: vi.fn(() => limiterLeft),
-    getInputAnalyserNodeR: vi.fn(() => limiterRight),
-    getLimiterNode: vi.fn(),
-    getInputNode: vi.fn(() => limiterInput),
-    getOutputNode: vi.fn(() => limiterOutput),
+    get input() { return limiterInput as unknown as AudioNode; },
+    get output() { return limiterOutput as unknown as AudioNode; },
+    meterSource: createMockMeterSource(),
+    dispose: vi.fn(),
   };
 
   const masterStrip: MasterStripGraph = {
     masterVolume: 0,
     setMasterVolume: vi.fn(),
-    getInputNode: vi.fn(() => masterStripInput),
-    getOutputNode: vi.fn(() => masterStripOutput),
-    getMasterGainNode: vi.fn(),
-    getAnalyserNode: vi.fn(),
-    getAnalyserNodeL: vi.fn(() => masterLeft),
-    getAnalyserNodeR: vi.fn(() => masterRight),
+    get input() { return masterStripInput as unknown as GainNode; },
+    get output() { return masterStripOutput as unknown as GainNode; },
+    meterSource: createMockMeterSource(),
+    dispose: vi.fn(),
   };
 
   return {
@@ -150,12 +138,6 @@ function createBuild(index: number): MockBuild {
     masterStripInput,
     masterStripOutput,
     destinationInput,
-    trackLeft,
-    trackRight,
-    masterLeft,
-    masterRight,
-    limiterLeft,
-    limiterRight,
     synth,
     panner,
     trackStrip,
@@ -196,18 +178,15 @@ describe('createAudioEngineWithFactories', () => {
     expect(build.limiterOutput.connect).toHaveBeenCalledWith(build.masterStripInput);
     expect(build.masterStripOutput.connect).toHaveBeenCalledWith(build.destinationInput);
 
-    expect(engine.synth.getOutput()).toBe(build.synthOutput);
-    expect(engine.panner.getInputNode()).toBe(build.pannerInput);
-    expect(engine.trackStrip.getInputNode()).toBe(build.trackStripInput);
-    expect(engine.limiter.getInputNode()).toBe(build.limiterInput);
-    expect(engine.masterStrip.getInputNode()).toBe(build.masterStripInput);
     expect(engine.destination).toBe(build.destinationInput);
-    expect(engine.meterTaps.trackLeft).toBe(build.trackLeft);
-    expect(engine.meterTaps.trackRight).toBe(build.trackRight);
-    expect(engine.meterTaps.masterLeft).toBe(build.masterLeft);
-    expect(engine.meterTaps.masterRight).toBe(build.masterRight);
-    expect(engine.meterTaps.limiterInputLeft).toBe(build.limiterLeft);
-    expect(engine.meterTaps.limiterInputRight).toBe(build.limiterRight);
+    // Verify public interface has no AudioNode / Tone.* exposure
+    expect('getSynth' in engine.synth).toBe(false);
+    expect('getOutput' in engine.synth).toBe(false);
+    expect('connectSource' in engine.panner).toBe(false);
+    expect('input' in engine.trackStrip).toBe(false);
+    expect('output' in engine.trackStrip).toBe(false);
+    expect('input' in engine.limiter).toBe(false);
+    expect('output' in engine.limiter).toBe(false);
   });
 
   it('is deterministic across repeated createAudioEngine calls', () => {

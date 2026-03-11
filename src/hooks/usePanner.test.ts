@@ -85,13 +85,13 @@ describe('createPanner (pan-only)', () => {
     expect(mockInputGain.connect).toHaveBeenCalledWith(mockPannerNode);
   });
 
-  it('getPannerNode returns the StereoPannerNode', () => {
+  it('output property returns output gain node', () => {
     const panner = createPanner();
-    expect(panner.getPannerNode()).toBe(mockPannerNode);
+    expect(panner.output).toBe(mockOutputGain);
   });
 
-  it('getOutputNode returns output gain node', () => {
+  it('input property returns input gain node', () => {
     const panner = createPanner();
-    expect(panner.getOutputNode()).toBe(mockOutputGain);
+    expect(panner.input).toBe(mockInputGain);
   });
 });

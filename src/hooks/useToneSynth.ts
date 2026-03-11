@@ -9,27 +9,43 @@ import {
   SYNTH_VOLUME_DEFAULT_DB,
 } from '../audio/parameterDefaults';
 
+// Engine-internal type: has Tone.* for graph assembly use.
+export interface ToneSynthGraph {
+  readonly isEnabled: boolean;
+  readonly filterCutoff: number;
+  readonly voiceSpread: number;
+  readonly volume: number;
+  noteOn(midi: number, velocity?: number): void;
+  noteOff(midi: number): void;
+  panic(): void;
+  setFilterCutoff(hz: number): void;
+  setVoiceSpread(value: number): void;
+  setVolume(db: number): void;
+  setEnabled(enabled: boolean): void;
+  getSynth(): Tone.PolySynth | null;
+  getOutput(): Tone.ToneAudioNode;
+}
+
+// Public UI contract: no AudioNode / Tone.* exposure.
 export interface ToneSynthHook {
-  isEnabled: boolean;
-  filterCutoff: number;
-  voiceSpread: number;
-  volume: number;
-  noteOn: (midi: number, velocity?: number) => void;
-  noteOff: (midi: number) => void;
-  panic: () => void;
-  setFilterCutoff: (hz: number) => void;
-  setVoiceSpread: (value: number) => void;
-  setVolume: (db: number) => void;
-  setEnabled: (enabled: boolean) => void;
-  getSynth: () => Tone.PolySynth | null;
-  getOutput: () => Tone.ToneAudioNode;
+  readonly isEnabled: boolean;
+  readonly filterCutoff: number;
+  readonly voiceSpread: number;
+  readonly volume: number;
+  noteOn(midi: number, velocity?: number): void;
+  noteOff(midi: number): void;
+  panic(): void;
+  setFilterCutoff(hz: number): void;
+  setVoiceSpread(value: number): void;
+  setVolume(db: number): void;
+  setEnabled(enabled: boolean): void;
 }
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-export function createToneSynth(): ToneSynthHook {
+export function createToneSynth(): ToneSynthGraph {
   const synth = new Tone.PolySynth(Tone.Synth, {
     oscillator: { type: 'sawtooth' },
     envelope: { attack: 0.02, decay: 0.1, sustain: 0.5, release: 0.3 },
@@ -95,18 +111,10 @@ export function createToneSynth(): ToneSynthHook {
   }
 
   return {
-    get isEnabled() {
-      return enabled;
-    },
-    get filterCutoff() {
-      return filterCutoff;
-    },
-    get voiceSpread() {
-      return voiceSpread;
-    },
-    get volume() {
-      return volume;
-    },
+    get isEnabled() { return enabled; },
+    get filterCutoff() { return filterCutoff; },
+    get voiceSpread() { return voiceSpread; },
+    get volume() { return volume; },
     noteOn,
     noteOff,
     panic,
@@ -129,47 +137,39 @@ export function useToneSynth(existingSynth: ToneSynthHook): ToneSynthHook {
   const [volume, setVolumeState] = useState(synthRef.current.volume);
 
   const noteOn = useCallback((midi: number, velocity = 100) => {
-    synthRef.current!.noteOn(midi, velocity);
+    synthRef.current.noteOn(midi, velocity);
   }, []);
 
   const noteOff = useCallback((midi: number) => {
-    synthRef.current!.noteOff(midi);
+    synthRef.current.noteOff(midi);
   }, []);
 
   const panic = useCallback(() => {
-    synthRef.current!.panic();
+    synthRef.current.panic();
   }, []);
 
   const setFilterCutoff = useCallback((hz: number) => {
-    const synth = synthRef.current!;
+    const synth = synthRef.current;
     synth.setFilterCutoff(hz);
     setFilterCutoffState(synth.filterCutoff);
   }, []);
 
   const setVoiceSpread = useCallback((value: number) => {
-    const synth = synthRef.current!;
+    const synth = synthRef.current;
     synth.setVoiceSpread(value);
     setVoiceSpreadState(synth.voiceSpread);
   }, []);
 
   const setVolume = useCallback((db: number) => {
-    const synth = synthRef.current!;
+    const synth = synthRef.current;
     synth.setVolume(db);
     setVolumeState(synth.volume);
   }, []);
 
   const setEnabled = useCallback((enabled: boolean) => {
-    const synth = synthRef.current!;
+    const synth = synthRef.current;
     synth.setEnabled(enabled);
     setIsEnabledState(synth.isEnabled);
-  }, []);
-
-  const getSynth = useCallback(() => {
-    return synthRef.current!.getSynth();
-  }, []);
-
-  const getOutput = useCallback(() => {
-    return synthRef.current!.getOutput();
   }, []);
 
   return {
@@ -184,7 +184,5 @@ export function useToneSynth(existingSynth: ToneSynthHook): ToneSynthHook {
     setVoiceSpread,
     setVolume,
     setEnabled,
-    getSynth,
-    getOutput,
   };
 }

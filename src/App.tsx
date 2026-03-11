@@ -79,12 +79,10 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
           isTrackRecEnabled={isTrackRecEnabled}
           onMuteToggle={transport.setTrackMute}
           onRecToggle={setIsTrackRecEnabled}
-          getAnalyserNodeL={trackStrip.getAnalyserNodeL}
-          getAnalyserNodeR={trackStrip.getAnalyserNodeR}
+          trackMeterSource={trackStrip.meterSource}
           trackVolumeDb={trackStrip.trackVolume}
           onVolumeChange={trackStrip.setTrackVolume}
-          getMasterAnalyserNodeL={masterStrip.getAnalyserNodeL}
-          getMasterAnalyserNodeR={masterStrip.getAnalyserNodeR}
+          masterMeterSource={masterStrip.meterSource}
           masterVolumeDb={masterStrip.masterVolume}
           onMasterVolumeChange={masterStrip.setMasterVolume}
         />
