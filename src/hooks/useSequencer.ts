@@ -1,7 +1,11 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import * as Tone from 'tone';
 import { getE2EHooks } from '../testing/e2eHooks';
-import type { SequencerTransport } from '../engine/transportService';
+import {
+  createTransportService,
+  type SequencerTransport,
+  type TransportService,
+} from '../engine/transportService';
 
 export const SEQUENCER_NOTES = [60, 62, 64, 65, 67, 69, 71, 72];
 
@@ -24,7 +28,7 @@ export function createSequencer(
   noteOff: (midi: number, time?: number) => void,
   panic: () => void,
   onStepChange?: (step: number) => void,
-  transport?: SequencerTransport,
+  transport: SequencerTransport,
 ): Sequencer {
   let _currentStep = -1;
   let _isPlaying = false;
@@ -55,15 +59,7 @@ export function createSequencer(
   function setLoop(loop: boolean) {
     part.loop = loop;
     part.loopEnd = loopEnd;
-
-    if (transport) {
-      transport.setLoopConfig(loop, loopEnd);
-    } else {
-      const t = Tone.getTransport();
-      t.loop = loop;
-      t.loopStart = 0;
-      t.loopEnd = loopEnd;
-    }
+    transport.setLoopConfig(loop, loopEnd);
   }
 
   setLoop(true);
@@ -75,20 +71,12 @@ export function createSequencer(
       part.start(0);
       _partStarted = true;
     }
-    if (transport) {
-      transport.start();
-    } else {
-      Tone.getTransport().start();
-    }
+    transport.start();
   }
 
   function pause() {
     _isPlaying = false;
-    if (transport) {
-      transport.pause();
-    } else {
-      Tone.getTransport().pause();
-    }
+    transport.pause();
   }
 
   function stop() {
@@ -99,11 +87,7 @@ export function createSequencer(
     // Clear scheduled start/stop state so the next play starts cleanly.
     part.stop(0);
     part.cancel(0);
-    if (transport) {
-      transport.stop();
-    } else {
-      Tone.getTransport().stop();
-    }
+    transport.stop();
     panic();
     onStepChange?.(-1);
   }
@@ -142,6 +126,11 @@ export function useSequencer(
   noteOnRef.current = noteOn;
   noteOffRef.current = noteOff;
   panicRef.current = panic;
+  const serviceRef = useRef<TransportService | null>(null);
+
+  if (!serviceRef.current) {
+    serviceRef.current = createTransportService(120);
+  }
 
   const sequencerRef = useRef<Sequencer | null>(null);
 
@@ -151,6 +140,7 @@ export function useSequencer(
       (midi, time) => noteOffRef.current(midi, time),
       () => panicRef.current(),
       (step) => setCurrentStep(step),
+      serviceRef.current,
     );
   }
 
@@ -186,6 +176,7 @@ export function useSequencer(
   useEffect(() => {
     return () => {
       sequencerRef.current?.stop();
+      serviceRef.current?.dispose();
     };
   }, []);
 

@@ -60,7 +60,7 @@ export interface TransportCoreDeps {
  */
 export function createTransportCore(
   deps: TransportCoreDeps,
-  transportService?: TransportService,
+  transportService: TransportService,
 ): TransportCore {
   let _trackMuted = false;
 
@@ -69,7 +69,7 @@ export function createTransportCore(
     deps.noteOff,
     deps.synthPanic,
     (step) => {
-      transportService?.updateCurrentStep(step);
+      transportService.updateCurrentStep(step);
       deps.onStepChange?.(step);
     },
     transportService,
@@ -90,15 +90,7 @@ export function createTransportCore(
   }
 
   function setBpm(bpm: number) {
-    if (transportService) {
-      transportService.setBpm(bpm);
-      return;
-    }
-    try {
-      Tone.getTransport().bpm.value = bpm;
-    } catch {
-      /* transport not yet ready */
-    }
+    transportService.setBpm(bpm);
   }
 
   function setLoop(loop: boolean) {

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createTransportCore } from './useTransportController';
+import type { TransportService } from '../engine/transportService';
 
 // ── Tone.js mock ──────────────────────────────────────────────────────────────
 const { mockState } = vi.hoisted(() => ({
@@ -54,6 +55,38 @@ function makeDeps(overrides: Partial<Parameters<typeof createTransportCore>[0]> 
   };
 }
 
+function makeTransportService(): TransportService {
+  return {
+    getSnapshot: vi.fn(() => ({
+      isPlaying: false,
+      positionSeconds: 0,
+      currentStep: -1,
+      bpm: mockState.transport.bpm.value,
+    })),
+    subscribe: vi.fn(() => vi.fn()),
+    play: vi.fn(),
+    start: vi.fn(() => {
+      mockState.transport.start();
+    }),
+    pause: vi.fn(() => {
+      mockState.transport.pause();
+    }),
+    stop: vi.fn(() => {
+      mockState.transport.stop();
+    }),
+    setBpm: vi.fn((bpm: number) => {
+      mockState.transport.bpm.value = bpm;
+    }),
+    setLoopConfig: vi.fn((loop: boolean, loopEnd: string) => {
+      mockState.transport.loop = loop;
+      mockState.transport.loopStart = 0;
+      mockState.transport.loopEnd = loopEnd;
+    }),
+    updateCurrentStep: vi.fn(),
+    dispose: vi.fn(),
+  };
+}
+
 /** Fire events[i] through the Part callback (simulates Tone scheduling). */
 function fireStep(i: number) {
   mockState.callback!(0, mockState.events[i][1]);
@@ -78,7 +111,8 @@ describe('createTransportCore', () => {
   // 1. play → pause → play resumes from paused step
   it('pause preserves current step and does not call panic', () => {
     const deps = makeDeps();
-    const core = createTransportCore(deps);
+    const transportService = makeTransportService();
+    const core = createTransportCore(deps, transportService);
 
     core.play();
     fireStep(2); // advance to step 2
@@ -97,7 +131,8 @@ describe('createTransportCore', () => {
 
   it('play → pause → play: step is preserved across pause', () => {
     const deps = makeDeps();
-    const core = createTransportCore(deps);
+    const transportService = makeTransportService();
+    const core = createTransportCore(deps, transportService);
 
     core.play();
     fireStep(3);
@@ -115,7 +150,8 @@ describe('createTransportCore', () => {
   // 2. stop triggers panic once and resets step
   it('stop resets step to -1 and calls panic exactly once', () => {
     const deps = makeDeps();
-    const core = createTransportCore(deps);
+    const transportService = makeTransportService();
+    const core = createTransportCore(deps, transportService);
 
     core.play();
     fireStep(4);
@@ -131,7 +167,8 @@ describe('createTransportCore', () => {
   // 3. mute delegates to channel strip mute, unmute restores it
   it('setTrackMute(true) mutes channel strip, setTrackMute(false) unmutes it', () => {
     const deps = makeDeps();
-    const core = createTransportCore(deps);
+    const transportService = makeTransportService();
+    const core = createTransportCore(deps, transportService);
 
     core.setTrackMute(true);
     expect(deps.setTrackMuted).toHaveBeenCalledWith(true);
@@ -145,7 +182,8 @@ describe('createTransportCore', () => {
   // 4. while muted, sequencer current step still advances
   it('while muted, sequencer step continues to advance', () => {
     const deps = makeDeps();
-    const core = createTransportCore(deps);
+    const transportService = makeTransportService();
+    const core = createTransportCore(deps, transportService);
 
     core.play();
     core.setTrackMute(true);
@@ -164,7 +202,8 @@ describe('createTransportCore', () => {
   // 5. track mute ON keeps channel strip muted regardless of synth/panner state
   it('track mute state is preserved independently from synth/panner enable state', () => {
     const deps = makeDeps();
-    const core = createTransportCore(deps);
+    const transportService = makeTransportService();
+    const core = createTransportCore(deps, transportService);
 
     // Simulate synth+panner both "enabled" (irrelevant to mute gate).
     core.setTrackMute(true);
@@ -180,16 +219,19 @@ describe('createTransportCore', () => {
   // Additional: setBpm updates transport
   it('setBpm updates Tone.getTransport().bpm.value', () => {
     const deps = makeDeps();
-    const core = createTransportCore(deps);
+    const transportService = makeTransportService();
+    const core = createTransportCore(deps, transportService);
 
     core.setBpm(140);
     expect(mockState.transport.bpm.value).toBe(140);
+    expect(transportService.setBpm).toHaveBeenCalledWith(140);
   });
 
   // Additional: setLoop toggles transport loop
   it('setLoop sets transport loop flag', () => {
     const deps = makeDeps();
-    const core = createTransportCore(deps);
+    const transportService = makeTransportService();
+    const core = createTransportCore(deps, transportService);
 
     core.setLoop(true);
     expect(mockState.part.loop).toBe(true);
@@ -203,7 +245,8 @@ describe('createTransportCore', () => {
   // Additional: panic calls synthPanic
   it('panic() calls synthPanic', () => {
     const deps = makeDeps();
-    const core = createTransportCore(deps);
+    const transportService = makeTransportService();
+    const core = createTransportCore(deps, transportService);
 
     core.panic();
     expect(deps.synthPanic).toHaveBeenCalledOnce();
