@@ -28,13 +28,13 @@ Scope constraints:
 ---
 
 ### Task 1: Introduce `AudioGraphPlan` model + default plan
-- [ ] Create `src/engine/audioGraphPlan.ts` with plan-level types (module nodes, edges, sink role)
-- [ ] Introduce `AudioModuleKind` enum for plan nodes (`SYNTH`, `PANNER`, `TRACK_STRIP`, `LIMITER`, `MASTER_STRIP`, `DESTINATION`)
-- [ ] Keep plan module kinds at engine-domain level, not `AudioNode`-level
-- [ ] Export `DEFAULT_AUDIO_GRAPH_PLAN` that exactly matches the current runtime chain
-- [ ] Port existing graph validation checks to plan data as-is (duplicate id, missing module reference, missing port, self-loop, backward edge)
-- [ ] Add/adjust unit tests for plan validity and default topology shape
-- [ ] Mark completed
+- [x] Create `src/engine/audioGraphPlan.ts` with plan-level types (module nodes, edges, sink role)
+- [x] Introduce `AudioModuleKind` enum for plan nodes (`SYNTH`, `PANNER`, `TRACK_STRIP`, `LIMITER`, `MASTER_STRIP`, `DESTINATION`)
+- [x] Keep plan module kinds at engine-domain level, not `AudioNode`-level
+- [x] Export `DEFAULT_AUDIO_GRAPH_PLAN` that exactly matches the current runtime chain
+- [x] Port existing graph validation checks to plan data as-is (duplicate id, missing module reference, missing port, self-loop, backward edge)
+- [x] Add/adjust unit tests for plan validity and default topology shape
+- [x] Mark completed
 
 ### Task 2: Make `AudioEngine` consume `AudioGraphPlan`
 - [ ] Change engine constructor signature to `createAudioEngine(plan, moduleFactoryMap)` (both parameters required)
