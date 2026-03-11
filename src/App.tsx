@@ -85,6 +85,7 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
           masterMeterSource={masterStrip.meterSource}
           masterVolumeDb={masterStrip.masterVolume}
           onMasterVolumeChange={masterStrip.setMasterVolume}
+          getPositionSeconds={transport.getPositionSeconds}
         />
         <DevicePanel synth={toneSynth} panner={panner} limiter={limiter} />
         <MidiKeyboard synth={toneSynth} enabled={isTrackRecEnabled} />

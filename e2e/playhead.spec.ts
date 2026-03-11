@@ -2,6 +2,41 @@ import { test, expect } from '@playwright/test'
 import { getPixelsPerSecond, clipDurationSeconds } from '../src/utils/timelineScale'
 import { expectPlayState, setBpm } from './helpers/toolbar'
 
+test('playhead position is driven by transport controller (moves, pauses, resets via stop)', async ({ page }) => {
+  await page.goto('/')
+
+  const playBtn = page.locator('.toolbar-play-pause')
+  const stopBtn = page.locator('.toolbar-stop')
+  const playhead = page.locator('.playhead')
+
+  await expect(playhead).toBeVisible()
+
+  // Start playing — playhead must advance
+  await playBtn.click()
+  await page.waitForTimeout(600)
+
+  const leftAfterPlay = await playhead.evaluate((el) => (el as HTMLElement).style.left)
+  const pxAfterPlay = parseLeftPx(leftAfterPlay)
+  expect(pxAfterPlay).toBeGreaterThan(5) // playhead moved
+
+  // Pause — playhead must hold near current position
+  await playBtn.click()
+  await expectPlayState(playBtn, 'play')
+  await page.waitForTimeout(150)
+
+  const leftAfterPause = await playhead.evaluate((el) => (el as HTMLElement).style.left)
+  const pxAfterPause = parseLeftPx(leftAfterPause)
+  expect(Math.abs(pxAfterPause - pxAfterPlay)).toBeLessThan(15) // held position
+
+  // Stop — playhead must reset to 0
+  await stopBtn.click()
+  await page.waitForTimeout(100)
+
+  const leftAfterStop = await playhead.evaluate((el) => (el as HTMLElement).style.left)
+  const pxAfterStop = parseLeftPx(leftAfterStop)
+  expect(pxAfterStop).toBeCloseTo(0, 0) // back to start
+})
+
 function parseLeftPx(styleLeft: string): number {
   return parseFloat(styleLeft.replace('px', ''))
 }

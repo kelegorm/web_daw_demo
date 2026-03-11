@@ -3,6 +3,7 @@ import * as Tone from 'tone';
 import { createSequencer, Sequencer } from './useSequencer';
 import type { ToneSynthHook } from './useToneSynth';
 import type { TrackStripHook } from './useTrackStrip';
+import { createTransportService, type TransportService } from '../engine/transportService';
 
 export type PlaybackState = 'playing' | 'paused' | 'stopped';
 
@@ -24,6 +25,7 @@ export interface TransportControllerActions {
   setLoop(loop: boolean): void;
   setTrackMute(muted: boolean): void;
   panic(): void;
+  getPositionSeconds(): number;
 }
 
 export type TransportController = TransportControllerState & TransportControllerActions;
@@ -56,14 +58,21 @@ export interface TransportCoreDeps {
  *   stop()  — resets step to -1, calls panic() exactly once
  *   setTrackMute(true) — silences via channel strip mute; sequencer timing continues
  */
-export function createTransportCore(deps: TransportCoreDeps): TransportCore {
+export function createTransportCore(
+  deps: TransportCoreDeps,
+  transportService?: TransportService,
+): TransportCore {
   let _trackMuted = false;
 
   const seq: Sequencer = createSequencer(
     deps.noteOn,
     deps.noteOff,
     deps.synthPanic,
-    deps.onStepChange,
+    (step) => {
+      transportService?.updateCurrentStep(step);
+      deps.onStepChange?.(step);
+    },
+    transportService,
   );
 
   function play() {
@@ -81,6 +90,10 @@ export function createTransportCore(deps: TransportCoreDeps): TransportCore {
   }
 
   function setBpm(bpm: number) {
+    if (transportService) {
+      transportService.setBpm(bpm);
+      return;
+    }
     try {
       Tone.getTransport().bpm.value = bpm;
     } catch {
@@ -132,16 +145,24 @@ export function useTransportController(
   const trackStripRef = useRef(trackStrip);
   trackStripRef.current = trackStrip;
 
+  const serviceRef = useRef<TransportService | null>(null);
+  if (!serviceRef.current) {
+    serviceRef.current = createTransportService(120);
+  }
+
   const coreRef = useRef<TransportCore | null>(null);
 
   if (!coreRef.current) {
-    coreRef.current = createTransportCore({
-      noteOn: (midi, velocity) => toneSynthRef.current.noteOn(midi, velocity),
-      noteOff: (midi) => toneSynthRef.current.noteOff(midi),
-      synthPanic: () => toneSynthRef.current.panic(),
-      setTrackMuted: (muted) => trackStripRef.current.setTrackMuted(muted),
-      onStepChange: (step) => setCurrentStep(step),
-    });
+    coreRef.current = createTransportCore(
+      {
+        noteOn: (midi, velocity) => toneSynthRef.current.noteOn(midi, velocity),
+        noteOff: (midi) => toneSynthRef.current.noteOff(midi),
+        synthPanic: () => toneSynthRef.current.panic(),
+        setTrackMuted: (muted) => trackStripRef.current.setTrackMuted(muted),
+        onStepChange: (step) => setCurrentStep(step),
+      },
+      serviceRef.current,
+    );
   }
 
   const play = useCallback(async () => {
@@ -188,9 +209,14 @@ export function useTransportController(
     coreRef.current!.panic();
   }, []);
 
+  const getPositionSeconds = useCallback((): number => {
+    return serviceRef.current!.getSnapshot().positionSeconds;
+  }, []);
+
   useEffect(() => {
     return () => {
       coreRef.current?.stop();
+      serviceRef.current?.dispose();
     };
   }, []);
 
@@ -211,5 +237,6 @@ export function useTransportController(
     setLoop,
     setTrackMute,
     panic,
+    getPositionSeconds,
   };
 }

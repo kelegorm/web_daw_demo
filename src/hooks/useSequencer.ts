@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import * as Tone from 'tone';
 import { getE2EHooks } from '../testing/e2eHooks';
+import type { SequencerTransport } from '../engine/transportService';
 
 export const SEQUENCER_NOTES = [60, 62, 64, 65, 67, 69, 71, 72];
 
@@ -23,6 +24,7 @@ export function createSequencer(
   noteOff: (midi: number) => void,
   panic: () => void,
   onStepChange?: (step: number) => void,
+  transport?: SequencerTransport,
 ): Sequencer {
   let _currentStep = -1;
   let _isPlaying = false;
@@ -56,10 +58,14 @@ export function createSequencer(
     part.loop = loop;
     part.loopEnd = loopEnd;
 
-    const transport = Tone.getTransport();
-    transport.loop = loop;
-    transport.loopStart = 0;
-    transport.loopEnd = loopEnd;
+    if (transport) {
+      transport.setLoopConfig(loop, loopEnd);
+    } else {
+      const t = Tone.getTransport();
+      t.loop = loop;
+      t.loopStart = 0;
+      t.loopEnd = loopEnd;
+    }
   }
 
   setLoop(true);
@@ -71,12 +77,20 @@ export function createSequencer(
       part.start(0);
       _partStarted = true;
     }
-    Tone.getTransport().start();
+    if (transport) {
+      transport.start();
+    } else {
+      Tone.getTransport().start();
+    }
   }
 
   function pause() {
     _isPlaying = false;
-    Tone.getTransport().pause();
+    if (transport) {
+      transport.pause();
+    } else {
+      Tone.getTransport().pause();
+    }
   }
 
   function stop() {
@@ -87,7 +101,11 @@ export function createSequencer(
     // Clear scheduled start/stop state so the next play starts cleanly.
     part.stop(0);
     part.cancel(0);
-    Tone.getTransport().stop();
+    if (transport) {
+      transport.stop();
+    } else {
+      Tone.getTransport().stop();
+    }
     panic();
     onStepChange?.(-1);
   }

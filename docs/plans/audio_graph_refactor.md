@@ -77,17 +77,17 @@ Invariant status is updated in **Task 6** only, when there is linked automated p
 
 ### Task 4: Transport service — remove direct Tone calls from UI
 
-- [ ] Create `src/engine/transportService.ts` with contract:
+- [x] Create `src/engine/transportService.ts` with contract:
   - `getSnapshot(): { isPlaying: boolean; positionSeconds: number; currentStep: number; bpm: number }`
   - `subscribe(listener: () => void): () => void`
   - `play()`, `pause()`, `stop()`, `setBpm(bpm: number)`, `setLoop(loop: boolean)`
-- [ ] Move `useTransportController` to `TransportService` (no direct `Tone.getTransport()` in UI-facing flow)
-- [ ] Make `useSequencer` consume `TransportService` instead of calling `Tone.getTransport()` directly
-- [ ] Make `TrackZone` consume `positionSeconds` / `playheadPos` from controller/service snapshot, not Tone directly
-- [ ] Add Vitest test: `play/pause/stop` update snapshot correctly
-- [ ] Add Vitest test: `stop()` resets `positionSeconds` and `currentStep`
-- [ ] Add Playwright test: playhead moves from controller state, not direct Tone reads in component
-- [ ] Mark completed
+- [x] Move `useTransportController` to `TransportService` (no direct `Tone.getTransport()` in UI-facing flow)
+- [x] Make `useSequencer` consume `TransportService` instead of calling `Tone.getTransport()` directly
+- [x] Make `TrackZone` consume `positionSeconds` / `playheadPos` from controller/service snapshot, not Tone directly
+- [x] Add Vitest test: `play/pause/stop` update snapshot correctly
+- [x] Add Vitest test: `stop()` resets `positionSeconds` and `currentStep`
+- [x] Add Playwright test: playhead moves from controller state, not direct Tone reads in component
+- [x] Mark completed
 
 ### Task 5: Single timing model — remove `setTimeout` from note lifecycle
 

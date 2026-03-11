@@ -1,5 +1,4 @@
 import { useRef, useEffect, useState } from 'react'
-import * as Tone from 'tone'
 import VUMeter from './VUMeter'
 import TimelineRuler from './TimelineRuler'
 import { clipDurationSeconds, getPixelsPerSecond } from '../utils/timelineScale'
@@ -52,6 +51,7 @@ interface Props {
   masterMeterSource?: MeterSource | null
   masterVolumeDb?: number
   onMasterVolumeChange?: (db: number) => void
+  getPositionSeconds?: () => number
 }
 
 export default function TrackZone({
@@ -68,6 +68,7 @@ export default function TrackZone({
   masterMeterSource,
   masterVolumeDb = 0,
   onMasterVolumeChange,
+  getPositionSeconds,
 }: Props) {
   const [playheadPos, setPlayheadPos] = useState(0)
   const { selectedTrack, selectTrack } = useTrackSelectionContext()
@@ -82,7 +83,7 @@ export default function TrackZone({
         return 0
       }
 
-      const seconds = Tone.getTransport().seconds
+      const seconds = getPositionSeconds ? getPositionSeconds() : 0
       const pps = getPixelsPerSecond(bpm)
       let px = seconds * pps
 
