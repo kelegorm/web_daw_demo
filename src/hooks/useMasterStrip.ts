@@ -68,12 +68,9 @@ export function createMasterStrip(audioContext?: AudioContext): MasterStripGraph
 
 export interface MasterStripHook extends MasterStripGraph {}
 
-export function useMasterStrip(existingMasterStrip?: MasterStripGraph): MasterStripHook {
-  const masterStripRef = useRef<MasterStripGraph | null>(null);
-
-  if (!masterStripRef.current) {
-    masterStripRef.current = existingMasterStrip ?? createMasterStrip();
-  }
+export function useMasterStrip(existingMasterStrip: MasterStripGraph): MasterStripHook {
+  const masterStripRef = useRef<MasterStripGraph>(existingMasterStrip);
+  masterStripRef.current = existingMasterStrip;
 
   const [masterVolume, setMasterVolumeState] = useState(() => masterStripRef.current!.masterVolume);
 

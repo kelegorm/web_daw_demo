@@ -78,12 +78,9 @@ export interface PannerHook extends PannerGraph {
   pan: number;
 }
 
-export function usePanner(existingPanner?: PannerGraph): PannerHook {
-  const pannerRef = useRef<PannerGraph | null>(null);
-
-  if (!pannerRef.current) {
-    pannerRef.current = existingPanner ?? createPanner();
-  }
+export function usePanner(existingPanner: PannerGraph): PannerHook {
+  const pannerRef = useRef<PannerGraph>(existingPanner);
+  pannerRef.current = existingPanner;
 
   const [isEnabled, setIsEnabledState] = useState(() => pannerRef.current!.isEnabled);
   const [pan, setPanState] = useState(() => pannerRef.current!.pan);

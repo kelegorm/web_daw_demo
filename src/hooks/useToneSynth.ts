@@ -119,12 +119,9 @@ export function createToneSynth(): ToneSynthHook {
   };
 }
 
-export function useToneSynth(existingSynth?: ToneSynthHook): ToneSynthHook {
-  const synthRef = useRef<ToneSynthHook | null>(null);
-
-  if (!synthRef.current) {
-    synthRef.current = existingSynth ?? createToneSynth();
-  }
+export function useToneSynth(existingSynth: ToneSynthHook): ToneSynthHook {
+  const synthRef = useRef<ToneSynthHook>(existingSynth);
+  synthRef.current = existingSynth;
 
   const [isEnabled, setIsEnabledState] = useState(synthRef.current.isEnabled);
   const [filterCutoff, setFilterCutoffState] = useState(synthRef.current.filterCutoff);

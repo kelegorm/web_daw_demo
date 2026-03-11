@@ -85,12 +85,9 @@ export function createTrackStrip(audioContext?: AudioContext): TrackStripGraph {
 
 export interface TrackStripHook extends TrackStripGraph {}
 
-export function useTrackStrip(existingTrackStrip?: TrackStripGraph): TrackStripHook {
-  const trackStripRef = useRef<TrackStripGraph | null>(null);
-
-  if (!trackStripRef.current) {
-    trackStripRef.current = existingTrackStrip ?? createTrackStrip();
-  }
+export function useTrackStrip(existingTrackStrip: TrackStripGraph): TrackStripHook {
+  const trackStripRef = useRef<TrackStripGraph>(existingTrackStrip);
+  trackStripRef.current = existingTrackStrip;
 
   const [trackVolume, setTrackVolumeState] = useState(() => trackStripRef.current!.trackVolume);
   const [isTrackMuted, setIsTrackMutedState] = useState(() => trackStripRef.current!.isTrackMuted);

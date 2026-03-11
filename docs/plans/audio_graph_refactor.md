@@ -54,14 +54,14 @@ Invariant status is updated in **Task 6** only, when there is linked automated p
 
 ### Task 2: Explicit lifecycle — `useAudioEngine` + `dispose`
 
-- [ ] Create `useAudioEngine` in `src/hooks/useAudioEngine.ts`; initialize `createAudioEngine()` in `useEffect`, dispose in cleanup
-- [ ] Move engine creation out of `App.tsx` render path; `App` must consume `useAudioEngine`
-- [ ] Remove fallback creation (`existing ?? create*`) from UI hooks (`useToneSynth`, `usePanner`, `useTrackStrip`, `useMasterStrip`, `useLimiter`); these hooks become adapters over injected engine modules only
-- [ ] Make `AudioEngine.dispose()` idempotent and responsible for full teardown of graph links and module resources
-- [ ] Verify StrictMode behavior: double mount/unmount does not create duplicate graphs
-- [ ] Add Vitest test: after `dispose()`, public engine methods are safe no-ops (no throws)
-- [ ] Add Playwright test: app remount does not produce duplicated audio activity/duplicated sequencer steps
-- [ ] Mark completed
+- [x] Create `useAudioEngine` in `src/hooks/useAudioEngine.ts`; initialize `createAudioEngine()` in `useEffect`, dispose in cleanup
+- [x] Move engine creation out of `App.tsx` render path; `App` must consume `useAudioEngine`
+- [x] Remove fallback creation (`existing ?? create*`) from UI hooks (`useToneSynth`, `usePanner`, `useTrackStrip`, `useMasterStrip`, `useLimiter`); these hooks become adapters over injected engine modules only
+- [x] Make `AudioEngine.dispose()` idempotent and responsible for full teardown of graph links and module resources
+- [x] Verify StrictMode behavior: double mount/unmount does not create duplicate graphs
+- [x] Add Vitest test: after `dispose()`, public engine methods are safe no-ops (no throws)
+- [x] Add Playwright test: app remount does not produce duplicated audio activity/duplicated sequencer steps
+- [x] Mark completed
 
 ### Task 3: Intent-level contracts (after engine/lifecycle)
 

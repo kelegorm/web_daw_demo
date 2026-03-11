@@ -37,6 +37,9 @@ export function createSequencer(
 
   const part = new Tone.Part<StepEvent>((_time, { note, step }) => {
     if (!_active) return;
+    if (typeof window !== 'undefined') {
+      window.__sequencerTicks = (window.__sequencerTicks ?? 0) + 1;
+    }
     noteOn(note, 100);
     _currentStep = step;
     onStepChange?.(step);

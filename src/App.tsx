@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Toolbar from './components/Toolbar'
 import TrackZone from './components/TrackZone'
 import DevicePanel from './components/DevicePanel'
@@ -10,7 +10,8 @@ import { useMasterStrip } from './hooks/useMasterStrip'
 import { useLimiter } from './hooks/useLimiter'
 import { useTransportController } from './hooks/useTransportController'
 import { useTrackSelection, TrackSelectionContext } from './hooks/useTrackSelection'
-import { createAudioEngine } from './engine/audioEngine'
+import type { AudioEngine } from './engine/audioEngine'
+import { useAudioEngine } from './hooks/useAudioEngine'
 import './App.css'
 
 declare global {
@@ -18,20 +19,26 @@ declare global {
     __panicCount?: number
     __activeSteps?: number[]
     __vuMeterLevel?: number
+    __sequencerTicks?: number
   }
 }
 
 function App() {
-  const audioEngineRef = useRef<ReturnType<typeof createAudioEngine> | null>(null)
-  if (!audioEngineRef.current) {
-    audioEngineRef.current = createAudioEngine()
+  const audioEngine = useAudioEngine()
+
+  if (!audioEngine) {
+    return <div id="app" />
   }
 
-  const toneSynth = useToneSynth(audioEngineRef.current.synth)
-  const panner = usePanner(audioEngineRef.current.panner)
-  const trackStrip = useTrackStrip(audioEngineRef.current.trackStrip)
-  const masterStrip = useMasterStrip(audioEngineRef.current.masterStrip)
-  const limiter = useLimiter(audioEngineRef.current.limiter)
+  return <AppWithEngine audioEngine={audioEngine} />
+}
+
+function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
+  const toneSynth = useToneSynth(audioEngine.synth)
+  const panner = usePanner(audioEngine.panner)
+  const trackStrip = useTrackStrip(audioEngine.trackStrip)
+  const masterStrip = useMasterStrip(audioEngine.masterStrip)
+  const limiter = useLimiter(audioEngine.limiter)
   const transport = useTransportController(toneSynth, trackStrip)
   const [isTrackRecEnabled, setIsTrackRecEnabled] = useState(true)
   const trackSelection = useTrackSelection()
@@ -39,6 +46,7 @@ function App() {
   useEffect(() => {
     window.__panicCount = 0
     window.__activeSteps = []
+    window.__sequencerTicks = 0
   }, [])
 
   useEffect(() => {
@@ -54,37 +62,37 @@ function App() {
 
   return (
     <TrackSelectionContext.Provider value={trackSelection}>
-    <div id="app">
-      <Toolbar
-        isPlaying={transport.isPlaying}
-        onPlay={transport.toggle}
-        onStop={transport.stop}
-        onPanic={handlePanic}
-        bpm={transport.bpm}
-        onBpmChange={transport.setBpm}
-        loop={transport.loop}
-        onLoopToggle={() => transport.setLoop(!transport.loop)}
-      />
-      <TrackZone
-        playbackState={transport.playbackState}
-        bpm={transport.bpm}
-        loop={transport.loop}
-        isTrackMuted={transport.isTrackMuted}
-        isTrackRecEnabled={isTrackRecEnabled}
-        onMuteToggle={transport.setTrackMute}
-        onRecToggle={setIsTrackRecEnabled}
-        getAnalyserNodeL={trackStrip.getAnalyserNodeL}
-        getAnalyserNodeR={trackStrip.getAnalyserNodeR}
-        trackVolumeDb={trackStrip.trackVolume}
-        onVolumeChange={trackStrip.setTrackVolume}
-        getMasterAnalyserNodeL={masterStrip.getAnalyserNodeL}
-        getMasterAnalyserNodeR={masterStrip.getAnalyserNodeR}
-        masterVolumeDb={masterStrip.masterVolume}
-        onMasterVolumeChange={masterStrip.setMasterVolume}
-      />
-      <DevicePanel synth={toneSynth} panner={panner} limiter={limiter} />
-      <MidiKeyboard synth={toneSynth} enabled={isTrackRecEnabled} />
-    </div>
+      <div id="app">
+        <Toolbar
+          isPlaying={transport.isPlaying}
+          onPlay={transport.toggle}
+          onStop={transport.stop}
+          onPanic={handlePanic}
+          bpm={transport.bpm}
+          onBpmChange={transport.setBpm}
+          loop={transport.loop}
+          onLoopToggle={() => transport.setLoop(!transport.loop)}
+        />
+        <TrackZone
+          playbackState={transport.playbackState}
+          bpm={transport.bpm}
+          loop={transport.loop}
+          isTrackMuted={transport.isTrackMuted}
+          isTrackRecEnabled={isTrackRecEnabled}
+          onMuteToggle={transport.setTrackMute}
+          onRecToggle={setIsTrackRecEnabled}
+          getAnalyserNodeL={trackStrip.getAnalyserNodeL}
+          getAnalyserNodeR={trackStrip.getAnalyserNodeR}
+          trackVolumeDb={trackStrip.trackVolume}
+          onVolumeChange={trackStrip.setTrackVolume}
+          getMasterAnalyserNodeL={masterStrip.getAnalyserNodeL}
+          getMasterAnalyserNodeR={masterStrip.getAnalyserNodeR}
+          masterVolumeDb={masterStrip.masterVolume}
+          onMasterVolumeChange={masterStrip.setMasterVolume}
+        />
+        <DevicePanel synth={toneSynth} panner={panner} limiter={limiter} />
+        <MidiKeyboard synth={toneSynth} enabled={isTrackRecEnabled} />
+      </div>
     </TrackSelectionContext.Provider>
   )
 }

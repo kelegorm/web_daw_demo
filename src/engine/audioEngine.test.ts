@@ -264,6 +264,96 @@ describe('createAudioEngineWithFactories', () => {
     expect(first.masterStripOutput.connect).toHaveBeenCalledWith(first.destinationInput);
     expect(second.masterStripOutput.connect).toHaveBeenCalledWith(second.destinationInput);
   });
+
+  it('dispose is idempotent', () => {
+    const build = createBuild(2);
+
+    const engine = createAudioEngineWithFactories({
+      createSynth: () => build.synth,
+      createPannerModule: () => build.panner,
+      createTrackStripModule: () => build.trackStrip,
+      createLimiterModule: () => build.limiter,
+      createMasterStripModule: () => build.masterStrip,
+    });
+
+    engine.dispose();
+
+    const disconnectCountsAfterFirstDispose = {
+      synthOutput: build.synthOutput.disconnect.mock.calls.length,
+      pannerOutput: build.pannerOutput.disconnect.mock.calls.length,
+      trackStripOutput: build.trackStripOutput.disconnect.mock.calls.length,
+      limiterOutput: build.limiterOutput.disconnect.mock.calls.length,
+      masterStripOutput: build.masterStripOutput.disconnect.mock.calls.length,
+      destination: build.destinationInput.disconnect.mock.calls.length,
+    };
+
+    engine.dispose();
+
+    expect(build.synthOutput.disconnect.mock.calls.length).toBe(disconnectCountsAfterFirstDispose.synthOutput);
+    expect(build.pannerOutput.disconnect.mock.calls.length).toBe(disconnectCountsAfterFirstDispose.pannerOutput);
+    expect(build.trackStripOutput.disconnect.mock.calls.length).toBe(disconnectCountsAfterFirstDispose.trackStripOutput);
+    expect(build.limiterOutput.disconnect.mock.calls.length).toBe(disconnectCountsAfterFirstDispose.limiterOutput);
+    expect(build.masterStripOutput.disconnect.mock.calls.length).toBe(disconnectCountsAfterFirstDispose.masterStripOutput);
+    expect(build.destinationInput.disconnect.mock.calls.length).toBe(disconnectCountsAfterFirstDispose.destination);
+  });
+
+  it('public engine methods become safe no-ops after dispose', () => {
+    const build = createBuild(3);
+    const synthNoteOn = build.synth.noteOn;
+    const synthNoteOff = build.synth.noteOff;
+    const synthPanic = build.synth.panic;
+    const synthSetFilterCutoff = build.synth.setFilterCutoff;
+    const synthSetVoiceSpread = build.synth.setVoiceSpread;
+    const synthSetVolume = build.synth.setVolume;
+    const synthSetEnabled = build.synth.setEnabled;
+    const pannerSetPan = build.panner.setPan;
+    const pannerSetEnabled = build.panner.setEnabled;
+    const trackStripSetTrackVolume = build.trackStrip.setTrackVolume;
+    const trackStripSetTrackMuted = build.trackStrip.setTrackMuted;
+    const limiterSetThreshold = build.limiter.setThreshold;
+    const limiterSetEnabled = build.limiter.setEnabled;
+    const masterStripSetMasterVolume = build.masterStrip.setMasterVolume;
+
+    const engine = createAudioEngineWithFactories({
+      createSynth: () => build.synth,
+      createPannerModule: () => build.panner,
+      createTrackStripModule: () => build.trackStrip,
+      createLimiterModule: () => build.limiter,
+      createMasterStripModule: () => build.masterStrip,
+    });
+
+    engine.dispose();
+
+    expect(() => engine.synth.noteOn(60, 100)).not.toThrow();
+    expect(() => engine.synth.noteOff(60)).not.toThrow();
+    expect(() => engine.synth.panic()).not.toThrow();
+    expect(() => engine.synth.setFilterCutoff(1000)).not.toThrow();
+    expect(() => engine.synth.setVoiceSpread(0.5)).not.toThrow();
+    expect(() => engine.synth.setVolume(-6)).not.toThrow();
+    expect(() => engine.synth.setEnabled(false)).not.toThrow();
+    expect(() => engine.panner.setPan(0.25)).not.toThrow();
+    expect(() => engine.panner.setEnabled(false)).not.toThrow();
+    expect(() => engine.trackStrip.setTrackVolume(-6)).not.toThrow();
+    expect(() => engine.trackStrip.setTrackMuted(true)).not.toThrow();
+    expect(() => engine.limiter.setThreshold(-10)).not.toThrow();
+    expect(() => engine.limiter.setEnabled(false)).not.toThrow();
+    expect(() => engine.masterStrip.setMasterVolume(-3)).not.toThrow();
+
+    expect(synthNoteOn).not.toHaveBeenCalled();
+    expect(synthNoteOff).not.toHaveBeenCalled();
+    expect(synthPanic).toHaveBeenCalledTimes(1);
+    expect(synthSetFilterCutoff).not.toHaveBeenCalled();
+    expect(synthSetVoiceSpread).not.toHaveBeenCalled();
+    expect(synthSetVolume).not.toHaveBeenCalled();
+    expect(synthSetEnabled).not.toHaveBeenCalled();
+    expect(pannerSetPan).not.toHaveBeenCalled();
+    expect(pannerSetEnabled).not.toHaveBeenCalled();
+    expect(trackStripSetTrackVolume).not.toHaveBeenCalled();
+    expect(trackStripSetTrackMuted).not.toHaveBeenCalled();
+    expect(limiterSetThreshold).not.toHaveBeenCalled();
+    expect(limiterSetEnabled).not.toHaveBeenCalled();
+    expect(masterStripSetMasterVolume).not.toHaveBeenCalled();
+  });
 });
 
 describe('graph validation', () => {

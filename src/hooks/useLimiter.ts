@@ -91,12 +91,9 @@ export function createLimiter(audioContext?: AudioContext): LimiterGraph {
 
 export interface LimiterHook extends LimiterGraph {}
 
-export function useLimiter(existingLimiter?: LimiterGraph): LimiterHook {
-  const limiterRef = useRef<LimiterGraph | null>(null);
-
-  if (!limiterRef.current) {
-    limiterRef.current = existingLimiter ?? createLimiter();
-  }
+export function useLimiter(existingLimiter: LimiterGraph): LimiterHook {
+  const limiterRef = useRef<LimiterGraph>(existingLimiter);
+  limiterRef.current = existingLimiter;
 
   const [isEnabled, setIsEnabledState] = useState(() => limiterRef.current!.isEnabled);
   const [threshold, setThresholdState] = useState(() => limiterRef.current!.threshold);
