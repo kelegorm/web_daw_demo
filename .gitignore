@@ -22,6 +22,10 @@ src/wasm/generated/
 emscripten-build/
 .emscripten
 emscripten_cache/
+.emscripten-cache/
+.emscripten_cache/
+src/wasm/spatial-reverb/build/
+src/wasm/spatial-reverb/build-wasm/
 *.wasm.map
 *.symbols
 
