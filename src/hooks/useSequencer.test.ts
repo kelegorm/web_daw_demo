@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createSequencer, SEQUENCER_NOTES } from './useSequencer';
 
 const { mockState } = vi.hoisted(() => ({
@@ -37,14 +37,9 @@ vi.mock('tone', () => ({
 
 describe('createSequencer (Tone.js)', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
     vi.clearAllMocks();
     mockState.callback = null;
     mockState.events = [];
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it('fires notes [60, 62, 64, 65, 67, 69, 71, 72] in order', () => {
@@ -139,7 +134,27 @@ describe('createSequencer (Tone.js)', () => {
     expect(mockState.transport.pause).toHaveBeenCalled();
   });
 
-  it('noteOff is scheduled after 80% of 8th note duration', () => {
+  it('at BPM 120, noteOff is scheduled at audio-time (no wall-clock setTimeout)', () => {
+    const noteOn = vi.fn();
+    const noteOff = vi.fn();
+    const panic = vi.fn();
+
+    const seq = createSequencer(noteOn, noteOff, panic);
+    seq.start();
+
+    // Tone.Time mock returns { toSeconds: () => 0.25 }, so noteDuration = 0.25 * 0.8 = 0.2
+    const audioTime = 1.0;
+    mockState.callback!(audioTime, mockState.events[0][1]);
+
+    // noteOff should be called immediately with the future audio time, not via setTimeout
+    expect(noteOff).toHaveBeenCalledOnce();
+    expect(noteOff).toHaveBeenCalledWith(SEQUENCER_NOTES[0], audioTime + 0.25 * 0.8);
+
+    // noteOn should also carry the audio time
+    expect(noteOn).toHaveBeenCalledWith(SEQUENCER_NOTES[0], 100, audioTime);
+  });
+
+  it('noteOff is not called after stop()', () => {
     const noteOn = vi.fn();
     const noteOff = vi.fn();
     const panic = vi.fn();
@@ -148,11 +163,16 @@ describe('createSequencer (Tone.js)', () => {
     seq.start();
 
     mockState.callback!(0, mockState.events[0][1]);
-    expect(noteOff).not.toHaveBeenCalled();
+    expect(noteOn).toHaveBeenCalledTimes(1);
 
-    // Time mock: 0.25s * 0.8 * 1000 = 200ms
-    vi.advanceTimersByTime(200);
-    expect(noteOff).toHaveBeenCalledOnce();
+    seq.stop();
+    noteOn.mockClear();
+    noteOff.mockClear();
+
+    // Fire a Part callback after stop — _active is false, nothing should be called
+    mockState.callback!(0, mockState.events[1][1]);
+    expect(noteOn).not.toHaveBeenCalled();
+    expect(noteOff).not.toHaveBeenCalled();
   });
 
   it('setLoop toggles loop mode for part and transport', () => {

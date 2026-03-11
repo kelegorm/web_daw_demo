@@ -91,14 +91,14 @@ Invariant status is updated in **Task 6** only, when there is linked automated p
 
 ### Task 5: Single timing model — remove `setTimeout` from note lifecycle
 
-- [ ] In `useSequencer.ts`, replace `setTimeout` for `noteOff` with transport/audio-time scheduling (for example `scheduleOnce`)
-- [ ] Ensure `noteOn` and `noteOff` are scheduled in the same time domain
-- [ ] Ensure `stop()`/`pause()` cancels or suppresses pending note-off events deterministically
-- [ ] Verify behavior during BPM changes while playing: note duration is recalculated correctly
-- [ ] Verify behavior during pause/resume: no hanging notes
-- [ ] Add Vitest test: at BPM 120, step duration follows audio-time (no wall-clock `setTimeout`)
-- [ ] Add Vitest test: `noteOff` is not called after `stop()`
-- [ ] Mark completed
+- [x] In `useSequencer.ts`, replace `setTimeout` for `noteOff` with transport/audio-time scheduling (for example `scheduleOnce`)
+- [x] Ensure `noteOn` and `noteOff` are scheduled in the same time domain
+- [x] Ensure `stop()`/`pause()` cancels or suppresses pending note-off events deterministically
+- [x] Verify behavior during BPM changes while playing: note duration is recalculated correctly
+- [x] Verify behavior during pause/resume: no hanging notes
+- [x] Add Vitest test: at BPM 120, step duration follows audio-time (no wall-clock `setTimeout`)
+- [x] Add Vitest test: `noteOff` is not called after `stop()`
+- [x] Mark completed
 
 ### Task 6: Regression Gate (how we prove refactor did not break behavior)
 

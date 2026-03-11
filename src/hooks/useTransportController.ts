@@ -44,8 +44,8 @@ export interface TransportCore {
 }
 
 export interface TransportCoreDeps {
-  noteOn: (midi: number, velocity: number) => void;
-  noteOff: (midi: number) => void;
+  noteOn: (midi: number, velocity: number, time?: number) => void;
+  noteOff: (midi: number, time?: number) => void;
   synthPanic: () => void;
   setTrackMuted: (muted: boolean) => void;
   onStepChange?: (step: number) => void;
@@ -155,8 +155,8 @@ export function useTransportController(
   if (!coreRef.current) {
     coreRef.current = createTransportCore(
       {
-        noteOn: (midi, velocity) => toneSynthRef.current.noteOn(midi, velocity),
-        noteOff: (midi) => toneSynthRef.current.noteOff(midi),
+        noteOn: (midi, velocity, time) => toneSynthRef.current.noteOn(midi, velocity, time),
+        noteOff: (midi, time) => toneSynthRef.current.noteOff(midi, time),
         synthPanic: () => toneSynthRef.current.panic(),
         setTrackMuted: (muted) => trackStripRef.current.setTrackMuted(muted),
         onStepChange: (step) => setCurrentStep(step),

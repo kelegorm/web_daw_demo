@@ -15,8 +15,8 @@ export interface ToneSynthGraph {
   readonly filterCutoff: number;
   readonly voiceSpread: number;
   readonly volume: number;
-  noteOn(midi: number, velocity?: number): void;
-  noteOff(midi: number): void;
+  noteOn(midi: number, velocity?: number, time?: number): void;
+  noteOff(midi: number, time?: number): void;
   panic(): void;
   setFilterCutoff(hz: number): void;
   setVoiceSpread(value: number): void;
@@ -32,8 +32,8 @@ export interface ToneSynthHook {
   readonly filterCutoff: number;
   readonly voiceSpread: number;
   readonly volume: number;
-  noteOn(midi: number, velocity?: number): void;
-  noteOff(midi: number): void;
+  noteOn(midi: number, velocity?: number, time?: number): void;
+  noteOff(midi: number, time?: number): void;
   panic(): void;
   setFilterCutoff(hz: number): void;
   setVoiceSpread(value: number): void;
@@ -64,15 +64,15 @@ export function createToneSynth(): ToneSynthGraph {
     return Tone.Frequency(midi, 'midi').toNote();
   }
 
-  function noteOn(midi: number, velocity = 100) {
+  function noteOn(midi: number, velocity = 100, time?: number) {
     const note = midiToNote(midi);
     const normVelocity = velocity / 127;
-    synth.triggerAttack(note, Tone.now(), normVelocity);
+    synth.triggerAttack(note, time ?? Tone.now(), normVelocity);
   }
 
-  function noteOff(midi: number) {
+  function noteOff(midi: number, time?: number) {
     const note = midiToNote(midi);
-    synth.triggerRelease(note, Tone.now());
+    synth.triggerRelease(note, time ?? Tone.now());
   }
 
   function panic() {

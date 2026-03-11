@@ -20,8 +20,8 @@ export interface Sequencer {
 }
 
 export function createSequencer(
-  noteOn: (midi: number, velocity: number) => void,
-  noteOff: (midi: number) => void,
+  noteOn: (midi: number, velocity: number, time?: number) => void,
+  noteOff: (midi: number, time?: number) => void,
   panic: () => void,
   onStepChange?: (step: number) => void,
   transport?: SequencerTransport,
@@ -38,19 +38,17 @@ export function createSequencer(
     return [`0:${beat}:${sixteenth}`, { note, step: i }];
   });
 
-  const part = new Tone.Part<StepEvent>((_time, { note, step }) => {
+  const part = new Tone.Part<StepEvent>((time, { note, step }) => {
     if (!_active) return;
     const e2eHooks = getE2EHooks();
     if (e2eHooks) {
       e2eHooks.sequencerTicks += 1;
     }
-    noteOn(note, 100);
+    noteOn(note, 100, time);
     _currentStep = step;
     onStepChange?.(step);
-    const delayMs = Tone.Time('8n').toSeconds() * 0.8 * 1000;
-    setTimeout(() => {
-      if (_active) noteOff(note);
-    }, delayMs);
+    const noteDuration = Tone.Time('8n').toSeconds() * 0.8;
+    noteOff(note, time + noteDuration);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }, events as any);
 
@@ -131,8 +129,8 @@ export interface SequencerHook {
 }
 
 export function useSequencer(
-  noteOn: (midi: number, velocity?: number) => void,
-  noteOff: (midi: number) => void,
+  noteOn: (midi: number, velocity?: number, time?: number) => void,
+  noteOff: (midi: number, time?: number) => void,
   panic: () => void,
 ): SequencerHook {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -149,8 +147,8 @@ export function useSequencer(
 
   if (!sequencerRef.current) {
     sequencerRef.current = createSequencer(
-      (midi, velocity) => noteOnRef.current(midi, velocity),
-      (midi) => noteOffRef.current(midi),
+      (midi, velocity, time) => noteOnRef.current(midi, velocity, time),
+      (midi, time) => noteOffRef.current(midi, time),
       () => panicRef.current(),
       (step) => setCurrentStep(step),
     );
