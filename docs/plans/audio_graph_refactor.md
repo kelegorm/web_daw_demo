@@ -130,8 +130,8 @@ Invariant status is updated in **Task 6** only, when there is linked automated p
 
 - [x] Update `AGENTS.md`: remove claim that AudioWorklet/WASM is the active runtime, document current runtime and boundaries
 - [x] Update `CLAUDE.md`: align Architecture section with `createAudioEngine` + current transport/sequencer reality
-- [ ] Fix `scripts/build-wasm.js` and `package.json` (`build:wasm`):
+- [x] Fix `scripts/build-wasm.js` and `package.json` (`build:wasm`):
   - either remove non-working script,
   - or keep as `experimental` and explicitly document that it is not part of active runtime
-- [ ] Create `docs/architecture/audio_engine.md`: graph, modules, lifecycle, transport, meter contracts
-- [ ] Mark completed
+- [x] Create `docs/architecture/audio_engine.md`: graph, modules, lifecycle, transport, meter contracts
+- [x] Mark completed

@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+// EXPERIMENTAL / LEGACY — not part of the active runtime.
+// AudioWorklet/WASM is not wired into the app. This script is retained for
+// historical reference only. See CLAUDE.md for the active runtime stack.
+//
 // Compiles src/wasm/synth.wat → public/synth.wasm using the wabt npm package.
 // Run: node scripts/build-wasm.js
 import { readFileSync, writeFileSync, mkdirSync } from 'fs';
