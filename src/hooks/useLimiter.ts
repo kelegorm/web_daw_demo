@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
+import * as Tone from 'tone';
 import {
   LIMITER_ENABLED_DEFAULT,
   LIMITER_THRESHOLD_DEFAULT_DB,
@@ -16,31 +17,28 @@ export interface LimiterGraph {
   getInputAnalyserNodeL: () => AnalyserNode;
   getInputAnalyserNodeR: () => AnalyserNode;
   getLimiterNode: () => DynamicsCompressorNode;
+  getInputNode: () => AudioNode;
+  getOutputNode: () => AudioNode;
 }
 
-export function createLimiter(inputNode: AudioNode, outputNode: AudioNode): LimiterGraph {
+export function createLimiter(audioContext?: AudioContext): LimiterGraph {
   const REDUCTION_EPSILON_DB = 0.05;
-  const audioContext = inputNode.context as AudioContext;
-  const compressor = audioContext.createDynamicsCompressor();
+  const context = audioContext ?? (Tone.getContext().rawContext as AudioContext);
+  const inputNode = context.createGain();
+  const outputNode = context.createGain();
+  const compressor = context.createDynamicsCompressor();
   compressor.threshold.value = LIMITER_THRESHOLD_DEFAULT_DB;
   compressor.knee.value = 0;      // Hard knee
   compressor.ratio.value = 20;    // High ratio ≈ limiter
   compressor.attack.value = 0.001;
   compressor.release.value = 0.1;
-  const inputChannelSplitter = audioContext.createChannelSplitter(2);
-  const inputAnalyserNodeL = audioContext.createAnalyser();
-  const inputAnalyserNodeR = audioContext.createAnalyser();
+  const inputChannelSplitter = context.createChannelSplitter(2);
+  const inputAnalyserNodeL = context.createAnalyser();
+  const inputAnalyserNodeR = context.createAnalyser();
 
   let enabled = LIMITER_ENABLED_DEFAULT;
   let currentThreshold = LIMITER_THRESHOLD_DEFAULT_DB;
 
-  // Insert limiter inline:
-  // input -> compressor -> output
-  try {
-    inputNode.disconnect(outputNode);
-  } catch {
-    // No direct connection existed
-  }
   inputNode.connect(compressor);
   compressor.connect(outputNode);
   inputNode.connect(inputChannelSplitter);
@@ -57,12 +55,11 @@ export function createLimiter(inputNode: AudioNode, outputNode: AudioNode): Limi
     enabled = isEnabled;
 
     if (!isEnabled) {
-      // Bypass limiter: input connects directly to output.
+      // Bypass limiter internally while preserving external wiring.
       inputNode.disconnect(compressor);
       compressor.disconnect(outputNode);
       inputNode.connect(outputNode);
     } else {
-      // Restore limiter in chain.
       inputNode.disconnect(outputNode);
       inputNode.connect(compressor);
       compressor.connect(outputNode);
@@ -87,34 +84,39 @@ export function createLimiter(inputNode: AudioNode, outputNode: AudioNode): Limi
     getInputAnalyserNodeL: () => inputAnalyserNodeL,
     getInputAnalyserNodeR: () => inputAnalyserNodeR,
     getLimiterNode: () => compressor,
+    getInputNode: () => inputNode,
+    getOutputNode: () => outputNode,
   };
 }
 
 export interface LimiterHook extends LimiterGraph {}
 
-export function useLimiter(inputNode: AudioNode, outputNode: AudioNode): LimiterHook {
+export function useLimiter(existingLimiter?: LimiterGraph): LimiterHook {
   const limiterRef = useRef<LimiterGraph | null>(null);
-  const [isEnabled, setIsEnabledState] = useState(LIMITER_ENABLED_DEFAULT);
-  const [threshold, setThresholdState] = useState(LIMITER_THRESHOLD_DEFAULT_DB);
 
   if (!limiterRef.current) {
-    limiterRef.current = createLimiter(inputNode, outputNode);
+    limiterRef.current = existingLimiter ?? createLimiter();
   }
+
+  const [isEnabled, setIsEnabledState] = useState(() => limiterRef.current!.isEnabled);
+  const [threshold, setThresholdState] = useState(() => limiterRef.current!.threshold);
 
   const setThreshold = useCallback((db: number) => {
     limiterRef.current!.setThreshold(db);
-    setThresholdState(db);
+    setThresholdState(limiterRef.current!.threshold);
   }, []);
 
   const setEnabled = useCallback((enabled: boolean) => {
     limiterRef.current!.setEnabled(enabled);
-    setIsEnabledState(enabled);
+    setIsEnabledState(limiterRef.current!.isEnabled);
   }, []);
 
   const getReductionDb = useCallback(() => limiterRef.current!.getReductionDb(), []);
   const getInputAnalyserNodeL = useCallback(() => limiterRef.current!.getInputAnalyserNodeL(), []);
   const getInputAnalyserNodeR = useCallback(() => limiterRef.current!.getInputAnalyserNodeR(), []);
   const getLimiterNode = useCallback(() => limiterRef.current!.getLimiterNode(), []);
+  const getInputNode = useCallback(() => limiterRef.current!.getInputNode(), []);
+  const getOutputNode = useCallback(() => limiterRef.current!.getOutputNode(), []);
 
   return {
     isEnabled,
@@ -125,5 +127,7 @@ export function useLimiter(inputNode: AudioNode, outputNode: AudioNode): Limiter
     getInputAnalyserNodeL,
     getInputAnalyserNodeR,
     getLimiterNode,
+    getInputNode,
+    getOutputNode,
   };
 }

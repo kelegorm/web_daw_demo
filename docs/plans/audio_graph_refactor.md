@@ -19,34 +19,34 @@ Validation:
 
 ## Architecture Invariants (lock these before implementation)
 
-- [ ] Single graph composition point: `createAudioEngine`
-- [ ] No module connects to `destination` on its own
-- [ ] All `AudioNode` instances used by engine modules live in one shared `AudioContext`
-- [ ] Modules do not know neighboring modules directly (only `input/output/params` contracts)
-- [ ] UI/feature hooks do not accept or return `AudioNode` / `Tone.*`
-- [ ] `AudioNode`-level contracts are engine-internal only; UI-facing contracts are intent-level only
-- [ ] Sequencer and transport share one time domain (audio-time), no `setTimeout` for note lifecycle
-- [ ] All long-lived audio resources have an explicit lifecycle: `init/start/stop/dispose`
-- [ ] If an FX/worklet module fails to initialize, engine degrades to bypass/pass-through instead of breaking the graph
+- [ ] `[INV-1]` Single graph composition point: `createAudioEngine`
+- [ ] `[INV-2]` No module connects to `destination` on its own
+- [ ] `[INV-3]` All `AudioNode` instances used by engine modules live in one shared `AudioContext`
+- [ ] `[INV-4]` Modules do not know neighboring modules directly (only `input/output/params` contracts)
+- [ ] `[INV-5]` UI/feature hooks do not accept or return `AudioNode` / `Tone.*`
+- [ ] `[INV-6]` `AudioNode`-level contracts are engine-internal only; UI-facing contracts are intent-level only
+- [ ] `[INV-7]` Sequencer and transport share one time domain (audio-time), no `setTimeout` for note lifecycle
+- [ ] `[INV-8]` All long-lived audio resources have an explicit lifecycle: `init/start/stop/dispose`
+- [ ] `[INV-9]` If an FX/worklet module fails to initialize, engine degrades to bypass/pass-through instead of breaking the graph
 - [ ] Mark completed
 
 ### Task 1: Single composition root — `createAudioEngine` (first)
 
-- [ ] Create `src/engine/audioEngine.ts` with `createAudioEngine(): AudioEngine`
-- [ ] Declare `AudioModule` in `src/engine/types.ts`: `{ input?: AudioNode; output?: AudioNode; init?(): void|Promise<void>; dispose(): void }` (declaration only at this stage)
-- [ ] `AudioEngine` owns the graph and nodes: synth, panner, limiter, meter taps, destination
-- [ ] Build the graph only inside `createAudioEngine` using: `synth -> panner -> limiter -> master -> destination`
-- [ ] Remove self-connection to destination from `createToneSynth` (`useToneSynth.ts#L40`)
-- [ ] Remove self-connection to destination from `createPanner` (`usePanner.ts#L67`)
-- [ ] Remove disconnect/reconnect insertion from `useLimiter` (`useLimiter.ts#L40`) — limiter is wired only via engine
-- [ ] Remove manual disconnect/reconnect from `App.tsx#L29`
-- [ ] Add Vitest test: `createAudioEngine()` builds expected graph links (using connect/disconnect mocks)
-- [ ] Add Vitest test: repeated `createAudioEngine()` is not order-dependent
-- [ ] Add lightweight graph validation in engine assembly (Task 1 scope): missing module id, missing port (`from.output` / `to.input`), duplicate module id, self-loop edge
-- [ ] For current linear graph spec, prevent cycles by rule: edge order must move forward in module list (no backward edges)
-- [ ] Add Vitest tests for validation errors: missing module, missing port, duplicate id, self-loop, backward edge
-- [ ] Leave generic cycle detection (DFS over arbitrary graph) out of Task 1 scope; add only when non-linear graph routing is introduced
-- [ ] Mark completed
+- [x] Create `src/engine/audioEngine.ts` with `createAudioEngine(): AudioEngine`
+- [x] Declare `AudioModule` in `src/engine/types.ts`: `{ input?: AudioNode; output?: AudioNode; init?(): void|Promise<void>; dispose(): void }` (declaration only at this stage)
+- [x] `AudioEngine` owns the graph and nodes: synth, panner, limiter, meter taps, destination
+- [x] Build the graph only inside `createAudioEngine` using: `synth -> panner -> limiter -> master -> destination`
+- [x] Remove self-connection to destination from `createToneSynth` (`useToneSynth.ts#L40`)
+- [x] Remove self-connection to destination from `createPanner` (`usePanner.ts#L67`)
+- [x] Remove disconnect/reconnect insertion from `useLimiter` (`useLimiter.ts#L40`) — limiter is wired only via engine
+- [x] Remove manual disconnect/reconnect from `App.tsx#L29`
+- [x] Add Vitest test: `createAudioEngine()` builds expected graph links (using connect/disconnect mocks)
+- [x] Add Vitest test: repeated `createAudioEngine()` is not order-dependent
+- [x] Add lightweight graph validation in engine assembly (Task 1 scope): missing module id, missing port (`from.output` / `to.input`), duplicate module id, self-loop edge
+- [x] For current linear graph spec, prevent cycles by rule: edge order must move forward in module list (no backward edges)
+- [x] Add Vitest tests for validation errors: missing module, missing port, duplicate id, self-loop, backward edge
+- [x] Leave generic cycle detection (DFS over arbitrary graph) out of Task 1 scope; add only when non-linear graph routing is introduced
+- [x] Mark completed
 
 ### Task 2: Explicit lifecycle — `useAudioEngine` + `dispose`
 
@@ -106,6 +106,8 @@ Validation:
   - UI meters: track/master L/R activity and peak hold
   - Engine fail-safe: FX/worklet init failure falls back to bypass/pass-through and app remains playable
 - [ ] For each scenario, link exact test file (`vitest`/`playwright`) and expected result
+- [ ] Add `Invariant Traceability` section in `regression_gate.md`: map each invariant `[INV-1..INV-9]` -> validating test(s) -> status
+- [ ] Add explicit sign-off line: all `[INV-*]` have at least one passing automated proof
 - [ ] Add aggregate command `npm run test:arch` (runs critical regression suite)
 - [ ] Definition of Done for refactor:
   - `npm run build` is green
@@ -114,6 +116,7 @@ Validation:
   - `npm run test:arch` is green
   - No direct `Tone.getTransport()` usage in UI components
   - No `AudioNode`/`Tone.*` in public UI contracts
+  - Invariant traceability is complete and all `[INV-*]` are green
 - [ ] Mark completed
 
 ### Task 7: Documentation alignment — one source of truth

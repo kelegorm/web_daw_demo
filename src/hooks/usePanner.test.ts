@@ -194,4 +194,9 @@ describe('createPanner', () => {
     const panner = createPanner();
     expect(panner.getMasterAnalyserNode()).toBe(mockMasterAnalyser);
   });
+
+  it('does not self-connect master chain directly to destination', () => {
+    createPanner();
+    expect(mockMasterAnalyser.connect).not.toHaveBeenCalledWith(mockAudioContext.destination);
+  });
 });

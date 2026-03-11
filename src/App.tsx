@@ -8,6 +8,7 @@ import { usePanner } from './hooks/usePanner'
 import { useLimiter } from './hooks/useLimiter'
 import { useTransportController } from './hooks/useTransportController'
 import { useTrackSelection, TrackSelectionContext } from './hooks/useTrackSelection'
+import { createAudioEngine } from './engine/audioEngine'
 import './App.css'
 
 declare global {
@@ -19,27 +20,17 @@ declare global {
 }
 
 function App() {
-  const toneSynth = useToneSynth()
-  const panner = usePanner()
-  const limiter = useLimiter(panner.getMixerNode(), panner.getMasterGainNode())
+  const audioEngineRef = useRef<ReturnType<typeof createAudioEngine> | null>(null)
+  if (!audioEngineRef.current) {
+    audioEngineRef.current = createAudioEngine()
+  }
+
+  const toneSynth = useToneSynth(audioEngineRef.current.synth)
+  const panner = usePanner(audioEngineRef.current.panner)
+  const limiter = useLimiter(audioEngineRef.current.limiter)
   const transport = useTransportController(toneSynth, panner)
   const [isTrackRecEnabled, setIsTrackRecEnabled] = useState(true)
   const trackSelection = useTrackSelection()
-
-  // Wire synth output through panner graph (once)
-  const audioRoutedRef = useRef(false)
-  useEffect(() => {
-    if (!audioRoutedRef.current) {
-      audioRoutedRef.current = true
-      const output = toneSynth.getOutput()
-      try {
-        output.disconnect()
-      } catch {
-        // may not be connected yet
-      }
-      panner.connectSource(output)
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     window.__panicCount = 0

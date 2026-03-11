@@ -37,7 +37,6 @@ export function createToneSynth(): ToneSynthHook {
 
   const filter = new Tone.Filter(SYNTH_FILTER_CUTOFF_DEFAULT_HZ, 'lowpass');
   synth.connect(filter);
-  filter.connect(Tone.getDestination());
   synth.volume.value = SYNTH_VOLUME_DEFAULT_DB;
 
   let enabled = SYNTH_ENABLED_DEFAULT;
@@ -120,11 +119,11 @@ export function createToneSynth(): ToneSynthHook {
   };
 }
 
-export function useToneSynth(): ToneSynthHook {
+export function useToneSynth(existingSynth?: ToneSynthHook): ToneSynthHook {
   const synthRef = useRef<ToneSynthHook | null>(null);
 
   if (!synthRef.current) {
-    synthRef.current = createToneSynth();
+    synthRef.current = existingSynth ?? createToneSynth();
   }
 
   const [isEnabled, setIsEnabledState] = useState(synthRef.current.isEnabled);

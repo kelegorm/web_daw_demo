@@ -19,6 +19,7 @@ export interface PannerGraph {
   setTrackMuted: (muted: boolean) => void;
   setEnabled: (enabled: boolean) => void;
   isEnabled: boolean;
+  getInputNode: () => GainNode;
   connectSource: (source: AudioNode | Tone.ToneAudioNode) => void;
   getPannerNode: () => StereoPannerNode;
   getGainNode: () => GainNode;
@@ -50,7 +51,7 @@ export function createPanner(): PannerGraph {
   const analyserNodeL = audioContext.createAnalyser();
   const analyserNodeR = audioContext.createAnalyser();
 
-  // Master chain: mix bus -> (limiter inserted externally) -> masterGain -> masterAnalyser -> destination
+  // Master chain nodes are owned here but connected by the engine.
   const mixerNode = audioContext.createGain();
   const masterGainNode = audioContext.createGain();
   const masterAnalyserNode = audioContext.createAnalyser();
@@ -62,9 +63,6 @@ export function createPanner(): PannerGraph {
   pannerNode.connect(trackGainNode);
   trackGainNode.connect(analyserNode);
   analyserNode.connect(mixerNode);
-  mixerNode.connect(masterGainNode);
-  masterGainNode.connect(masterAnalyserNode);
-  masterAnalyserNode.connect(audioContext.destination);
 
   analyserNode.connect(channelSplitter);
   channelSplitter.connect(analyserNodeL, 0);
@@ -154,6 +152,7 @@ export function createPanner(): PannerGraph {
     setMasterVolume,
     setTrackMuted,
     setEnabled,
+    getInputNode: () => inputGain,
     connectSource,
     getPannerNode: () => pannerNode,
     getGainNode: () => trackGainNode,
@@ -176,11 +175,11 @@ export interface PannerHook extends PannerGraph {
   masterVolume: number;
 }
 
-export function usePanner(): PannerHook {
+export function usePanner(existingPanner?: PannerGraph): PannerHook {
   const pannerRef = useRef<PannerGraph | null>(null);
 
   if (!pannerRef.current) {
-    pannerRef.current = createPanner();
+    pannerRef.current = existingPanner ?? createPanner();
   }
 
   const [isEnabled, setIsEnabledState] = useState(() => pannerRef.current!.isEnabled);
@@ -216,6 +215,7 @@ export function usePanner(): PannerHook {
     setIsEnabledState(panner.isEnabled);
   }, []);
 
+  const getInputNode = useCallback(() => pannerRef.current!.getInputNode(), []);
   const connectSource = useCallback((source: AudioNode | Tone.ToneAudioNode) => {
     pannerRef.current!.connectSource(source);
   }, []);
@@ -242,6 +242,7 @@ export function usePanner(): PannerHook {
     setMasterVolume,
     setTrackMuted,
     setEnabled,
+    getInputNode,
     connectSource,
     getPannerNode,
     getGainNode,

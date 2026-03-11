@@ -17,6 +17,10 @@ const mockPolySynth = {
   volume: { value: 0 },
 };
 
+const { mockGetDestination } = vi.hoisted(() => ({
+  mockGetDestination: vi.fn(() => ({})),
+}));
+
 vi.mock('tone', () => {
   return {
     PolySynth: vi.fn(() => mockPolySynth),
@@ -31,7 +35,7 @@ vi.mock('tone', () => {
       },
     })),
     now: vi.fn(() => 0),
-    getDestination: vi.fn(() => ({})),
+    getDestination: mockGetDestination,
   };
 });
 
@@ -63,6 +67,11 @@ describe('createToneSynth', () => {
     const synth = createToneSynth();
     synth.setFilterCutoff(800);
     expect(mockFilter.frequency.value).toBe(800);
+  });
+
+  it('does not self-connect filter output to destination', () => {
+    createToneSynth();
+    expect(mockGetDestination).not.toHaveBeenCalled();
   });
 
   it('noteOff(60) triggers release on PolySynth', () => {
