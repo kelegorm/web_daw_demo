@@ -6,8 +6,10 @@ import {
   validateLinearGraph,
 } from './audioEngine';
 import type { LimiterGraph } from '../hooks/useLimiter';
+import type { MasterStripGraph } from '../hooks/useMasterStrip';
 import type { PannerGraph } from '../hooks/usePanner';
 import type { ToneSynthHook } from '../hooks/useToneSynth';
+import type { TrackStripGraph } from '../hooks/useTrackStrip';
 
 type MockPort = {
   id: string;
@@ -21,10 +23,12 @@ type MockBuild = {
   synthOutput: MockPort;
   pannerInput: MockPort;
   pannerOutput: MockPort;
+  trackStripInput: MockPort;
+  trackStripOutput: MockPort;
   limiterInput: MockPort;
   limiterOutput: MockPort;
-  masterInput: MockPort;
-  masterOutput: MockPort;
+  masterStripInput: MockPort;
+  masterStripOutput: MockPort;
   destinationInput: MockPort;
   trackLeft: AnalyserNode;
   trackRight: AnalyserNode;
@@ -34,7 +38,9 @@ type MockBuild = {
   limiterRight: AnalyserNode;
   synth: ToneSynthHook;
   panner: PannerGraph;
+  trackStrip: TrackStripGraph;
   limiter: LimiterGraph;
+  masterStrip: MasterStripGraph;
 };
 
 function createPort(id: string, context?: AudioContext): MockPort {
@@ -54,10 +60,12 @@ function createBuild(index: number): MockBuild {
   const synthOutput = createPort(`synth-output-${index}`, context);
   const pannerInput = createPort(`panner-input-${index}`, context);
   const pannerOutput = createPort(`panner-output-${index}`, context);
+  const trackStripInput = createPort(`track-strip-input-${index}`, context);
+  const trackStripOutput = createPort(`track-strip-output-${index}`, context);
   const limiterInput = createPort(`limiter-input-${index}`, context);
   const limiterOutput = createPort(`limiter-output-${index}`, context);
-  const masterInput = createPort(`master-input-${index}`, context);
-  const masterOutput = createPort(`master-output-${index}`, context);
+  const masterStripInput = createPort(`master-strip-input-${index}`, context);
+  const masterStripOutput = createPort(`master-strip-output-${index}`, context);
   const destinationInput = context.destination as unknown as MockPort;
   const trackLeft = createPort(`track-left-${index}`) as unknown as AnalyserNode;
   const trackRight = createPort(`track-right-${index}`) as unknown as AnalyserNode;
@@ -84,27 +92,26 @@ function createBuild(index: number): MockBuild {
 
   const panner: PannerGraph = {
     pan: 0,
-    trackVolume: 0,
-    masterVolume: 0,
     isEnabled: true,
     setPan: vi.fn(),
-    setTrackVolume: vi.fn(),
-    setMasterVolume: vi.fn(),
-    setTrackMuted: vi.fn(),
     setEnabled: vi.fn(),
     getInputNode: vi.fn(() => pannerInput),
+    getOutputNode: vi.fn(() => pannerOutput),
     connectSource: vi.fn(),
     getPannerNode: vi.fn(),
-    getGainNode: vi.fn(),
+  };
+
+  const trackStrip: TrackStripGraph = {
+    trackVolume: 0,
+    isTrackMuted: false,
+    setTrackVolume: vi.fn(),
+    setTrackMuted: vi.fn(),
+    getInputNode: vi.fn(() => trackStripInput),
+    getOutputNode: vi.fn(() => trackStripOutput),
     getTrackGainNode: vi.fn(),
-    getMixerNode: vi.fn(() => pannerOutput),
-    getMasterGainNode: vi.fn(() => masterInput),
     getAnalyserNode: vi.fn(),
     getAnalyserNodeL: vi.fn(() => trackLeft),
     getAnalyserNodeR: vi.fn(() => trackRight),
-    getMasterAnalyserNode: vi.fn(() => masterOutput),
-    getMasterAnalyserNodeL: vi.fn(() => masterLeft),
-    getMasterAnalyserNodeR: vi.fn(() => masterRight),
   };
 
   const limiter: LimiterGraph = {
@@ -120,15 +127,28 @@ function createBuild(index: number): MockBuild {
     getOutputNode: vi.fn(() => limiterOutput),
   };
 
+  const masterStrip: MasterStripGraph = {
+    masterVolume: 0,
+    setMasterVolume: vi.fn(),
+    getInputNode: vi.fn(() => masterStripInput),
+    getOutputNode: vi.fn(() => masterStripOutput),
+    getMasterGainNode: vi.fn(),
+    getAnalyserNode: vi.fn(),
+    getAnalyserNodeL: vi.fn(() => masterLeft),
+    getAnalyserNodeR: vi.fn(() => masterRight),
+  };
+
   return {
     context,
     synthOutput,
     pannerInput,
     pannerOutput,
+    trackStripInput,
+    trackStripOutput,
     limiterInput,
     limiterOutput,
-    masterInput,
-    masterOutput,
+    masterStripInput,
+    masterStripOutput,
     destinationInput,
     trackLeft,
     trackRight,
@@ -138,7 +158,9 @@ function createBuild(index: number): MockBuild {
     limiterRight,
     synth,
     panner,
+    trackStrip,
     limiter,
+    masterStrip,
   };
 }
 
@@ -147,28 +169,38 @@ describe('createAudioEngineWithFactories', () => {
     const build = createBuild(0);
     const createSynth = vi.fn(() => build.synth);
     const createPannerModule = vi.fn(() => build.panner);
+    const createTrackStripModule = vi.fn((context: AudioContext) => {
+      expect(context).toBe(build.context);
+      return build.trackStrip;
+    });
     const createLimiterModule = vi.fn((context: AudioContext) => {
       expect(context).toBe(build.context);
       return build.limiter;
+    });
+    const createMasterStripModule = vi.fn((context: AudioContext) => {
+      expect(context).toBe(build.context);
+      return build.masterStrip;
     });
 
     const engine = createAudioEngineWithFactories({
       createSynth,
       createPannerModule,
+      createTrackStripModule,
       createLimiterModule,
+      createMasterStripModule,
     });
 
-    expect((build.panner as { connectSource: ReturnType<typeof vi.fn> }).connectSource)
-      .toHaveBeenCalledWith(build.synthOutput);
-    expect(build.synthOutput.connect).not.toHaveBeenCalled();
-    expect(build.pannerOutput.connect).toHaveBeenCalledWith(build.limiterInput);
-    expect(build.limiterOutput.connect).toHaveBeenCalledWith(build.masterInput);
-    expect(build.masterInput.connect).toHaveBeenCalledWith(build.masterOutput);
-    expect(build.masterOutput.connect).toHaveBeenCalledWith(build.destinationInput);
+    expect(build.panner.connectSource).toHaveBeenCalledWith(build.synthOutput);
+    expect(build.pannerOutput.connect).toHaveBeenCalledWith(build.trackStripInput);
+    expect(build.trackStripOutput.connect).toHaveBeenCalledWith(build.limiterInput);
+    expect(build.limiterOutput.connect).toHaveBeenCalledWith(build.masterStripInput);
+    expect(build.masterStripOutput.connect).toHaveBeenCalledWith(build.destinationInput);
 
     expect(engine.synth).toBe(build.synth);
     expect(engine.panner).toBe(build.panner);
+    expect(engine.trackStrip).toBe(build.trackStrip);
     expect(engine.limiter).toBe(build.limiter);
+    expect(engine.masterStrip).toBe(build.masterStrip);
     expect(engine.destination).toBe(build.destinationInput);
     expect(engine.meterTaps.trackLeft).toBe(build.trackLeft);
     expect(engine.meterTaps.trackRight).toBe(build.trackRight);
@@ -186,49 +218,51 @@ describe('createAudioEngineWithFactories', () => {
 
     const createSynth = vi.fn(() => builds[buildIndex].synth);
     const createPannerModule = vi.fn(() => builds[buildIndex].panner);
-    const createLimiterModule = vi.fn(() => {
-      const limiter = builds[buildIndex].limiter;
+    const createTrackStripModule = vi.fn(() => builds[buildIndex].trackStrip);
+    const createLimiterModule = vi.fn(() => builds[buildIndex].limiter);
+    const createMasterStripModule = vi.fn(() => {
+      const masterStrip = builds[buildIndex].masterStrip;
       buildIndex += 1;
-      return limiter;
+      return masterStrip;
     });
 
     createAudioEngineWithFactories({
       createSynth,
       createPannerModule,
+      createTrackStripModule,
       createLimiterModule,
+      createMasterStripModule,
     });
     createAudioEngineWithFactories({
       createSynth,
       createPannerModule,
+      createTrackStripModule,
       createLimiterModule,
+      createMasterStripModule,
     });
 
-    expect((first.panner as { connectSource: ReturnType<typeof vi.fn> }).connectSource)
-      .toHaveBeenCalledTimes(1);
+    expect(first.panner.connectSource).toHaveBeenCalledTimes(1);
     expect(first.pannerOutput.connect).toHaveBeenCalledTimes(1);
+    expect(first.trackStripOutput.connect).toHaveBeenCalledTimes(1);
     expect(first.limiterOutput.connect).toHaveBeenCalledTimes(1);
-    expect(first.masterInput.connect).toHaveBeenCalledTimes(1);
-    expect(first.masterOutput.connect).toHaveBeenCalledTimes(1);
+    expect(first.masterStripOutput.connect).toHaveBeenCalledTimes(1);
 
-    expect((second.panner as { connectSource: ReturnType<typeof vi.fn> }).connectSource)
-      .toHaveBeenCalledTimes(1);
+    expect(second.panner.connectSource).toHaveBeenCalledTimes(1);
     expect(second.pannerOutput.connect).toHaveBeenCalledTimes(1);
+    expect(second.trackStripOutput.connect).toHaveBeenCalledTimes(1);
     expect(second.limiterOutput.connect).toHaveBeenCalledTimes(1);
-    expect(second.masterInput.connect).toHaveBeenCalledTimes(1);
-    expect(second.masterOutput.connect).toHaveBeenCalledTimes(1);
+    expect(second.masterStripOutput.connect).toHaveBeenCalledTimes(1);
 
-    expect((first.panner as { connectSource: ReturnType<typeof vi.fn> }).connectSource)
-      .toHaveBeenCalledWith(first.synthOutput);
-    expect((second.panner as { connectSource: ReturnType<typeof vi.fn> }).connectSource)
-      .toHaveBeenCalledWith(second.synthOutput);
-    expect(first.pannerOutput.connect).toHaveBeenCalledWith(first.limiterInput);
-    expect(second.pannerOutput.connect).toHaveBeenCalledWith(second.limiterInput);
-    expect(first.limiterOutput.connect).toHaveBeenCalledWith(first.masterInput);
-    expect(second.limiterOutput.connect).toHaveBeenCalledWith(second.masterInput);
-    expect(first.masterInput.connect).toHaveBeenCalledWith(first.masterOutput);
-    expect(second.masterInput.connect).toHaveBeenCalledWith(second.masterOutput);
-    expect(first.masterOutput.connect).toHaveBeenCalledWith(first.destinationInput);
-    expect(second.masterOutput.connect).toHaveBeenCalledWith(second.destinationInput);
+    expect(first.panner.connectSource).toHaveBeenCalledWith(first.synthOutput);
+    expect(second.panner.connectSource).toHaveBeenCalledWith(second.synthOutput);
+    expect(first.pannerOutput.connect).toHaveBeenCalledWith(first.trackStripInput);
+    expect(second.pannerOutput.connect).toHaveBeenCalledWith(second.trackStripInput);
+    expect(first.trackStripOutput.connect).toHaveBeenCalledWith(first.limiterInput);
+    expect(second.trackStripOutput.connect).toHaveBeenCalledWith(second.limiterInput);
+    expect(first.limiterOutput.connect).toHaveBeenCalledWith(first.masterStripInput);
+    expect(second.limiterOutput.connect).toHaveBeenCalledWith(second.masterStripInput);
+    expect(first.masterStripOutput.connect).toHaveBeenCalledWith(first.destinationInput);
+    expect(second.masterStripOutput.connect).toHaveBeenCalledWith(second.destinationInput);
   });
 });
 

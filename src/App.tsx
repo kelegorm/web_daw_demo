@@ -5,6 +5,8 @@ import DevicePanel from './components/DevicePanel'
 import MidiKeyboard from './components/MidiKeyboard'
 import { useToneSynth } from './hooks/useToneSynth'
 import { usePanner } from './hooks/usePanner'
+import { useTrackStrip } from './hooks/useTrackStrip'
+import { useMasterStrip } from './hooks/useMasterStrip'
 import { useLimiter } from './hooks/useLimiter'
 import { useTransportController } from './hooks/useTransportController'
 import { useTrackSelection, TrackSelectionContext } from './hooks/useTrackSelection'
@@ -27,8 +29,10 @@ function App() {
 
   const toneSynth = useToneSynth(audioEngineRef.current.synth)
   const panner = usePanner(audioEngineRef.current.panner)
+  const trackStrip = useTrackStrip(audioEngineRef.current.trackStrip)
+  const masterStrip = useMasterStrip(audioEngineRef.current.masterStrip)
   const limiter = useLimiter(audioEngineRef.current.limiter)
-  const transport = useTransportController(toneSynth, panner)
+  const transport = useTransportController(toneSynth, trackStrip)
   const [isTrackRecEnabled, setIsTrackRecEnabled] = useState(true)
   const trackSelection = useTrackSelection()
 
@@ -69,14 +73,14 @@ function App() {
         isTrackRecEnabled={isTrackRecEnabled}
         onMuteToggle={transport.setTrackMute}
         onRecToggle={setIsTrackRecEnabled}
-        getAnalyserNodeL={panner.getAnalyserNodeL}
-        getAnalyserNodeR={panner.getAnalyserNodeR}
-        trackVolumeDb={panner.trackVolume}
-        onVolumeChange={panner.setTrackVolume}
-        getMasterAnalyserNodeL={panner.getMasterAnalyserNodeL}
-        getMasterAnalyserNodeR={panner.getMasterAnalyserNodeR}
-        masterVolumeDb={panner.masterVolume}
-        onMasterVolumeChange={panner.setMasterVolume}
+        getAnalyserNodeL={trackStrip.getAnalyserNodeL}
+        getAnalyserNodeR={trackStrip.getAnalyserNodeR}
+        trackVolumeDb={trackStrip.trackVolume}
+        onVolumeChange={trackStrip.setTrackVolume}
+        getMasterAnalyserNodeL={masterStrip.getAnalyserNodeL}
+        getMasterAnalyserNodeR={masterStrip.getAnalyserNodeR}
+        masterVolumeDb={masterStrip.masterVolume}
+        onMasterVolumeChange={masterStrip.setMasterVolume}
       />
       <DevicePanel synth={toneSynth} panner={panner} limiter={limiter} />
       <MidiKeyboard synth={toneSynth} enabled={isTrackRecEnabled} />

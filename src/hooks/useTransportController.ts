@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import * as Tone from 'tone';
 import { createSequencer, Sequencer } from './useSequencer';
 import type { ToneSynthHook } from './useToneSynth';
-import type { PannerHook } from './usePanner';
+import type { TrackStripHook } from './useTrackStrip';
 
 export type PlaybackState = 'playing' | 'paused' | 'stopped';
 
@@ -119,7 +119,7 @@ export function createTransportCore(deps: TransportCoreDeps): TransportCore {
 
 export function useTransportController(
   toneSynth: ToneSynthHook,
-  panner: PannerHook,
+  trackStrip: TrackStripHook,
 ): TransportController {
   const [playbackState, setPlaybackState] = useState<PlaybackState>('stopped');
   const [bpm, setBpmState] = useState(120);
@@ -129,8 +129,8 @@ export function useTransportController(
 
   const toneSynthRef = useRef(toneSynth);
   toneSynthRef.current = toneSynth;
-  const pannerRef = useRef(panner);
-  pannerRef.current = panner;
+  const trackStripRef = useRef(trackStrip);
+  trackStripRef.current = trackStrip;
 
   const coreRef = useRef<TransportCore | null>(null);
 
@@ -139,7 +139,7 @@ export function useTransportController(
       noteOn: (midi, velocity) => toneSynthRef.current.noteOn(midi, velocity),
       noteOff: (midi) => toneSynthRef.current.noteOff(midi),
       synthPanic: () => toneSynthRef.current.panic(),
-      setTrackMuted: (muted) => pannerRef.current.setTrackMuted(muted),
+      setTrackMuted: (muted) => trackStripRef.current.setTrackMuted(muted),
       onStepChange: (step) => setCurrentStep(step),
     });
   }
