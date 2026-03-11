@@ -2,13 +2,13 @@
 
 ## Overview
 
-Устранить архитектурные проблемы, выявленные в system map report:
-- Граф аудио собирается в нескольких местах одновременно (нет единого composition root)
-- Публичные контракты хуков протекают платформенными объектами (`AudioNode`, `Tone.*`)
-- Ресурсы создаются во время рендера без явного dispose-lifecycle
-- Transport policy и UI напрямую зависят от `Tone.getTransport()` internals
-- `noteOff` использует `setTimeout` вместо audio-time scheduling
-- Конфликтующие источники правды в документации (WASM/AudioWorklet vs Tone.js)
+Fix the architectural issues identified in the system map report:
+- The audio graph is assembled in multiple places at once (no single composition root)
+- Public hook contracts leak platform objects (`AudioNode`, `Tone.*`)
+- Resources are created during render without an explicit dispose lifecycle
+- Transport policy and UI depend directly on `Tone.getTransport()` internals
+- `noteOff` uses `setTimeout` instead of audio-time scheduling
+- Conflicting sources of truth in documentation (WASM/AudioWorklet vs Tone.js)
 
 Validation:
 - `npm run test`
@@ -17,68 +17,102 @@ Validation:
 
 ---
 
-### Task 1: Intent-level контракты хуков — убрать утечку платформенных объектов
+## Architecture Invariants (lock these before implementation)
 
-- [ ] Определить интерфейс `AudioModule` в `src/engine/types.ts`: `{ input?: AudioNode; output?: AudioNode; dispose(): void }`
-- [ ] Определить интерфейс `MeterSource` в `src/engine/types.ts`: `{ observeMeter(cb: (rms: number) => void): () => void }`
-- [ ] В `useToneSynth` убрать `get*Node()` геттеры из публичного контракта; synth-объект остаётся внутри engine
-- [ ] В `usePanner` убрать экспорт `ToneAudioNode` / `AudioNode`; контракт: `{ setPan, setEnabled, isEnabled }`
-- [ ] В `useLimiter` убрать экспорт `AudioNode`; контракт: `{ setThreshold, setEnabled, isEnabled }`
-- [ ] `VUMeter` переключить на `MeterSource.observeMeter` вместо прямого `AnalyserNode` (`VUMeter.tsx#L10`)
-- [ ] `TrackZone` убрать прямое использование `Tone.ToneAudioNode` / `AudioNode` (`TrackZone.tsx#L48`)
-- [ ] Написать Vitest тест: публичный тип `usePanner` не содержит поля типа `AudioNode`
-- [ ] Написать Vitest тест: `MeterSource.observeMeter` вызывает callback с числом в диапазоне 0–1
-- [ ] Отметить выполненным
+- [ ] Single graph composition point: `createAudioEngine`
+- [ ] No module connects to `destination` on its own
+- [ ] UI/feature hooks do not accept or return `AudioNode` / `Tone.*`
+- [ ] Sequencer and transport share one time domain (audio-time), no `setTimeout` for note lifecycle
+- [ ] All long-lived audio resources have an explicit lifecycle: `init/start/stop/dispose`
+- [ ] Mark completed
 
-### Task 2: Единый composition root — `createAudioEngine`
+### Task 1: Single composition root — `createAudioEngine` (first)
 
-- [ ] Создать `src/engine/audioEngine.ts` с функцией `createAudioEngine(): AudioEngine`
-- [ ] `AudioEngine` содержит внутри все узлы: synth, panner, limiter, analyser, destination; модули реализуют `AudioModule` из Task 1
-- [ ] Граф собирается внутри `createAudioEngine` по схеме: `synth.output → panner → limiter → analyser → destination`
-- [ ] Убрать самостоятельное подключение к destination из `createToneSynth` (`useToneSynth.ts#L40`)
-- [ ] Убрать самостоятельное подключение к destination из `createPanner` (`usePanner.ts#L67`)
-- [ ] Убрать disconnect/reconnect вставку из `useLimiter` (`useLimiter.ts#L40`) — лимитер подключается только через `createAudioEngine`
-- [ ] Убрать ручной disconnect/reconnect в `App.tsx#L29`
-- [ ] Написать Vitest тест: `createAudioEngine()` возвращает объект с полями `synth`, `panner`, `limiter`, `analyser`
-- [ ] Написать Vitest тест: после `createAudioEngine()` граф замкнут (analyser подключён к destination)
-- [ ] Отметить выполненным
+- [ ] Create `src/engine/audioEngine.ts` with `createAudioEngine(): AudioEngine`
+- [ ] Declare `AudioModule` in `src/engine/types.ts`: `{ input?: AudioNode; output?: AudioNode; init?(): void|Promise<void>; dispose(): void }` (declaration only at this stage)
+- [ ] `AudioEngine` owns the graph and nodes: synth, panner, limiter, meter taps, destination
+- [ ] Build the graph only inside `createAudioEngine` using: `synth -> panner -> limiter -> master -> destination`
+- [ ] Remove self-connection to destination from `createToneSynth` (`useToneSynth.ts#L40`)
+- [ ] Remove self-connection to destination from `createPanner` (`usePanner.ts#L67`)
+- [ ] Remove disconnect/reconnect insertion from `useLimiter` (`useLimiter.ts#L40`) — limiter is wired only via engine
+- [ ] Remove manual disconnect/reconnect from `App.tsx#L29`
+- [ ] Add Vitest test: `createAudioEngine()` builds expected graph links (using connect/disconnect mocks)
+- [ ] Add Vitest test: repeated `createAudioEngine()` is not order-dependent
+- [ ] Mark completed
 
-### Task 3: Явный lifecycle — `useEffect` + `dispose`
+### Task 2: Explicit lifecycle — `useAudioEngine` + `dispose`
 
-- [ ] Создать хук `useAudioEngine` в `src/hooks/useAudioEngine.ts`, который инициализирует `createAudioEngine()` в `useEffect` и вызывает `engine.dispose()` в cleanup
-- [ ] `AudioEngine` реализует `dispose()`: вызывает `dispose()` на synth, panner, limiter; разрывает все соединения
-- [ ] Убрать создание аудио-ресурсов из render-path инициализации хуков (`useToneSynth.ts#L126`, `usePanner.ts#L182`, `useLimiter.ts#L100`)
-- [ ] Убрать прямое создание AudioContext/Tone-объектов в `main.tsx#L7`; инициализация только через `useAudioEngine`
-- [ ] Проверить корректность в StrictMode: двойной mount/unmount не создаёт дубликатов графа
-- [ ] Написать Vitest тест: после `dispose()` вызов `noteOn` не бросает исключений, просто no-op
-- [ ] Написать Playwright тест: перезагрузка страницы не оставляет AudioContext в состоянии `running` после unmount
-- [ ] Отметить выполненным
+- [ ] Create `useAudioEngine` in `src/hooks/useAudioEngine.ts`, initializing `createAudioEngine()` in `useEffect`
+- [ ] Implement `AudioEngine.dispose()`: disconnect external links and release module resources
+- [ ] Remove long-lived audio resource creation from render path (`useToneSynth.ts#L126`, `usePanner.ts#L182`, `useLimiter.ts#L100`)
+- [ ] Verify StrictMode behavior: double mount/unmount does not create duplicate graphs
+- [ ] Add Vitest test: after `dispose()`, public engine methods are safe no-ops (no throws)
+- [ ] Add Playwright test: app remount does not produce duplicated audio activity/duplicated sequencer steps
+- [ ] Mark completed
 
-### Task 4: Transport service — убрать прямые вызовы `Tone.getTransport()` из UI
+### Task 3: Intent-level contracts (after engine/lifecycle)
 
-- [ ] Создать `src/engine/transportService.ts` с интерфейсом `TransportService`: `{ isPlaying: boolean; positionSeconds: number; currentStep: number; play(); stop(); setBpm(bpm: number) }`
-- [ ] `useTransportController` (`useTransportController.ts#L83`) проксирует вызовы через `TransportService`, убрать прямой `Tone.getTransport()` из контракта
-- [ ] `useSequencer` (`useSequencer.ts#L38`) получает `TransportService`, убрать прямой `Tone.getTransport()`
-- [ ] `TrackZone` (`TrackZone.tsx#L88`) читает `playheadPos` / `positionSeconds` из `useTransportController`, не из Tone напрямую
-- [ ] Написать Vitest тест: `TransportService.play()` переводит `isPlaying` в `true`
-- [ ] Написать Vitest тест: `TransportService.stop()` сбрасывает `positionSeconds` в 0
-- [ ] Написать Playwright тест: нажать Play, убедиться что playhead движется без прямого обращения к Tone в компоненте
-- [ ] Отметить выполненным
+- [ ] Adopt the `AudioModule` declared in Task 1 as the only internal module shape across engine modules
+- [ ] Define `MeterFrame` in `src/engine/types.ts`: `{ leftRms: number; rightRms: number; leftPeak: number; rightPeak: number }`
+- [ ] Define `MeterSource` in `src/engine/types.ts`: `{ subscribe(cb: (frame: MeterFrame) => void): () => void }`
+- [ ] Hide `get*Node()`/`Tone.*` from public UI contracts (`useToneSynth`, `usePanner`, `useLimiter`)
+- [ ] Switch `VUMeter` to `MeterSource.subscribe` instead of `AnalyserNode` (`VUMeter.tsx#L10`)
+- [ ] Remove direct `AnalyserNode`/Tone type dependency from `TrackZone` (`TrackZone.tsx#L48`)
+- [ ] Add type-level tests (`expectTypeOf` or `tsd`): public UI-hook types must not include `AudioNode`/`Tone.*`
+- [ ] Add Vitest test: `MeterSource` emits valid frames (`0..1` for RMS/Peak)
+- [ ] Mark completed
 
-### Task 5: Единая модель таймирования — убрать `setTimeout` из noteOff
+### Task 4: Transport service — remove direct Tone calls from UI
 
-- [ ] В `useSequencer.ts#L43` заменить `setTimeout` для `noteOff` на `TransportService.scheduleOnce` (зависит от Task 4)
-- [ ] `noteOff` должен планироваться в audio-time через тот же механизм, что и `noteOn`
-- [ ] Проверить поведение при смене BPM во время воспроизведения: длительность ноты должна пересчитываться
-- [ ] Проверить поведение при паузе/возобновлении: ноты не должны зависать
-- [ ] Написать Vitest тест: при BPM 120 и длительности 1 beat, `noteOff` наступает через ~500ms audio-time
-- [ ] Написать Vitest тест: `noteOff` не вызывается после `stop()` транспорта
-- [ ] Отметить выполненным
+- [ ] Create `src/engine/transportService.ts` with contract:
+  - `getSnapshot(): { isPlaying: boolean; positionSeconds: number; currentStep: number; bpm: number }`
+  - `subscribe(listener: () => void): () => void`
+  - `play()`, `pause()`, `stop()`, `setBpm(bpm: number)`, `setLoop(loop: boolean)`
+- [ ] Move `useTransportController` to `TransportService` (no direct `Tone.getTransport()` in public flow)
+- [ ] Make `useSequencer` consume `TransportService` instead of direct `Tone.getTransport()`
+- [ ] Make `TrackZone` consume `positionSeconds`/`playheadPos` from `useTransportController`, not Tone directly
+- [ ] Add Vitest test: `play/pause/stop` update snapshot correctly
+- [ ] Add Vitest test: `stop()` resets `positionSeconds` and `currentStep`
+- [ ] Add Playwright test: playhead moves from controller state, not direct Tone reads in component
+- [ ] Mark completed
 
-### Task 6: Выравнивание документации — единый источник правды
+### Task 5: Single timing model — remove `setTimeout` from note lifecycle
 
-- [ ] Обновить `AGENTS.md#L7`: убрать упоминания AudioWorklet/WASM как активного runtime; зафиксировать Tone.js как текущий бэкенд
-- [ ] Обновить `CLAUDE.md`: привести раздел Architecture в соответствие с новым `createAudioEngine` / `TransportService`
-- [ ] Исправить `scripts/build-wasm.js#L15` и `package.json#L12` (`build:wasm`): либо убрать нерабочий скрипт, либо пометить как `experimental` с пояснением
-- [ ] Создать `docs/architecture/audio_engine.md`: описать граф, контракты `AudioModule` / `MeterSource` / `TransportService`, lifecycle
-- [ ] Отметить выполненным
+- [ ] In `useSequencer.ts#L43`, replace `setTimeout` for `noteOff` with transport/audio-time scheduling (for example `scheduleOnce`)
+- [ ] Ensure `noteOn` and `noteOff` are scheduled in the same time domain
+- [ ] Verify behavior during BPM changes while playing: note duration is recalculated correctly
+- [ ] Verify behavior during pause/resume: no hanging notes
+- [ ] Add Vitest test: at BPM 120, step duration follows audio-time (no wall-clock `setTimeout`)
+- [ ] Add Vitest test: `noteOff` is not called after `stop()`
+- [ ] Mark completed
+
+### Task 6: Regression Gate (how we prove refactor did not break behavior)
+
+- [ ] Create `docs/architecture/regression_gate.md` with table: "scenario -> automated test -> status"
+- [ ] Lock required scenarios:
+  - Transport: play/pause/stop, loop
+  - Sequencer: step progression and note order
+  - Panic: releases all active notes
+  - Track mute: steps keep advancing while track audio/meter stay at zero
+  - Master chain: limiter enable/bypass, GR meter
+  - UI meters: track/master L/R activity and peak hold
+- [ ] For each scenario, link exact test file (`vitest`/`playwright`) and expected result
+- [ ] Add aggregate command `npm run test:arch` (runs critical regression suite)
+- [ ] Definition of Done for refactor:
+  - `npm run build` is green
+  - `npm run test` is green
+  - `npm run test:e2e` is green
+  - `npm run test:arch` is green
+  - No direct `Tone.getTransport()` usage in UI components
+  - No `AudioNode`/`Tone.*` in public UI contracts
+- [ ] Mark completed
+
+### Task 7: Documentation alignment — one source of truth
+
+- [ ] Update `AGENTS.md#L7`: remove claim that AudioWorklet/WASM is the active runtime, document current runtime and boundaries
+- [ ] Update `CLAUDE.md`: align Architecture section with `createAudioEngine` / `TransportService`
+- [ ] Fix `scripts/build-wasm.js#L15` and `package.json#L12` (`build:wasm`):
+  - either remove non-working script,
+  - or keep as `experimental` and explicitly document that it is not part of active runtime
+- [ ] Create `docs/architecture/audio_engine.md`: graph, modules, lifecycle, transport, meter contracts
+- [ ] Mark completed
