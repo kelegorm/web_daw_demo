@@ -3,6 +3,12 @@ import { createMasterStrip, type MasterStripGraph, type MasterStripHook } from '
 import { createPanner, type PannerGraph, type PannerHook } from '../hooks/usePanner';
 import { createToneSynth, type ToneSynthGraph, type ToneSynthHook } from '../hooks/useToneSynth';
 import { createTrackStrip, type TrackStripGraph, type TrackStripHook } from '../hooks/useTrackStrip';
+import {
+  AudioModuleKind,
+  DEFAULT_AUDIO_GRAPH_PLAN,
+  validateAudioGraphPlan,
+  type AudioGraphPlan,
+} from './audioGraphPlan';
 import type { AudioModule } from './types';
 
 type AudioPort = {
@@ -40,13 +46,16 @@ export interface AudioEngine {
   dispose: () => void;
 }
 
-export interface AudioEngineFactories {
-  createSynth: () => ToneSynthGraph;
-  createPannerModule: () => PannerGraph;
-  createTrackStripModule: (audioContext: AudioContext) => TrackStripGraph;
-  createLimiterModule: (audioContext: AudioContext) => LimiterGraph;
-  createMasterStripModule: (audioContext: AudioContext) => MasterStripGraph;
+// The result returned by each factory: the raw runtime graph object, plus optional AudioContext
+// provided by this factory (for propagation to subsequent factories in the chain).
+export interface AudioModuleFactoryResult {
+  runtime: unknown;
+  audioContext?: AudioContext;
 }
+
+export type AudioModuleFactory = (audioContext: AudioContext | null) => AudioModuleFactoryResult;
+
+export type AudioModuleFactoryMap = Record<AudioModuleKind, AudioModuleFactory>;
 
 function safeDisconnect(node: Disconnectable | null | undefined, ...args: any[]): void {
   if (!node?.disconnect) return;
@@ -132,75 +141,145 @@ export function assembleAudioGraph(modules: GraphModuleSpec[], edges: GraphEdge[
   }
 }
 
-export function createAudioEngineWithFactories(factories: AudioEngineFactories): AudioEngine {
-  const synth = factories.createSynth();
-  const panner = factories.createPannerModule();
-  const audioContext = panner.input.context as AudioContext;
-  const trackStrip = factories.createTrackStripModule(audioContext);
-  const limiter = factories.createLimiterModule(audioContext);
-  const masterStrip = factories.createMasterStripModule(audioContext);
-  const destination = audioContext.destination;
-  const synthOutputNode = synth.getOutput();
+function getRequiredRuntime<T>(runtimeByKind: Map<AudioModuleKind, unknown>, kind: AudioModuleKind): T {
+  const runtime = runtimeByKind.get(kind);
+  if (runtime === undefined) {
+    throw new Error(`[audio-engine] plan is missing required module kind: ${kind}`);
+  }
+  return runtime as T;
+}
 
-  const synthOutputPort: AudioPort = {
-    connect: () => {
-      panner.connectSource(synthOutputNode);
-    },
-    disconnect: () => {
-      safeDisconnect(synthOutputNode as unknown as Disconnectable);
-    },
-  };
+function buildModuleSpec(
+  nodeId: string,
+  kind: AudioModuleKind,
+  runtimeByKind: Map<AudioModuleKind, unknown>,
+  audioContext: AudioContext,
+): GraphModuleSpec {
+  switch (kind) {
+    case AudioModuleKind.SYNTH: {
+      const synth = getRequiredRuntime<ToneSynthGraph>(runtimeByKind, AudioModuleKind.SYNTH);
+      const panner = getRequiredRuntime<PannerGraph>(runtimeByKind, AudioModuleKind.PANNER);
+      const synthOutputNode = synth.getOutput();
+      return {
+        id: nodeId,
+        output: {
+          connect: () => {
+            panner.connectSource(synthOutputNode);
+          },
+          disconnect: () => {
+            safeDisconnect(synthOutputNode as unknown as Disconnectable);
+          },
+        },
+        dispose: () => {
+          safeCall(() => synth.panic());
+          safeDisconnect(synthOutputNode as unknown as Disconnectable);
+          safeDispose(synthOutputNode as unknown as Disposable);
+          safeDispose(synth.getSynth() as unknown as Disposable);
+        },
+      };
+    }
+    case AudioModuleKind.PANNER: {
+      const panner = getRequiredRuntime<PannerGraph>(runtimeByKind, AudioModuleKind.PANNER);
+      return {
+        id: nodeId,
+        input: panner.input,
+        output: panner.output,
+        dispose: () => safeCall(() => panner.dispose()),
+      };
+    }
+    case AudioModuleKind.TRACK_STRIP: {
+      const trackStrip = getRequiredRuntime<TrackStripGraph>(runtimeByKind, AudioModuleKind.TRACK_STRIP);
+      return {
+        id: nodeId,
+        input: trackStrip.input,
+        output: trackStrip.output,
+        dispose: () => safeCall(() => trackStrip.dispose()),
+      };
+    }
+    case AudioModuleKind.LIMITER: {
+      const limiter = getRequiredRuntime<LimiterGraph>(runtimeByKind, AudioModuleKind.LIMITER);
+      return {
+        id: nodeId,
+        input: limiter.input,
+        output: limiter.output,
+        dispose: () => safeCall(() => limiter.dispose()),
+      };
+    }
+    case AudioModuleKind.MASTER_STRIP: {
+      const masterStrip = getRequiredRuntime<MasterStripGraph>(runtimeByKind, AudioModuleKind.MASTER_STRIP);
+      return {
+        id: nodeId,
+        input: masterStrip.input,
+        output: masterStrip.output,
+        dispose: () => safeCall(() => masterStrip.dispose()),
+      };
+    }
+    case AudioModuleKind.DESTINATION: {
+      return {
+        id: nodeId,
+        input: audioContext.destination,
+        dispose: () => {},
+      };
+    }
+  }
+}
 
-  const modules: GraphModuleSpec[] = [
-    {
-      id: 'synth',
-      output: synthOutputPort,
-      dispose: () => {
-        safeCall(() => synth.panic());
-        safeDisconnect(synthOutputNode as unknown as Disconnectable);
-        safeDispose(synthOutputNode as unknown as Disposable);
-        safeDispose(synth.getSynth() as unknown as Disposable);
-      },
-    },
-    {
-      id: 'panner',
-      input: panner.input,
-      output: panner.output,
-      dispose: () => safeCall(() => panner.dispose()),
-    },
-    {
-      id: 'track-strip',
-      input: trackStrip.input,
-      output: trackStrip.output,
-      dispose: () => safeCall(() => trackStrip.dispose()),
-    },
-    {
-      id: 'limiter',
-      input: limiter.input,
-      output: limiter.output,
-      dispose: () => safeCall(() => limiter.dispose()),
-    },
-    {
-      id: 'master-strip',
-      input: masterStrip.input,
-      output: masterStrip.output,
-      dispose: () => safeCall(() => masterStrip.dispose()),
-    },
-    { id: 'destination', input: destination, dispose: () => {} },
-  ];
+export const DEFAULT_AUDIO_MODULE_FACTORY_MAP: AudioModuleFactoryMap = {
+  [AudioModuleKind.SYNTH]: () => ({ runtime: createToneSynth() }),
+  [AudioModuleKind.PANNER]: () => {
+    const pannerGraph = createPanner();
+    return { runtime: pannerGraph, audioContext: pannerGraph.input.context as AudioContext };
+  },
+  [AudioModuleKind.TRACK_STRIP]: (ctx) => ({ runtime: createTrackStrip(ctx!) }),
+  [AudioModuleKind.LIMITER]: (ctx) => ({ runtime: createLimiter(ctx!) }),
+  [AudioModuleKind.MASTER_STRIP]: (ctx) => ({ runtime: createMasterStrip(ctx!) }),
+  [AudioModuleKind.DESTINATION]: (ctx) => ({ runtime: ctx!.destination }),
+};
 
-  const edges: GraphEdge[] = [
-    { from: 'synth', to: 'panner' },
-    { from: 'panner', to: 'track-strip' },
-    { from: 'track-strip', to: 'limiter' },
-    { from: 'limiter', to: 'master-strip' },
-    { from: 'master-strip', to: 'destination' },
-  ];
+export function createAudioEngine(plan: AudioGraphPlan, factoryMap: AudioModuleFactoryMap): AudioEngine {
+  validateAudioGraphPlan(plan);
 
-  assembleAudioGraph(modules, edges);
+  // Fail-fast: verify all plan node kinds have factories before materializing anything.
+  for (const node of plan.nodes) {
+    if (!(node.kind in factoryMap)) {
+      throw new Error(`[audio-engine] missing factory for module kind: ${node.kind}`);
+    }
+  }
+
+  // Materialize runtime objects from plan nodes in declaration order.
+  let audioContext: AudioContext | null = null;
+  const runtimeByKind = new Map<AudioModuleKind, unknown>();
+
+  for (const node of plan.nodes) {
+    const result = factoryMap[node.kind](audioContext);
+    runtimeByKind.set(node.kind, result.runtime);
+    if (result.audioContext && !audioContext) {
+      audioContext = result.audioContext;
+    }
+  }
+
+  if (!audioContext) {
+    throw new Error('[audio-engine] no AudioContext was provided by any factory in the plan');
+  }
+
+  // Build GraphModuleSpec array from plan nodes (all runtimes are now available).
+  const resolvedContext = audioContext;
+  const modules: GraphModuleSpec[] = plan.nodes.map((node) =>
+    buildModuleSpec(node.id, node.kind, runtimeByKind, resolvedContext),
+  );
+
+  // Connect modules by plan edges.
+  assembleAudioGraph(modules, plan.edges);
 
   let isDisposed = false;
   const isEngineDisposed = () => isDisposed;
+
+  const synth = getRequiredRuntime<ToneSynthGraph>(runtimeByKind, AudioModuleKind.SYNTH);
+  const panner = getRequiredRuntime<PannerGraph>(runtimeByKind, AudioModuleKind.PANNER);
+  const trackStrip = getRequiredRuntime<TrackStripGraph>(runtimeByKind, AudioModuleKind.TRACK_STRIP);
+  const limiter = getRequiredRuntime<LimiterGraph>(runtimeByKind, AudioModuleKind.LIMITER);
+  const masterStrip = getRequiredRuntime<MasterStripGraph>(runtimeByKind, AudioModuleKind.MASTER_STRIP);
+  const destination = audioContext.destination;
 
   const synthFacade: ToneSynthHook = {
     get isEnabled() { return synth.isEnabled; },
@@ -299,10 +378,9 @@ export function createAudioEngineWithFactories(factories: AudioEngineFactories):
       if (isDisposed) return;
       isDisposed = true;
 
-      for (const edge of edges) {
+      for (const edge of plan.edges) {
         const fromModule = getModuleById(modules, edge.from)!;
         const toModule = getModuleById(modules, edge.to)!;
-
         safeDisconnect(fromModule.output, toModule.input);
       }
 
@@ -313,12 +391,6 @@ export function createAudioEngineWithFactories(factories: AudioEngineFactories):
   };
 }
 
-export function createAudioEngine(): AudioEngine {
-  return createAudioEngineWithFactories({
-    createSynth: createToneSynth,
-    createPannerModule: createPanner,
-    createTrackStripModule: createTrackStrip,
-    createLimiterModule: createLimiter,
-    createMasterStripModule: createMasterStrip,
-  });
+export function createDefaultAudioEngine(): AudioEngine {
+  return createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, DEFAULT_AUDIO_MODULE_FACTORY_MAP);
 }

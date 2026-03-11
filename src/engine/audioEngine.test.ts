@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   assembleAudioGraph,
-  createAudioEngineWithFactories,
+  createAudioEngine,
+  type AudioModuleFactoryMap,
   type GraphModuleSpec,
   validateLinearGraph,
 } from './audioEngine';
+import { AudioModuleKind, DEFAULT_AUDIO_GRAPH_PLAN } from './audioGraphPlan';
 import type { LimiterGraph } from '../hooks/useLimiter';
 import type { MasterStripGraph } from '../hooks/useMasterStrip';
 import type { PannerGraph } from '../hooks/usePanner';
@@ -146,31 +148,21 @@ function createBuild(index: number): MockBuild {
   };
 }
 
-describe('createAudioEngineWithFactories', () => {
+function buildMockFactoryMap(build: MockBuild): AudioModuleFactoryMap {
+  return {
+    [AudioModuleKind.SYNTH]: () => ({ runtime: build.synth }),
+    [AudioModuleKind.PANNER]: () => ({ runtime: build.panner, audioContext: build.context }),
+    [AudioModuleKind.TRACK_STRIP]: () => ({ runtime: build.trackStrip }),
+    [AudioModuleKind.LIMITER]: () => ({ runtime: build.limiter }),
+    [AudioModuleKind.MASTER_STRIP]: () => ({ runtime: build.masterStrip }),
+    [AudioModuleKind.DESTINATION]: (ctx) => ({ runtime: (ctx as unknown as { destination: unknown }).destination }),
+  };
+}
+
+describe('createAudioEngine with DEFAULT_AUDIO_GRAPH_PLAN', () => {
   it('builds expected linear graph links', () => {
     const build = createBuild(0);
-    const createSynth = vi.fn(() => build.synth);
-    const createPannerModule = vi.fn(() => build.panner);
-    const createTrackStripModule = vi.fn((context: AudioContext) => {
-      expect(context).toBe(build.context);
-      return build.trackStrip;
-    });
-    const createLimiterModule = vi.fn((context: AudioContext) => {
-      expect(context).toBe(build.context);
-      return build.limiter;
-    });
-    const createMasterStripModule = vi.fn((context: AudioContext) => {
-      expect(context).toBe(build.context);
-      return build.masterStrip;
-    });
-
-    const engine = createAudioEngineWithFactories({
-      createSynth,
-      createPannerModule,
-      createTrackStripModule,
-      createLimiterModule,
-      createMasterStripModule,
-    });
+    const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
 
     expect(build.panner.connectSource).toHaveBeenCalledWith(build.synthOutput);
     expect(build.pannerOutput.connect).toHaveBeenCalledWith(build.trackStripInput);
@@ -191,13 +183,7 @@ describe('createAudioEngineWithFactories', () => {
 
   it('forwards scheduled note times through engine synth facade', () => {
     const build = createBuild(10);
-    const engine = createAudioEngineWithFactories({
-      createSynth: () => build.synth,
-      createPannerModule: () => build.panner,
-      createTrackStripModule: () => build.trackStrip,
-      createLimiterModule: () => build.limiter,
-      createMasterStripModule: () => build.masterStrip,
-    });
+    const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
 
     engine.synth.noteOn(60, 100, 1.25);
     engine.synth.noteOff(60, 1.45);
@@ -209,33 +195,9 @@ describe('createAudioEngineWithFactories', () => {
   it('is deterministic across repeated createAudioEngine calls', () => {
     const first = createBuild(0);
     const second = createBuild(1);
-    const builds = [first, second];
-    let buildIndex = 0;
 
-    const createSynth = vi.fn(() => builds[buildIndex].synth);
-    const createPannerModule = vi.fn(() => builds[buildIndex].panner);
-    const createTrackStripModule = vi.fn(() => builds[buildIndex].trackStrip);
-    const createLimiterModule = vi.fn(() => builds[buildIndex].limiter);
-    const createMasterStripModule = vi.fn(() => {
-      const masterStrip = builds[buildIndex].masterStrip;
-      buildIndex += 1;
-      return masterStrip;
-    });
-
-    createAudioEngineWithFactories({
-      createSynth,
-      createPannerModule,
-      createTrackStripModule,
-      createLimiterModule,
-      createMasterStripModule,
-    });
-    createAudioEngineWithFactories({
-      createSynth,
-      createPannerModule,
-      createTrackStripModule,
-      createLimiterModule,
-      createMasterStripModule,
-    });
+    createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(first));
+    createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(second));
 
     expect(first.panner.connectSource).toHaveBeenCalledTimes(1);
     expect(first.pannerOutput.connect).toHaveBeenCalledTimes(1);
@@ -263,14 +225,7 @@ describe('createAudioEngineWithFactories', () => {
 
   it('dispose is idempotent', () => {
     const build = createBuild(2);
-
-    const engine = createAudioEngineWithFactories({
-      createSynth: () => build.synth,
-      createPannerModule: () => build.panner,
-      createTrackStripModule: () => build.trackStrip,
-      createLimiterModule: () => build.limiter,
-      createMasterStripModule: () => build.masterStrip,
-    });
+    const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
 
     engine.dispose();
 
@@ -310,13 +265,7 @@ describe('createAudioEngineWithFactories', () => {
     const limiterSetEnabled = build.limiter.setEnabled;
     const masterStripSetMasterVolume = build.masterStrip.setMasterVolume;
 
-    const engine = createAudioEngineWithFactories({
-      createSynth: () => build.synth,
-      createPannerModule: () => build.panner,
-      createTrackStripModule: () => build.trackStrip,
-      createLimiterModule: () => build.limiter,
-      createMasterStripModule: () => build.masterStrip,
-    });
+    const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
 
     engine.dispose();
 
@@ -349,6 +298,17 @@ describe('createAudioEngineWithFactories', () => {
     expect(limiterSetThreshold).not.toHaveBeenCalled();
     expect(limiterSetEnabled).not.toHaveBeenCalled();
     expect(masterStripSetMasterVolume).not.toHaveBeenCalled();
+  });
+
+  it('throws when factory map is missing an entry for a plan node kind', () => {
+    const build = createBuild(4);
+    const incompleteFactoryMap = { ...buildMockFactoryMap(build) };
+    // Remove LIMITER factory to trigger fail-fast
+    delete (incompleteFactoryMap as Partial<AudioModuleFactoryMap>)[AudioModuleKind.LIMITER];
+
+    expect(() =>
+      createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, incompleteFactoryMap as AudioModuleFactoryMap),
+    ).toThrow('missing factory for module kind: LIMITER');
   });
 });
 

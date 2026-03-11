@@ -7,6 +7,7 @@ import { useAudioEngine } from './useAudioEngine';
 
 vi.mock('../engine/audioEngine', () => ({
   createAudioEngine: vi.fn(),
+  DEFAULT_AUDIO_MODULE_FACTORY_MAP: {},
 }));
 
 function Probe() {
