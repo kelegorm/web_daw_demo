@@ -136,12 +136,12 @@ export function useToneSynth(existingSynth: ToneSynthHook): ToneSynthHook {
   const [voiceSpread, setVoiceSpreadState] = useState(synthRef.current.voiceSpread);
   const [volume, setVolumeState] = useState(synthRef.current.volume);
 
-  const noteOn = useCallback((midi: number, velocity = 100) => {
-    synthRef.current.noteOn(midi, velocity);
+  const noteOn = useCallback((midi: number, velocity = 100, time?: number) => {
+    synthRef.current.noteOn(midi, velocity, time);
   }, []);
 
-  const noteOff = useCallback((midi: number) => {
-    synthRef.current.noteOff(midi);
+  const noteOff = useCallback((midi: number, time?: number) => {
+    synthRef.current.noteOff(midi, time);
   }, []);
 
   const panic = useCallback(() => {

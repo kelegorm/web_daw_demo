@@ -189,6 +189,23 @@ describe('createAudioEngineWithFactories', () => {
     expect('output' in engine.limiter).toBe(false);
   });
 
+  it('forwards scheduled note times through engine synth facade', () => {
+    const build = createBuild(10);
+    const engine = createAudioEngineWithFactories({
+      createSynth: () => build.synth,
+      createPannerModule: () => build.panner,
+      createTrackStripModule: () => build.trackStrip,
+      createLimiterModule: () => build.limiter,
+      createMasterStripModule: () => build.masterStrip,
+    });
+
+    engine.synth.noteOn(60, 100, 1.25);
+    engine.synth.noteOff(60, 1.45);
+
+    expect(build.synth.noteOn).toHaveBeenCalledWith(60, 100, 1.25);
+    expect(build.synth.noteOff).toHaveBeenCalledWith(60, 1.45);
+  });
+
   it('is deterministic across repeated createAudioEngine calls', () => {
     const first = createBuild(0);
     const second = createBuild(1);

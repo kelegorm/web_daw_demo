@@ -207,13 +207,13 @@ export function createAudioEngineWithFactories(factories: AudioEngineFactories):
     get filterCutoff() { return synth.filterCutoff; },
     get voiceSpread() { return synth.voiceSpread; },
     get volume() { return synth.volume; },
-    noteOn: (midi, velocity) => {
+    noteOn: (midi, velocity, time) => {
       if (isEngineDisposed()) return;
-      synth.noteOn(midi, velocity);
+      synth.noteOn(midi, velocity, time);
     },
-    noteOff: (midi) => {
+    noteOff: (midi, time) => {
       if (isEngineDisposed()) return;
-      synth.noteOff(midi);
+      synth.noteOff(midi, time);
     },
     panic: () => {
       if (isEngineDisposed()) return;

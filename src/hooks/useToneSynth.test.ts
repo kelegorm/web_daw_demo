@@ -1,5 +1,8 @@
+import React from 'react';
+import { flushSync } from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createToneSynth } from './useToneSynth';
+import { createToneSynth, useToneSynth, type ToneSynthHook } from './useToneSynth';
 
 const mockFilter = {
   connect: vi.fn(),
@@ -114,5 +117,62 @@ describe('createToneSynth', () => {
     expect(synth.voiceSpread).toBe(0.4);
     expect(synth.volume).toBe(-6);
     expect(synth.isEnabled).toBe(false);
+  });
+});
+
+function HookProbe({
+  synth,
+  onReady,
+}: {
+  synth: ToneSynthHook;
+  onReady: (hook: ToneSynthHook) => void;
+}) {
+  const hook = useToneSynth(synth);
+  onReady(hook);
+  return null;
+}
+
+describe('useToneSynth', () => {
+  it('forwards scheduled note times to underlying synth contract', () => {
+    const synth: ToneSynthHook = {
+      isEnabled: true,
+      filterCutoff: 2000,
+      voiceSpread: 0,
+      volume: 0,
+      noteOn: vi.fn(),
+      noteOff: vi.fn(),
+      panic: vi.fn(),
+      setFilterCutoff: vi.fn(),
+      setVoiceSpread: vi.fn(),
+      setVolume: vi.fn(),
+      setEnabled: vi.fn(),
+    };
+
+    let hook: ToneSynthHook | null = null;
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    try {
+      flushSync(() => {
+        root.render(React.createElement(HookProbe, {
+          synth,
+          onReady: (readyHook: ToneSynthHook) => {
+            hook = readyHook;
+          },
+        }));
+      });
+
+      expect(hook).not.toBeNull();
+
+      hook!.noteOn(60, 100, 1.25);
+      hook!.noteOff(60, 1.45);
+
+      expect(synth.noteOn).toHaveBeenCalledWith(60, 100, 1.25);
+      expect(synth.noteOff).toHaveBeenCalledWith(60, 1.45);
+    } finally {
+      root.unmount();
+      container.remove();
+    }
   });
 });
