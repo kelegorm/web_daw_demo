@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createTransportCore } from './useTransportController';
+import { SEQUENCER_NOTES } from './useSequencer';
 import type { TransportService } from '../engine/transportService';
 
 // ── Tone.js mock ──────────────────────────────────────────────────────────────
@@ -250,5 +251,42 @@ describe('createTransportCore', () => {
 
     core.panic();
     expect(deps.synthPanic).toHaveBeenCalledOnce();
+  });
+
+  it('one clip playback delivers full 8-note stream to synth sink', () => {
+    const synthSink = {
+      noteOn: vi.fn(),
+      noteOff: vi.fn(),
+      panic: vi.fn(),
+    };
+    const deps = makeDeps({
+      noteOn: (midi, velocity, time) => synthSink.noteOn(midi, velocity, time),
+      noteOff: (midi, time) => synthSink.noteOff(midi, time),
+      synthPanic: () => synthSink.panic(),
+    });
+    const transportService = makeTransportService();
+    const core = createTransportCore(deps, transportService);
+
+    core.play();
+    expect(mockState.events).toHaveLength(SEQUENCER_NOTES.length);
+
+    for (let i = 0; i < mockState.events.length; i += 1) {
+      const [, event] = mockState.events[i];
+      const eventTime = i * 0.25;
+      mockState.callback!(eventTime, event);
+    }
+
+    expect(synthSink.noteOn).toHaveBeenCalledTimes(SEQUENCER_NOTES.length);
+    expect(synthSink.noteOff).toHaveBeenCalledTimes(SEQUENCER_NOTES.length);
+    expect(synthSink.noteOn.mock.calls.map((call) => call[0])).toEqual(SEQUENCER_NOTES);
+    expect(synthSink.noteOff.mock.calls.map((call) => call[0])).toEqual(SEQUENCER_NOTES);
+
+    for (let i = 0; i < SEQUENCER_NOTES.length; i += 1) {
+      const onTime = synthSink.noteOn.mock.calls[i][2];
+      const offTime = synthSink.noteOff.mock.calls[i][1];
+      expect(typeof onTime).toBe('number');
+      expect(typeof offTime).toBe('number');
+      expect(offTime).toBeCloseTo(onTime + 0.25 * 0.8, 6);
+    }
   });
 });

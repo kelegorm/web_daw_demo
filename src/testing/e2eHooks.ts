@@ -1,5 +1,9 @@
 export interface E2EHooks {
   sequencerTicks: number;
+  sequencerNoteOnSent: number;
+  sequencerNoteOffSent: number;
+  synthNoteOnReceived: number;
+  synthNoteOffReceived: number;
   remountApp?: () => void;
 }
 
@@ -19,7 +23,13 @@ export function getE2EHooks(): E2EHooks | null {
   }
 
   if (!appWindow.__e2eHooks) {
-    appWindow.__e2eHooks = { sequencerTicks: 0 };
+    appWindow.__e2eHooks = {
+      sequencerTicks: 0,
+      sequencerNoteOnSent: 0,
+      sequencerNoteOffSent: 0,
+      synthNoteOnReceived: 0,
+      synthNoteOffReceived: 0,
+    };
   }
 
   return appWindow.__e2eHooks;

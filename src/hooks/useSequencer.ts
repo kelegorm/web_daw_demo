@@ -47,11 +47,15 @@ export function createSequencer(
     const e2eHooks = getE2EHooks();
     if (e2eHooks) {
       e2eHooks.sequencerTicks += 1;
+      e2eHooks.sequencerNoteOnSent += 1;
     }
     noteOn(note, 100, time);
     _currentStep = step;
     onStepChange?.(step);
     const noteDuration = Tone.Time('8n').toSeconds() * 0.8;
+    if (e2eHooks) {
+      e2eHooks.sequencerNoteOffSent += 1;
+    }
     noteOff(note, time + noteDuration);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }, events as any);

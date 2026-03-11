@@ -8,6 +8,7 @@ import {
   SYNTH_VOICE_SPREAD_DEFAULT,
   SYNTH_VOLUME_DEFAULT_DB,
 } from '../audio/parameterDefaults';
+import { getE2EHooks } from '../testing/e2eHooks';
 
 // Engine-internal type: has Tone.* for graph assembly use.
 export interface ToneSynthGraph {
@@ -65,12 +66,20 @@ export function createToneSynth(): ToneSynthGraph {
   }
 
   function noteOn(midi: number, velocity = 100, time?: number) {
+    const e2eHooks = getE2EHooks();
+    if (e2eHooks) {
+      e2eHooks.synthNoteOnReceived += 1;
+    }
     const note = midiToNote(midi);
     const normVelocity = velocity / 127;
     synth.triggerAttack(note, time ?? Tone.now(), normVelocity);
   }
 
   function noteOff(midi: number, time?: number) {
+    const e2eHooks = getE2EHooks();
+    if (e2eHooks) {
+      e2eHooks.synthNoteOffReceived += 1;
+    }
     const note = midiToNote(midi);
     synth.triggerRelease(note, time ?? Tone.now());
   }
