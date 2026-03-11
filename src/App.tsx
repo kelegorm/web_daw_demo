@@ -19,7 +19,6 @@ declare global {
     __panicCount?: number
     __activeSteps?: number[]
     __vuMeterLevel?: number
-    __sequencerTicks?: number
   }
 }
 
@@ -46,7 +45,6 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
   useEffect(() => {
     window.__panicCount = 0
     window.__activeSteps = []
-    window.__sequencerTicks = 0
   }, [])
 
   useEffect(() => {

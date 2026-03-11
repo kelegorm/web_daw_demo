@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import App from './App.tsx'
+import { getE2EHooks } from './testing/e2eHooks'
 import './index.css'
 
 const rootElement = document.getElementById('root')
@@ -21,10 +22,12 @@ const renderApp = () => {
 renderApp()
 
 if (import.meta.env.DEV) {
-  const codexWindow = window as Window & { __remountApp?: () => void }
-  codexWindow.__remountApp = () => {
-    root.unmount()
-    root = createRoot(rootElement)
-    renderApp()
+  const e2eHooks = getE2EHooks()
+  if (e2eHooks) {
+    e2eHooks.remountApp = () => {
+      root.unmount()
+      root = createRoot(rootElement)
+      renderApp()
+    }
   }
 }

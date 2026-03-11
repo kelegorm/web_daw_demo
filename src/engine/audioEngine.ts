@@ -253,6 +253,7 @@ export function createAudioEngineWithFactories(factories: AudioEngineFactories):
   assembleAudioGraph(modules, edges);
 
   let isDisposed = false;
+  const isEngineDisposed = () => isDisposed;
 
   const meterTaps = {
     trackLeft: trackLeftAnalyserNode,
@@ -263,37 +264,143 @@ export function createAudioEngineWithFactories(factories: AudioEngineFactories):
     limiterInputRight: limiterRightInputAnalyser,
   };
 
-  const makePublicMethodsNoop = () => {
-    synth.noteOn = () => {};
-    synth.noteOff = () => {};
-    synth.panic = () => {};
-    synth.setFilterCutoff = () => {};
-    synth.setVoiceSpread = () => {};
-    synth.setVolume = () => {};
-    synth.setEnabled = () => {};
-    synth.getSynth = () => null;
-    synth.getOutput = () => synthOutputNode;
+  const synthFacade: ToneSynthHook = {
+    get isEnabled() {
+      return synth.isEnabled;
+    },
+    get filterCutoff() {
+      return synth.filterCutoff;
+    },
+    get voiceSpread() {
+      return synth.voiceSpread;
+    },
+    get volume() {
+      return synth.volume;
+    },
+    noteOn: (midi, velocity) => {
+      if (isEngineDisposed()) return;
+      synth.noteOn(midi, velocity);
+    },
+    noteOff: (midi) => {
+      if (isEngineDisposed()) return;
+      synth.noteOff(midi);
+    },
+    panic: () => {
+      if (isEngineDisposed()) return;
+      synth.panic();
+    },
+    setFilterCutoff: (hz) => {
+      if (isEngineDisposed()) return;
+      synth.setFilterCutoff(hz);
+    },
+    setVoiceSpread: (value) => {
+      if (isEngineDisposed()) return;
+      synth.setVoiceSpread(value);
+    },
+    setVolume: (db) => {
+      if (isEngineDisposed()) return;
+      synth.setVolume(db);
+    },
+    setEnabled: (enabled) => {
+      if (isEngineDisposed()) return;
+      synth.setEnabled(enabled);
+    },
+    getSynth: () => (isEngineDisposed() ? null : synthNode),
+    getOutput: () => synthOutputNode,
+  };
 
-    panner.setPan = () => {};
-    panner.setEnabled = () => {};
-    panner.connectSource = () => {};
+  const pannerFacade: PannerGraph = {
+    get pan() {
+      return panner.pan;
+    },
+    get isEnabled() {
+      return panner.isEnabled;
+    },
+    setPan: (value) => {
+      if (isEngineDisposed()) return;
+      panner.setPan(value);
+    },
+    setEnabled: (enabled) => {
+      if (isEngineDisposed()) return;
+      panner.setEnabled(enabled);
+    },
+    getInputNode: () => pannerInputNode,
+    getOutputNode: () => pannerOutputNode,
+    connectSource: (source) => {
+      if (isEngineDisposed()) return;
+      panner.connectSource(source);
+    },
+    getPannerNode: () => pannerNode,
+  };
 
-    trackStrip.setTrackVolume = () => {};
-    trackStrip.setTrackMuted = () => {};
+  const trackStripFacade: TrackStripGraph = {
+    get trackVolume() {
+      return trackStrip.trackVolume;
+    },
+    get isTrackMuted() {
+      return trackStrip.isTrackMuted;
+    },
+    setTrackVolume: (db) => {
+      if (isEngineDisposed()) return;
+      trackStrip.setTrackVolume(db);
+    },
+    setTrackMuted: (muted) => {
+      if (isEngineDisposed()) return;
+      trackStrip.setTrackMuted(muted);
+    },
+    getInputNode: () => trackStripInputNode,
+    getOutputNode: () => trackStripOutputNode,
+    getTrackGainNode: () => trackGainNode,
+    getAnalyserNode: () => trackAnalyserNode,
+    getAnalyserNodeL: () => trackLeftAnalyserNode,
+    getAnalyserNodeR: () => trackRightAnalyserNode,
+  };
 
-    limiter.setThreshold = () => {};
-    limiter.setEnabled = () => {};
-    limiter.getReductionDb = () => 0;
+  const limiterFacade: LimiterGraph = {
+    get isEnabled() {
+      return limiter.isEnabled;
+    },
+    get threshold() {
+      return limiter.threshold;
+    },
+    setThreshold: (db) => {
+      if (isEngineDisposed()) return;
+      limiter.setThreshold(db);
+    },
+    setEnabled: (enabled) => {
+      if (isEngineDisposed()) return;
+      limiter.setEnabled(enabled);
+    },
+    getReductionDb: () => (isEngineDisposed() ? 0 : limiter.getReductionDb()),
+    getInputAnalyserNodeL: () => limiterLeftInputAnalyser,
+    getInputAnalyserNodeR: () => limiterRightInputAnalyser,
+    getLimiterNode: () => limiterNode,
+    getInputNode: () => limiterInputNode,
+    getOutputNode: () => limiterOutputNode,
+  };
 
-    masterStrip.setMasterVolume = () => {};
+  const masterStripFacade: MasterStripGraph = {
+    get masterVolume() {
+      return masterStrip.masterVolume;
+    },
+    setMasterVolume: (db) => {
+      if (isEngineDisposed()) return;
+      masterStrip.setMasterVolume(db);
+    },
+    getInputNode: () => masterStripInputNode,
+    getOutputNode: () => masterStripOutputNode,
+    getMasterGainNode: () => masterGainNode,
+    getAnalyserNode: () => masterAnalyserNode,
+    getAnalyserNodeL: () => masterLeftAnalyserNode,
+    getAnalyserNodeR: () => masterRightAnalyserNode,
   };
 
   return {
-    synth,
-    panner,
-    trackStrip,
-    limiter,
-    masterStrip,
+    synth: synthFacade,
+    panner: pannerFacade,
+    trackStrip: trackStripFacade,
+    limiter: limiterFacade,
+    masterStrip: masterStripFacade,
     destination,
     meterTaps,
     dispose: () => {
@@ -310,8 +417,6 @@ export function createAudioEngineWithFactories(factories: AudioEngineFactories):
       for (const module of modules) {
         module.dispose();
       }
-
-      makePublicMethodsNoop();
     },
   };
 }

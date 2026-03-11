@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import * as Tone from 'tone';
+import { getE2EHooks } from '../testing/e2eHooks';
 
 export const SEQUENCER_NOTES = [60, 62, 64, 65, 67, 69, 71, 72];
 
@@ -37,8 +38,9 @@ export function createSequencer(
 
   const part = new Tone.Part<StepEvent>((_time, { note, step }) => {
     if (!_active) return;
-    if (typeof window !== 'undefined') {
-      window.__sequencerTicks = (window.__sequencerTicks ?? 0) + 1;
+    const e2eHooks = getE2EHooks();
+    if (e2eHooks) {
+      e2eHooks.sequencerTicks += 1;
     }
     noteOn(note, 100);
     _currentStep = step;

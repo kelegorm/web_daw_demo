@@ -196,11 +196,11 @@ describe('createAudioEngineWithFactories', () => {
     expect(build.limiterOutput.connect).toHaveBeenCalledWith(build.masterStripInput);
     expect(build.masterStripOutput.connect).toHaveBeenCalledWith(build.destinationInput);
 
-    expect(engine.synth).toBe(build.synth);
-    expect(engine.panner).toBe(build.panner);
-    expect(engine.trackStrip).toBe(build.trackStrip);
-    expect(engine.limiter).toBe(build.limiter);
-    expect(engine.masterStrip).toBe(build.masterStrip);
+    expect(engine.synth.getOutput()).toBe(build.synthOutput);
+    expect(engine.panner.getInputNode()).toBe(build.pannerInput);
+    expect(engine.trackStrip.getInputNode()).toBe(build.trackStripInput);
+    expect(engine.limiter.getInputNode()).toBe(build.limiterInput);
+    expect(engine.masterStrip.getInputNode()).toBe(build.masterStripInput);
     expect(engine.destination).toBe(build.destinationInput);
     expect(engine.meterTaps.trackLeft).toBe(build.trackLeft);
     expect(engine.meterTaps.trackRight).toBe(build.trackRight);
