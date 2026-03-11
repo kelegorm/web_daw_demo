@@ -21,9 +21,13 @@ Validation:
 
 - [ ] Single graph composition point: `createAudioEngine`
 - [ ] No module connects to `destination` on its own
+- [ ] All `AudioNode` instances used by engine modules live in one shared `AudioContext`
+- [ ] Modules do not know neighboring modules directly (only `input/output/params` contracts)
 - [ ] UI/feature hooks do not accept or return `AudioNode` / `Tone.*`
+- [ ] `AudioNode`-level contracts are engine-internal only; UI-facing contracts are intent-level only
 - [ ] Sequencer and transport share one time domain (audio-time), no `setTimeout` for note lifecycle
 - [ ] All long-lived audio resources have an explicit lifecycle: `init/start/stop/dispose`
+- [ ] If an FX/worklet module fails to initialize, engine degrades to bypass/pass-through instead of breaking the graph
 - [ ] Mark completed
 
 ### Task 1: Single composition root — `createAudioEngine` (first)
@@ -38,6 +42,10 @@ Validation:
 - [ ] Remove manual disconnect/reconnect from `App.tsx#L29`
 - [ ] Add Vitest test: `createAudioEngine()` builds expected graph links (using connect/disconnect mocks)
 - [ ] Add Vitest test: repeated `createAudioEngine()` is not order-dependent
+- [ ] Add lightweight graph validation in engine assembly (Task 1 scope): missing module id, missing port (`from.output` / `to.input`), duplicate module id, self-loop edge
+- [ ] For current linear graph spec, prevent cycles by rule: edge order must move forward in module list (no backward edges)
+- [ ] Add Vitest tests for validation errors: missing module, missing port, duplicate id, self-loop, backward edge
+- [ ] Leave generic cycle detection (DFS over arbitrary graph) out of Task 1 scope; add only when non-linear graph routing is introduced
 - [ ] Mark completed
 
 ### Task 2: Explicit lifecycle — `useAudioEngine` + `dispose`
@@ -55,7 +63,7 @@ Validation:
 - [ ] Adopt the `AudioModule` declared in Task 1 as the only internal module shape across engine modules
 - [ ] Define `MeterFrame` in `src/engine/types.ts`: `{ leftRms: number; rightRms: number; leftPeak: number; rightPeak: number }`
 - [ ] Define `MeterSource` in `src/engine/types.ts`: `{ subscribe(cb: (frame: MeterFrame) => void): () => void }`
-- [ ] Hide `get*Node()`/`Tone.*` from public UI contracts (`useToneSynth`, `usePanner`, `useLimiter`)
+- [ ] Hide `get*Node()`/`Tone.*` from public UI contracts (`useToneSynth`, `usePanner`, `useLimiter`) and keep node-level APIs engine-internal
 - [ ] Switch `VUMeter` to `MeterSource.subscribe` instead of `AnalyserNode` (`VUMeter.tsx#L10`)
 - [ ] Remove direct `AnalyserNode`/Tone type dependency from `TrackZone` (`TrackZone.tsx#L48`)
 - [ ] Add type-level tests (`expectTypeOf` or `tsd`): public UI-hook types must not include `AudioNode`/`Tone.*`
@@ -96,6 +104,7 @@ Validation:
   - Track mute: steps keep advancing while track audio/meter stay at zero
   - Master chain: limiter enable/bypass, GR meter
   - UI meters: track/master L/R activity and peak hold
+  - Engine fail-safe: FX/worklet init failure falls back to bypass/pass-through and app remains playable
 - [ ] For each scenario, link exact test file (`vitest`/`playwright`) and expected result
 - [ ] Add aggregate command `npm run test:arch` (runs critical regression suite)
 - [ ] Definition of Done for refactor:
