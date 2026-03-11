@@ -30,7 +30,7 @@ Invariant status is updated in **Task 6** only, when there is linked automated p
 - [ ] `[INV-6]` `AudioNode`-level contracts are engine-internal only; UI-facing contracts are intent-level only
 - [ ] `[INV-7]` Sequencer and transport share one time domain (audio-time), no `setTimeout` for note lifecycle
 - [ ] `[INV-8]` All long-lived audio resources have an explicit lifecycle: `init/start/stop/dispose`
-- [ ] `[INV-9]` If an FX/worklet module fails to initialize, engine degrades to bypass/pass-through instead of breaking the graph
+- [ ] `[INV-9]` If a module fails to initialize, engine degrades to bypass/pass-through instead of breaking the graph
 - [ ] Mark completed (only after Task 6 traceability matrix is fully green)
 
 ### Task 1: Single composition root — `createAudioEngine` (completed)
@@ -71,7 +71,7 @@ Invariant status is updated in **Task 6** only, when there is linked automated p
 - [ ] Expose meter data from engine modules via `MeterSource` instead of leaking `AnalyserNode`
 - [ ] Hide `get*Node()` / `Tone.*` from public UI contracts (`useToneSynth`, `usePanner`, `useTrackStrip`, `useMasterStrip`, `useLimiter`)
 - [ ] Switch `VUMeter` and `TrackZone` to intent-level meter contracts directly (no temporary adapters)
-- [ ] Add type-level tests (`expectTypeOf` or `tsd`): public UI-hook types must not include `AudioNode` / `Tone.*`
+- [ ] Add type-level tests (`expectTypeOf`): public UI-hook types must not include `AudioNode` / `Tone.*`
 - [ ] Add Vitest test: `MeterSource` emits valid frames (`0..1` for RMS/Peak)
 - [ ] Mark completed
 
@@ -110,17 +110,17 @@ Invariant status is updated in **Task 6** only, when there is linked automated p
   - Track mute: steps keep advancing while track audio/meter stay at zero
   - Master chain: limiter enable/bypass, GR meter
   - UI meters: track/master L/R activity and peak hold
-  - Engine fail-safe: FX/worklet init failure falls back to bypass/pass-through and app remains playable
+  - Engine fail-safe: module init failure falls back to bypass/pass-through and app remains playable
 - [ ] For each scenario, link exact test file (`vitest` / `playwright`) and expected result
 - [ ] Add `Invariant Traceability` section in `regression_gate.md`: map each invariant `[INV-1..INV-9]` -> validating test(s) -> status
 - [ ] Update the checklist in `Architecture Invariants` based only on this traceability map
 - [ ] Add explicit sign-off line: all `[INV-*]` have at least one passing automated proof
-- [ ] Add aggregate command `npm run test:arch` (runs critical regression suite)
+- [ ] Optional: add aggregate command `npm run test:arch` (runs critical regression suite)
 - [ ] Definition of Done for refactor:
   - `npm run build` is green
   - `npm run test` is green
   - `npm run test:e2e` is green
-  - `npm run test:arch` is green
+  - If `npm run test:arch` is introduced, it is green
   - No direct `Tone.getTransport()` usage in UI components
   - No `AudioNode` / `Tone.*` in public UI contracts
   - Invariant traceability is complete and all `[INV-*]` are green
