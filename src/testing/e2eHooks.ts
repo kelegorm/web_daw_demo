@@ -4,6 +4,7 @@ export interface E2EHooks {
   sequencerNoteOffSent: number;
   synthNoteOnReceived: number;
   synthNoteOffReceived: number;
+  synthPanicReceived: number;
   remountApp?: () => void;
 }
 
@@ -29,6 +30,7 @@ export function getE2EHooks(): E2EHooks | null {
       sequencerNoteOffSent: 0,
       synthNoteOnReceived: 0,
       synthNoteOffReceived: 0,
+      synthPanicReceived: 0,
     };
   }
 

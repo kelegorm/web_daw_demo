@@ -7,6 +7,7 @@ type E2EHooksState = {
   sequencerNoteOffSent: number
   synthNoteOnReceived: number
   synthNoteOffReceived: number
+  synthPanicReceived: number
 }
 
 test('one clip playback: sequencer sends 8 notes and synth receives all 8', async ({ page }) => {
@@ -22,6 +23,7 @@ test('one clip playback: sequencer sends 8 notes and synth receives all 8', asyn
       sequencerNoteOffSent: 0,
       synthNoteOnReceived: 0,
       synthNoteOffReceived: 0,
+      synthPanicReceived: 0,
     }
   })
 
@@ -48,6 +50,7 @@ test('one clip playback: sequencer sends 8 notes and synth receives all 8', asyn
       appWindow.__e2eHooks.sequencerNoteOffSent = 0
       appWindow.__e2eHooks.synthNoteOnReceived = 0
       appWindow.__e2eHooks.synthNoteOffReceived = 0
+      appWindow.__e2eHooks.synthPanicReceived = 0
     }
   })
 

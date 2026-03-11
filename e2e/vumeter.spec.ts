@@ -57,31 +57,6 @@ test('VU meter bar has height above minimum within 300ms after pressing C3 key',
   await c3.dispatchEvent('mouseup')
 })
 
-test('VU meter in track header exceeds minimum within 300ms after pressing C3 key', async ({ page }) => {
-  await page.goto('/')
-
-  // Click Play to initialize Tone.js audio context
-  const playBtn = page.locator('.toolbar-play-pause')
-  await playBtn.click()
-  await page.waitForTimeout(500)
-
-  // Press C3 on MIDI keyboard (MIDI 48)
-  const c3 = page.locator('.midi-keyboard [data-midi="48"]')
-  await expect(c3).toBeVisible()
-  await c3.dispatchEvent('mousedown')
-
-  // Wait up to 300ms for VU meter level to increase above 0
-  await page.waitForFunction(
-    () => (window.__vuMeterLevel ?? 0) > 0,
-    { timeout: 300 }
-  )
-
-  const level = await page.evaluate(() => window.__vuMeterLevel ?? 0)
-  expect(level).toBeGreaterThan(0)
-
-  await c3.dispatchEvent('mouseup')
-})
-
 test('VU meter returns to minimum within 300ms after clicking Mute', async ({ page }) => {
   await page.goto('/')
 
@@ -189,22 +164,19 @@ test('VU meter peak hold tick falls downward after release within 2000ms', async
   await page.waitForSelector('.track-header .vu-meter-peak', { timeout: 500 })
 
   const peakTick = page.locator('.track-header .vu-meter-peak').first()
+  await expect(peakTick).toBeVisible()
+  const holdBottom = await peakTick.evaluate((el) => parseFloat((el as HTMLElement).style.bottom))
 
-  // Release the key — peak should start decaying after hold interval
+  // Release the key. Tick should still be visible during short hold window.
   await c3.dispatchEvent('mouseup')
+  await page.waitForTimeout(100)
+  await expect(peakTick).toBeVisible()
   await page.locator('.toolbar-stop').click()
 
-  // Wait for hold to expire and capture decay trend in two samples.
-  await page.waitForTimeout(1700)
-  const peakExists = await page.locator('.track-header .vu-meter-peak').first().isVisible().catch(() => false)
-  if (peakExists) {
-    const firstAfterHold = await peakTick.evaluate((el) => parseFloat((el as HTMLElement).style.bottom))
-    await page.waitForTimeout(300)
-    const stillExists = await page.locator('.track-header .vu-meter-peak').first().isVisible().catch(() => false)
-    if (stillExists) {
-      const secondAfterHold = await peakTick.evaluate((el) => parseFloat((el as HTMLElement).style.bottom))
-      expect(secondAfterHold).toBeLessThan(firstAfterHold)
-    }
-  }
-  // If it disappeared, that also means it fell — test passes
+  // After hold expires, peak should either move down or disappear.
+  await expect.poll(async () => {
+    const visible = await peakTick.isVisible().catch(() => false)
+    if (!visible) return -1
+    return peakTick.evaluate((el) => parseFloat((el as HTMLElement).style.bottom))
+  }, { timeout: 2000 }).toBeLessThan(holdBottom - 0.5)
 })

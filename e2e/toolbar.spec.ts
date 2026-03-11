@@ -57,14 +57,58 @@ test('change toolbar BPM input to 140, verify displayed value is 140', async ({ 
 })
 
 test('click toolbar Panic releases all active notes', async ({ page }) => {
+  await page.addInitScript(() => {
+    const appWindow = window as Window & {
+      __e2eHooksEnabled?: boolean
+      __e2eHooks?: {
+        sequencerTicks: number
+        sequencerNoteOnSent: number
+        sequencerNoteOffSent: number
+        synthNoteOnReceived: number
+        synthNoteOffReceived: number
+        synthPanicReceived: number
+      }
+    }
+    appWindow.__e2eHooksEnabled = true
+    appWindow.__e2eHooks = {
+      sequencerTicks: 0,
+      sequencerNoteOnSent: 0,
+      sequencerNoteOffSent: 0,
+      synthNoteOnReceived: 0,
+      synthNoteOffReceived: 0,
+      synthPanicReceived: 0,
+    }
+  })
+
   await page.goto('/')
 
-  // Reset panic count tracking
-  await page.evaluate(() => { window.__panicCount = 0 })
+  const playBtn = page.locator('.toolbar-play-pause')
+  await playBtn.click()
+  await expectPlayState(playBtn, 'pause')
+  await playBtn.click()
+  await expectPlayState(playBtn, 'play')
+
+  const c3 = page.locator('.midi-keyboard [data-midi="48"]')
+  await expect(c3).toBeVisible()
+  await c3.dispatchEvent('mousedown')
+  await page.waitForFunction(() => (window.__vuMeterLevel ?? 0) > 0, { timeout: 500 })
+
+  const panicCountBefore = await page.evaluate(() => {
+    const appWindow = window as Window & {
+      __e2eHooks?: { synthPanicReceived?: number }
+    }
+    return appWindow.__e2eHooks?.synthPanicReceived ?? 0
+  })
 
   const panicBtn = page.locator('.toolbar-panic')
   await panicBtn.click()
 
-  const panicCount = await page.evaluate(() => window.__panicCount)
-  expect(panicCount).toBeGreaterThan(0)
+  await page.waitForFunction((prev) => {
+    const appWindow = window as Window & {
+      __e2eHooks?: { synthPanicReceived?: number }
+    }
+    return (appWindow.__e2eHooks?.synthPanicReceived ?? 0) > prev
+  }, panicCountBefore)
+
+  await page.waitForFunction(() => (window.__vuMeterLevel ?? 0) < 0.001, { timeout: 2000 })
 })

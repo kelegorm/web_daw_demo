@@ -2,7 +2,7 @@
  * Type-level tests: public UI-hook types must not include AudioNode / Tone.* members.
  * These tests are compile-time checks encoded as runtime assertions on the interface shape.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it } from 'vitest';
 import { expectTypeOf } from 'vitest';
 import type { ToneSynthHook } from '../hooks/useToneSynth';
 import type { PannerHook } from '../hooks/usePanner';

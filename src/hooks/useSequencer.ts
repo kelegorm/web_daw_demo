@@ -27,8 +27,8 @@ export function createSequencer(
   noteOn: (midi: number, velocity: number, time?: number) => void,
   noteOff: (midi: number, time?: number) => void,
   panic: () => void,
-  onStepChange?: (step: number) => void,
   transport: SequencerTransport,
+  onStepChange?: (step: number) => void,
 ): Sequencer {
   let _currentStep = -1;
   let _isPlaying = false;
@@ -143,8 +143,8 @@ export function useSequencer(
       (midi, velocity, time) => noteOnRef.current(midi, velocity, time),
       (midi, time) => noteOffRef.current(midi, time),
       () => panicRef.current(),
-      (step) => setCurrentStep(step),
       serviceRef.current,
+      (step) => setCurrentStep(step),
     );
   }
 

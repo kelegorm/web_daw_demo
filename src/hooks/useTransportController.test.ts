@@ -21,6 +21,8 @@ const { mockState } = vi.hoisted(() => ({
       stop: vi.fn(),
       state: 'stopped',
       loop: false,
+      loopStart: 0,
+      loopEnd: '',
       bpm: { value: 120 },
     },
   },

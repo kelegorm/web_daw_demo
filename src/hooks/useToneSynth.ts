@@ -85,6 +85,10 @@ export function createToneSynth(): ToneSynthGraph {
   }
 
   function panic() {
+    const e2eHooks = getE2EHooks();
+    if (e2eHooks) {
+      e2eHooks.synthPanicReceived += 1;
+    }
     synth.releaseAll();
   }
 

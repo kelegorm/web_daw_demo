@@ -73,7 +73,7 @@ describe('createSequencer (Tone.js)', () => {
     const panic = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, undefined, transport);
+    const seq = createSequencer(noteOn, noteOff, panic, transport, undefined);
     seq.start();
 
     expect(mockState.callback).not.toBeNull();
@@ -92,7 +92,7 @@ describe('createSequencer (Tone.js)', () => {
     const panic = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, undefined, transport);
+    const seq = createSequencer(noteOn, noteOff, panic, transport, undefined);
     seq.start();
 
     // Fire first event
@@ -113,7 +113,7 @@ describe('createSequencer (Tone.js)', () => {
     const onStepChange = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, onStepChange, transport);
+    const seq = createSequencer(noteOn, noteOff, panic, transport, onStepChange);
     seq.start();
 
     mockState.callback!(0, mockState.events[0][1]);
@@ -133,7 +133,7 @@ describe('createSequencer (Tone.js)', () => {
     const panic = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, undefined, transport);
+    const seq = createSequencer(noteOn, noteOff, panic, transport, undefined);
     seq.start();
     mockState.callback!(0, mockState.events[0][1]);
     expect(noteOn).toHaveBeenCalledTimes(1);
@@ -151,7 +151,7 @@ describe('createSequencer (Tone.js)', () => {
     const panic = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, undefined, transport);
+    const seq = createSequencer(noteOn, noteOff, panic, transport, undefined);
     seq.start();
 
     mockState.callback!(0, mockState.events[2][1]);
@@ -170,7 +170,7 @@ describe('createSequencer (Tone.js)', () => {
     const panic = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, undefined, transport);
+    const seq = createSequencer(noteOn, noteOff, panic, transport, undefined);
     seq.start();
 
     // Tone.Time mock returns { toSeconds: () => 0.25 }, so noteDuration = 0.25 * 0.8 = 0.2
@@ -191,7 +191,7 @@ describe('createSequencer (Tone.js)', () => {
     const panic = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, undefined, transport);
+    const seq = createSequencer(noteOn, noteOff, panic, transport, undefined);
     seq.start();
 
     mockState.callback!(0, mockState.events[0][1]);
@@ -213,7 +213,7 @@ describe('createSequencer (Tone.js)', () => {
     const panic = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, undefined, transport);
+    const seq = createSequencer(noteOn, noteOff, panic, transport, undefined);
 
     seq.setLoop(true);
     expect(mockState.part.loop).toBe(true);

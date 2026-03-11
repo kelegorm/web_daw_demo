@@ -68,11 +68,11 @@ export function createTransportCore(
     deps.noteOn,
     deps.noteOff,
     deps.synthPanic,
+    transportService,
     (step) => {
       transportService.updateCurrentStep(step);
       deps.onStepChange?.(step);
     },
-    transportService,
   );
 
   function play() {

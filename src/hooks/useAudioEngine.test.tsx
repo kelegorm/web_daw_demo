@@ -1,4 +1,4 @@
-import React, { StrictMode } from 'react';
+import * as React from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -56,14 +56,14 @@ describe('useAudioEngine', () => {
 
       return {
         dispose,
-      } as ReturnType<typeof createAudioEngine>;
+      } as unknown as ReturnType<typeof createAudioEngine>;
     });
 
     flushSync(() => {
       root.render(
-        <StrictMode>
+        <React.StrictMode>
           <Probe />
-        </StrictMode>,
+        </React.StrictMode>,
       );
     });
 

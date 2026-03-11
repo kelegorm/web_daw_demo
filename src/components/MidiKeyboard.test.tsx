@@ -1,4 +1,4 @@
-import React from 'react'
+import * as React from 'react'
 import { createRoot, Root } from 'react-dom/client'
 import { flushSync } from 'react-dom'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
