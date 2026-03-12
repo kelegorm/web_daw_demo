@@ -101,47 +101,47 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ENG-01 | — | Pending |
-| ENG-02 | — | Pending |
-| ENG-03 | — | Pending |
-| ENG-04 | — | Pending |
-| ENG-05 | — | Pending |
-| ENG-06 | — | Pending |
-| ENG-07 | — | Pending |
-| STATE-01 | — | Pending |
-| STATE-02 | — | Pending |
-| STATE-03 | — | Pending |
-| STATE-04 | — | Pending |
-| STATE-05 | — | Pending |
-| STATE-06 | — | Pending |
-| STATE-07 | — | Pending |
-| STATE-08 | — | Pending |
-| CRUD-01 | — | Pending |
-| CRUD-02 | — | Pending |
-| CRUD-03 | — | Pending |
-| CRUD-04 | — | Pending |
-| CRUD-05 | — | Pending |
-| CRUD-06 | — | Pending |
-| CRUD-07 | — | Pending |
-| APP-01 | — | Pending |
-| APP-02 | — | Pending |
-| APP-03 | — | Pending |
-| APP-04 | — | Pending |
-| COMP-01 | — | Pending |
-| COMP-02 | — | Pending |
-| COMP-03 | — | Pending |
-| COMP-04 | — | Pending |
-| COMP-05 | — | Pending |
-| COMP-06 | — | Pending |
-| COMPAT-01 | — | Pending |
-| COMPAT-02 | — | Pending |
-| COMPAT-03 | — | Pending |
+| ENG-01 | Phase 1 | Pending |
+| ENG-02 | Phase 1 | Pending |
+| ENG-03 | Phase 1 | Pending |
+| ENG-04 | Phase 1 | Pending |
+| ENG-05 | Phase 1 | Pending |
+| ENG-06 | Phase 1 | Pending |
+| ENG-07 | Phase 1 | Pending |
+| STATE-01 | Phase 2 | Pending |
+| STATE-02 | Phase 2 | Pending |
+| STATE-03 | Phase 2 | Pending |
+| STATE-04 | Phase 2 | Pending |
+| STATE-05 | Phase 2 | Pending |
+| STATE-06 | Phase 2 | Pending |
+| STATE-07 | Phase 2 | Pending |
+| STATE-08 | Phase 2 | Pending |
+| CRUD-01 | Phase 4 | Pending |
+| CRUD-02 | Phase 4 | Pending |
+| CRUD-03 | Phase 4 | Pending |
+| CRUD-04 | Phase 4 | Pending |
+| CRUD-05 | Phase 4 | Pending |
+| CRUD-06 | Phase 4 | Pending |
+| CRUD-07 | Phase 4 | Pending |
+| APP-01 | Phase 3 | Pending |
+| APP-02 | Phase 3 | Pending |
+| APP-03 | Phase 3 | Pending |
+| APP-04 | Phase 3 | Pending |
+| COMP-01 | Phase 4 | Pending |
+| COMP-02 | Phase 4 | Pending |
+| COMP-03 | Phase 4 | Pending |
+| COMP-04 | Phase 4 | Pending |
+| COMP-05 | Phase 4 | Pending |
+| COMP-06 | Phase 4 | Pending |
+| COMPAT-01 | Phase 5 | Pending |
+| COMPAT-02 | Phase 5 | Pending |
+| COMPAT-03 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 35 total
-- Mapped to phases: 0
-- Unmapped: 35 ⚠️
+- Mapped to phases: 35
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-12*
-*Last updated: 2026-03-12 after initial definition*
+*Last updated: 2026-03-12 — traceability filled in after roadmap creation*
