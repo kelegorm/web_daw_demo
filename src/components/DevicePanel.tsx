@@ -1,10 +1,13 @@
-import SynthDevice from './SynthDevice'
-import PannerDevice from './PannerDevice'
-import LimiterDevice from './LimiterDevice'
 import type { ToneSynthHook } from '../hooks/useToneSynth'
 import type { PannerHook } from '../hooks/usePanner'
 import type { LimiterHook } from '../hooks/useLimiter'
 import { useTrackSelectionContext } from '../hooks/useTrackSelection'
+import {
+  DEFAULT_UI_PLAN_LIMITER_DEVICE_ID,
+  DEFAULT_UI_PLAN_PANNER_DEVICE_ID,
+  DEFAULT_UI_PLAN_SYNTH_DEVICE_ID,
+} from '../ui-plan/defaultUiPlan'
+import { renderDeviceFromRegistry } from '../ui-plan/deviceRegistry'
 
 interface Props {
   synth: ToneSynthHook
@@ -92,11 +95,26 @@ export default function DevicePanel({ synth, panner, limiter }: Props) {
         >
           {selectedTrack === 'synth1' ? (
             <>
-              <SynthDevice synth={synth} />
-              <PannerDevice panner={panner} />
+              {renderDeviceFromRegistry({
+                uiDeviceId: DEFAULT_UI_PLAN_SYNTH_DEVICE_ID,
+                displayName: 'Synth',
+                moduleKind: 'SYNTH',
+                module: synth,
+              })}
+              {renderDeviceFromRegistry({
+                uiDeviceId: DEFAULT_UI_PLAN_PANNER_DEVICE_ID,
+                displayName: 'Panner',
+                moduleKind: 'PANNER',
+                module: panner,
+              })}
             </>
           ) : (
-            <LimiterDevice limiter={limiter} />
+            renderDeviceFromRegistry({
+              uiDeviceId: DEFAULT_UI_PLAN_LIMITER_DEVICE_ID,
+              displayName: 'Limiter',
+              moduleKind: 'LIMITER',
+              module: limiter,
+            })
           )}
         </div>
       </div>

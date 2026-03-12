@@ -105,19 +105,19 @@ Scope constraints:
 - [x] Mark completed.
 
 ### Task 3: Add UI runtime constructor from plan
-- [ ] Create `src/ui-plan/buildUiRuntime.ts`.
-- [ ] Create `src/ui-plan/deviceRegistry.ts` and keep device-kind to adapter mapping centralized.
-- [ ] Keep it a pure function (safe for per-render/useMemo calls); do not treat `selectedTrackId` as constructor-time immutable input.
-- [ ] Input: `uiPlan`, `midiClipStore` (from `project-runtime`), `audioEngine`, `selectedTrackId`.
-- [ ] Output two runtime models: `trackZoneModel` and `devicePanelModel`.
-- [ ] Keep responsibility boundary strict: runtime constructor returns runtime data/contracts; `DeviceRegistry` remains separate.
-- [ ] Resolve track clips by `clipIds` from `MidiClipStore` (fail-fast if a clip id is missing).
-- [ ] Resolve device models by `UiDevicePlan.moduleId` and `moduleKind` (fail-fast on missing/mismatched ids) for both regular tracks and `masterTrack`.
-- [ ] Enforce namespace safety in runtime mapping: resolve audio modules only via explicit audio link fields, never via UI ids.
-- [ ] Use `DeviceRegistry` in renderers, so plan-driven device iteration does not require dynamic hook creation.
-- [ ] Explicit rule: no `use*` hook calls inside plan/device iteration paths in `DevicePanel` and related render helpers.
-- [ ] Add unit tests for success path and fail-fast path.
-- [ ] Mark completed.
+- [x] Create `src/ui-plan/buildUiRuntime.ts`.
+- [x] Create `src/ui-plan/deviceRegistry.ts` and keep device-kind to adapter mapping centralized.
+- [x] Keep it a pure function (safe for per-render/useMemo calls); do not treat `selectedTrackId` as constructor-time immutable input.
+- [x] Input: `uiPlan`, `midiClipStore` (from `project-runtime`), `audioEngine`, `selectedTrackId`.
+- [x] Output two runtime models: `trackZoneModel` and `devicePanelModel`.
+- [x] Keep responsibility boundary strict: runtime constructor returns runtime data/contracts; `DeviceRegistry` remains separate.
+- [x] Resolve track clips by `clipIds` from `MidiClipStore` (fail-fast if a clip id is missing).
+- [x] Resolve device models by `UiDevicePlan.moduleId` and `moduleKind` (fail-fast on missing/mismatched ids) for both regular tracks and `masterTrack`.
+- [x] Enforce namespace safety in runtime mapping: resolve audio modules only via explicit audio link fields, never via UI ids.
+- [x] Use `DeviceRegistry` in renderers, so plan-driven device iteration does not require dynamic hook creation.
+- [x] Explicit rule: no `use*` hook calls inside plan/device iteration paths in `DevicePanel` and related render helpers.
+- [x] Add unit tests for success path and fail-fast path.
+- [x] Mark completed.
 
 ### Task 4: Refactor `DevicePanel` to model-driven rendering
 - [ ] Replace hardcoded `synth/panner/limiter` branch rendering with iteration over `devicePanelModel.devices`.
