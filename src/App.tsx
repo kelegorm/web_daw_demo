@@ -4,24 +4,32 @@ import TrackZone from './components/TrackZone'
 import type { TrackZoneActions, TrackZoneModel } from './components/TrackZone'
 import DevicePanel from './components/DevicePanel'
 import MidiKeyboard from './components/MidiKeyboard'
-import { useToneSynth } from './hooks/useToneSynth'
-import { usePanner } from './hooks/usePanner'
+import { useToneSynth, createToneSynth } from './hooks/useToneSynth'
+import { usePanner, createPanner } from './hooks/usePanner'
 import { useTrackStrip } from './hooks/useTrackStrip'
 import { useMasterStrip } from './hooks/useMasterStrip'
+import type { MasterStripHook } from './hooks/useMasterStrip'
 import { useLimiter } from './hooks/useLimiter'
 import { useTransportController } from './hooks/useTransportController'
 import {
   useTrackSelection,
 } from './hooks/useTrackSelection'
 import type { AudioEngine } from './engine/audioEngine'
-import { useAudioEngine } from './hooks/useAudioEngine'
+import { getAudioEngine, DEFAULT_TRACK_ID } from './engine/engineSingleton'
+import {
+  DEFAULT_PLAN_SYNTH_ID,
+  DEFAULT_PLAN_PANNER_ID,
+  DEFAULT_PLAN_TRACK_STRIP_ID,
+  DEFAULT_PLAN_LIMITER_ID,
+  DEFAULT_PLAN_MASTER_STRIP_ID,
+} from './engine/audioGraphPlan'
 import {
   DEFAULT_MIDI_CLIP_SOURCE,
   DEFAULT_MIDI_CLIP_STORE,
 } from './project-runtime/midiClipStore'
 import { buildUiRuntime } from './ui-plan/buildUiRuntime'
 import { DEFAULT_UI_PLAN } from './ui-plan/defaultUiPlan'
-import { resolveInitialTrackId, type UiDevicePlan } from './ui-plan/uiPlan'
+import { resolveInitialTrackId } from './ui-plan/uiPlan'
 import './App.css'
 
 declare global {
@@ -34,44 +42,83 @@ declare global {
 
 const INITIAL_TRACK_ID = resolveInitialTrackId(DEFAULT_UI_PLAN)
 
-function findDeviceModuleIdByKindOrThrow(devices: UiDevicePlan[], moduleKind: UiDevicePlan['moduleKind']): string {
-  const device = devices.find((candidate) => candidate.moduleKind === moduleKind)
-  if (!device) {
-    throw new Error(`[app] missing ${moduleKind} device in default UI plan`)
-  }
+// ---------------------------------------------------------------------------
+// Module-level device graphs — created once, never recreated.
+// The singleton manages: track strip, limiter, master strip.
+// Synth and panner are created here and wired into the singleton's track subgraph.
+// ---------------------------------------------------------------------------
+const _synthGraph = createToneSynth()
+const _pannerGraph = createPanner()
 
-  return device.moduleId
+// Wire: synth output -> panner input
+_pannerGraph.connectSource(_synthGraph.getOutput())
+
+// Wire: panner output -> singleton's track-1 strip input.
+// Both use Tone.js's AudioContext, so connect() is valid (no cross-context error).
+const _singletonEngine = getAudioEngine()
+const _track1Strip = _singletonEngine._legacy.getTrackStripGraph(DEFAULT_TRACK_ID)
+_pannerGraph.output.connect(_track1Strip.input)
+
+const _limiterGraph = _singletonEngine._legacy.limiterGraph
+
+// Wrap the singleton's MasterFacade (setGain/getGain) into the MasterStripHook
+// shape (setMasterVolume/masterVolume) that buildUiRuntime and useMasterStrip expect.
+const _masterFacade = _singletonEngine.getMasterFacade()
+const _masterStripHook: MasterStripHook = {
+  get masterVolume() { return _masterFacade.getGain() },
+  setMasterVolume(db: number) { _masterFacade.setGain(db) },
+  get meterSource() { return _masterFacade.meterSource },
 }
 
-const INITIAL_TRACK_PLAN =
-  DEFAULT_UI_PLAN.tracks.find((track) => track.trackId === INITIAL_TRACK_ID) ?? DEFAULT_UI_PLAN.tracks[0]
-
-if (!INITIAL_TRACK_PLAN) {
-  throw new Error('[app] default UI plan must include at least one regular track')
+// ---------------------------------------------------------------------------
+// legacyEngineAdapter — implements AudioEngine interface using the singleton's
+// internal graphs. Passed to buildUiRuntime for device resolution.
+// buildUiRuntime.ts is NOT modified — it receives AudioEngine and calls
+// getSynth/getPanner/getTrackStrip/getLimiter/getMasterStrip by module ID.
+// ---------------------------------------------------------------------------
+const legacyEngineAdapter: AudioEngine = {
+  getSynth: (id: string) => {
+    if (id !== DEFAULT_PLAN_SYNTH_ID) {
+      throw new Error(`[app] unknown synth module id: ${id}`)
+    }
+    return _synthGraph
+  },
+  getPanner: (id: string) => {
+    if (id !== DEFAULT_PLAN_PANNER_ID) {
+      throw new Error(`[app] unknown panner module id: ${id}`)
+    }
+    return _pannerGraph
+  },
+  getTrackStrip: (id: string) => {
+    if (id !== DEFAULT_PLAN_TRACK_STRIP_ID) {
+      throw new Error(`[app] unknown track strip module id: ${id}`)
+    }
+    return _track1Strip
+  },
+  getLimiter: (id: string) => {
+    if (id !== DEFAULT_PLAN_LIMITER_ID) {
+      throw new Error(`[app] unknown limiter module id: ${id}`)
+    }
+    return _limiterGraph
+  },
+  getMasterStrip: (id: string) => {
+    if (id !== DEFAULT_PLAN_MASTER_STRIP_ID) {
+      throw new Error(`[app] unknown master strip module id: ${id}`)
+    }
+    return _masterStripHook
+  },
+  dispose: () => {
+    // No-op: singleton has no dispose. App-lifetime singleton avoids
+    // React lifecycle disposal/recreation bugs (see STATE.md decisions).
+  },
 }
-
-const APP_SYNTH_MODULE_ID = findDeviceModuleIdByKindOrThrow(INITIAL_TRACK_PLAN.devices, 'SYNTH')
-const APP_PANNER_MODULE_ID = findDeviceModuleIdByKindOrThrow(INITIAL_TRACK_PLAN.devices, 'PANNER')
-const APP_TRACK_STRIP_ID = INITIAL_TRACK_PLAN.trackStripId
-const APP_LIMITER_MODULE_ID = findDeviceModuleIdByKindOrThrow(DEFAULT_UI_PLAN.masterTrack.devices, 'LIMITER')
-const APP_MASTER_STRIP_ID = DEFAULT_UI_PLAN.masterTrack.trackStripId
 
 function App() {
-  const audioEngine = useAudioEngine()
-
-  if (!audioEngine) {
-    return <div id="app" />
-  }
-
-  return <AppWithEngine audioEngine={audioEngine} />
-}
-
-function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
-  const toneSynth = useToneSynth(audioEngine.getSynth(APP_SYNTH_MODULE_ID))
-  const panner = usePanner(audioEngine.getPanner(APP_PANNER_MODULE_ID))
-  const trackStrip = useTrackStrip(audioEngine.getTrackStrip(APP_TRACK_STRIP_ID))
-  const masterStrip = useMasterStrip(audioEngine.getMasterStrip(APP_MASTER_STRIP_ID))
-  const limiter = useLimiter(audioEngine.getLimiter(APP_LIMITER_MODULE_ID))
+  const toneSynth = useToneSynth(_synthGraph)
+  const panner = usePanner(_pannerGraph)
+  const trackStrip = useTrackStrip(_track1Strip)
+  const masterStrip = useMasterStrip(_masterStripHook)
+  const limiter = useLimiter(_limiterGraph)
   const transport = useTransportController(toneSynth, trackStrip, DEFAULT_MIDI_CLIP_SOURCE)
   const [trackRecByTrackId, setTrackRecByTrackId] = useState<Record<string, boolean>>({
     [INITIAL_TRACK_ID]: true,
@@ -80,7 +127,7 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
   const uiRuntime = buildUiRuntime({
     uiPlan: DEFAULT_UI_PLAN,
     midiClipStore: DEFAULT_MIDI_CLIP_STORE,
-    audioEngine,
+    audioEngine: legacyEngineAdapter,
     selectedTrackId: trackSelection.selectedTrack,
   })
 
@@ -94,18 +141,9 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
       trackId: runtimeTrack.trackId,
       displayName: runtimeTrack.displayName,
       clips: runtimeTrack.clips,
-      meterSource:
-        runtimeTrack.trackStripId === APP_TRACK_STRIP_ID
-          ? trackStrip.meterSource
-          : runtimeTrack.trackStrip.meterSource,
-      volumeDb:
-        runtimeTrack.trackStripId === APP_TRACK_STRIP_ID
-          ? trackStrip.trackVolume
-          : runtimeTrack.trackStrip.trackVolume,
-      isMuted:
-        runtimeTrack.trackStripId === APP_TRACK_STRIP_ID
-          ? trackStrip.isTrackMuted
-          : runtimeTrack.trackStrip.isTrackMuted,
+      meterSource: runtimeTrack.trackStrip.meterSource,
+      volumeDb: runtimeTrack.trackStrip.trackVolume,
+      isMuted: runtimeTrack.trackStrip.isTrackMuted,
       isRecEnabled: trackRecByTrackId[runtimeTrack.trackId] ?? false,
     })),
     masterTrack: {
@@ -119,13 +157,13 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
   const devicePanelModel = {
     ...uiRuntime.devicePanelModel,
     devices: uiRuntime.devicePanelModel.devices.map((device) => {
-      if (device.moduleId === APP_SYNTH_MODULE_ID) {
+      if (device.moduleId === DEFAULT_PLAN_SYNTH_ID) {
         return { ...device, module: toneSynth }
       }
-      if (device.moduleId === APP_PANNER_MODULE_ID) {
+      if (device.moduleId === DEFAULT_PLAN_PANNER_ID) {
         return { ...device, module: panner }
       }
-      if (device.moduleId === APP_LIMITER_MODULE_ID) {
+      if (device.moduleId === DEFAULT_PLAN_LIMITER_ID) {
         return { ...device, module: limiter }
       }
       return device
@@ -140,7 +178,7 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
         return
       }
 
-      if (runtimeTrack.trackStripId === APP_TRACK_STRIP_ID) {
+      if (runtimeTrack.trackStripId === DEFAULT_PLAN_TRACK_STRIP_ID) {
         transport.setTrackMute(muted)
         return
       }
@@ -156,7 +194,7 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
         return
       }
 
-      if (runtimeTrack.trackStripId === APP_TRACK_STRIP_ID) {
+      if (runtimeTrack.trackStripId === DEFAULT_PLAN_TRACK_STRIP_ID) {
         trackStrip.setTrackVolume(db)
         return
       }

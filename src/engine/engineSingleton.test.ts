@@ -176,7 +176,7 @@ beforeEach(() => {
   vi.mocked(Tone.getContext).mockReturnValue({ rawContext: mockAudioContext } as any);
   vi.mocked(Tone.getContext).mockClear();
   // Reset AudioContext factory call counts
-  mockAudioContext.createGain = vi.fn(() => mockPreLimiterBusGainNode);
+  mockAudioContext.createGain = vi.fn(() => mockPreLimiterBusGainNode) as unknown as typeof mockAudioContext.createGain;
   _resetEngineForTesting();
 });
 
@@ -197,7 +197,7 @@ describe('Singleton idempotency', () => {
     resetMocks();
     vi.mocked(createLimiter).mockReturnValue(mockLimiterGraph);
     vi.mocked(createMasterStrip).mockReturnValue(mockMasterStripGraph);
-    mockAudioContext.createGain = vi.fn(() => mockPreLimiterBusGainNode);
+    mockAudioContext.createGain = vi.fn(() => mockPreLimiterBusGainNode) as unknown as typeof mockAudioContext.createGain;
     const second = getAudioEngine();
     expect(first).not.toBe(second);
   });

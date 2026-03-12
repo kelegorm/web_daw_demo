@@ -3,7 +3,6 @@ import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useAudioEngine } from './hooks/useAudioEngine'
 import type { MeterSource } from './engine/types'
 import {
   DEFAULT_MIDI_CLIP_ID,
@@ -11,14 +10,39 @@ import {
   DEFAULT_MIDI_CLIP_STORE,
 } from './project-runtime/midiClipStore'
 import { DEFAULT_UI_PLAN } from './ui-plan/defaultUiPlan'
-import { resolveInitialTrackId, type UiDevicePlan } from './ui-plan/uiPlan'
+import { resolveInitialTrackId } from './ui-plan/uiPlan'
 
-vi.mock('./engine/audioEngine', () => ({
-  createAudioEngine: vi.fn(),
+// ---------------------------------------------------------------------------
+// Mock the engine singleton so module-level getAudioEngine() call in App.tsx
+// returns a controlled fake, not real Web Audio nodes.
+// ---------------------------------------------------------------------------
+vi.mock('./engine/engineSingleton', () => ({
+  DEFAULT_TRACK_ID: 'track-1',
+  getAudioEngine: vi.fn(),
+  _resetEngineForTesting: vi.fn(),
 }))
 
-vi.mock('./hooks/useAudioEngine', () => ({
-  useAudioEngine: vi.fn(),
+// Mock createToneSynth and createPanner to avoid real Tone.js / Web Audio nodes
+vi.mock('./hooks/useToneSynth', () => ({
+  createToneSynth: vi.fn(),
+  useToneSynth: vi.fn((hook) => hook),
+}))
+
+vi.mock('./hooks/usePanner', () => ({
+  createPanner: vi.fn(),
+  usePanner: vi.fn((hook) => hook),
+}))
+
+vi.mock('./hooks/useTrackStrip', () => ({
+  useTrackStrip: vi.fn((hook) => hook),
+}))
+
+vi.mock('./hooks/useMasterStrip', () => ({
+  useMasterStrip: vi.fn((hook) => hook),
+}))
+
+vi.mock('./hooks/useLimiter', () => ({
+  useLimiter: vi.fn((hook) => hook),
 }))
 
 vi.mock('./hooks/useTransportController', () => ({
@@ -37,26 +61,6 @@ vi.mock('./hooks/useTransportController', () => ({
     setTrackMute: vi.fn(),
     getPositionSeconds: vi.fn(() => 0),
   })),
-}))
-
-vi.mock('./hooks/useToneSynth', () => ({
-  useToneSynth: vi.fn((hook) => hook),
-}))
-
-vi.mock('./hooks/usePanner', () => ({
-  usePanner: vi.fn((hook) => hook),
-}))
-
-vi.mock('./hooks/useTrackStrip', () => ({
-  useTrackStrip: vi.fn((hook) => hook),
-}))
-
-vi.mock('./hooks/useMasterStrip', () => ({
-  useMasterStrip: vi.fn((hook) => hook),
-}))
-
-vi.mock('./hooks/useLimiter', () => ({
-  useLimiter: vi.fn((hook) => hook),
 }))
 
 vi.mock('./components/Toolbar', () => ({
@@ -80,34 +84,40 @@ vi.mock('./ui-plan/buildUiRuntime', () => ({
 }))
 
 const INITIAL_TRACK_ID = resolveInitialTrackId(DEFAULT_UI_PLAN)
-const INITIAL_TRACK_PLAN =
-  DEFAULT_UI_PLAN.tracks.find((track) => track.trackId === INITIAL_TRACK_ID) ?? DEFAULT_UI_PLAN.tracks[0]
-
-if (!INITIAL_TRACK_PLAN) {
-  throw new Error('[test] default UI plan must include at least one regular track')
-}
-
-function findDeviceModuleIdByKindOrThrow(devices: UiDevicePlan[], moduleKind: UiDevicePlan['moduleKind']): string {
-  const device = devices.find((candidate) => candidate.moduleKind === moduleKind)
-  if (!device) {
-    throw new Error(`[test] missing ${moduleKind} device in default UI plan`)
-  }
-
-  return device.moduleId
-}
-
-const EXPECTED_SYNTH_MODULE_ID = findDeviceModuleIdByKindOrThrow(INITIAL_TRACK_PLAN.devices, 'SYNTH')
-const EXPECTED_PANNER_MODULE_ID = findDeviceModuleIdByKindOrThrow(INITIAL_TRACK_PLAN.devices, 'PANNER')
-const EXPECTED_TRACK_STRIP_ID = INITIAL_TRACK_PLAN.trackStripId
-const EXPECTED_LIMITER_MODULE_ID = findDeviceModuleIdByKindOrThrow(DEFAULT_UI_PLAN.masterTrack.devices, 'LIMITER')
-const EXPECTED_MASTER_TRACK_STRIP_ID = DEFAULT_UI_PLAN.masterTrack.trackStripId
 
 function makeMockMeterSource(): MeterSource {
   return { subscribe: vi.fn(() => vi.fn()) }
 }
 
-function makeMockEngine() {
-  const synthHook = {
+function makeMockTrackStrip() {
+  return {
+    input: {} as GainNode,
+    output: {} as GainNode,
+    trackVolume: 0,
+    isTrackMuted: false,
+    setTrackVolume: vi.fn(),
+    setTrackMuted: vi.fn(),
+    meterSource: makeMockMeterSource(),
+    dispose: vi.fn(),
+  }
+}
+
+function makeMockLimiterGraph() {
+  return {
+    input: {} as AudioNode,
+    output: {} as AudioNode,
+    isEnabled: true,
+    threshold: -3,
+    setThreshold: vi.fn(),
+    setEnabled: vi.fn(),
+    getReductionDb: vi.fn(() => 0),
+    meterSource: makeMockMeterSource(),
+    dispose: vi.fn(),
+  }
+}
+
+function makeMockSynthGraph() {
+  return {
     isEnabled: true,
     filterCutoff: 2000,
     voiceSpread: 0,
@@ -119,51 +129,39 @@ function makeMockEngine() {
     setVoiceSpread: vi.fn(),
     setVolume: vi.fn(),
     setEnabled: vi.fn(),
-  }
-  const pannerHook = { pan: 0, isEnabled: true, setPan: vi.fn(), setEnabled: vi.fn() }
-  const trackStripHook = {
-    trackVolume: 0,
-    isTrackMuted: false,
-    setTrackVolume: vi.fn(),
-    setTrackMuted: vi.fn(),
-    meterSource: makeMockMeterSource(),
-  }
-  const limiterHook = {
-    isEnabled: true,
-    threshold: -3,
-    setThreshold: vi.fn(),
-    setEnabled: vi.fn(),
-    getReductionDb: vi.fn(() => 0),
-    meterSource: makeMockMeterSource(),
-  }
-  const masterStripHook = {
-    masterVolume: 0,
-    setMasterVolume: vi.fn(),
-    meterSource: makeMockMeterSource(),
-  }
-
-  const engine = {
-    getSynth: vi.fn(() => synthHook),
-    getPanner: vi.fn(() => pannerHook),
-    getTrackStrip: vi.fn(() => trackStripHook),
-    getLimiter: vi.fn(() => limiterHook),
-    getMasterStrip: vi.fn(() => masterStripHook),
-    dispose: vi.fn(),
-  }
-
-  return {
-    engine,
-    modules: {
-      synthHook,
-      pannerHook,
-      trackStripHook,
-      limiterHook,
-      masterStripHook,
-    },
+    getSynth: vi.fn(() => null),
+    getOutput: vi.fn(() => ({} as any)),
   }
 }
 
-function makeMockUiRuntime(modules: ReturnType<typeof makeMockEngine>['modules']) {
+function makeMockPannerGraph() {
+  return {
+    input: {} as GainNode,
+    output: { connect: vi.fn() } as unknown as GainNode,
+    pan: 0,
+    isEnabled: true,
+    setPan: vi.fn(),
+    setEnabled: vi.fn(),
+    connectSource: vi.fn(),
+    dispose: vi.fn(),
+  }
+}
+
+function makeMockMasterFacade() {
+  let gain = 0
+  const meterSource = makeMockMeterSource()
+  return {
+    get meterSource() { return meterSource },
+    setGain: vi.fn((db: number) => { gain = db }),
+    getGain: vi.fn(() => gain),
+  }
+}
+
+function makeMockUiRuntime(
+  trackStripHook: ReturnType<typeof makeMockTrackStrip>,
+  synthHook: ReturnType<typeof makeMockSynthGraph>,
+  pannerHook: { pan: number; isEnabled: boolean; setPan: ReturnType<typeof vi.fn>; setEnabled: ReturnType<typeof vi.fn> },
+) {
   return {
     trackZoneModel: {
       selectedTrackId: INITIAL_TRACK_ID,
@@ -171,8 +169,8 @@ function makeMockUiRuntime(modules: ReturnType<typeof makeMockEngine>['modules']
         {
           trackId: INITIAL_TRACK_ID,
           displayName: 'synth1',
-          trackStripId: EXPECTED_TRACK_STRIP_ID,
-          trackStrip: modules.trackStripHook,
+          trackStripId: 'track-strip',
+          trackStrip: trackStripHook,
           clips: [
             {
               clipId: DEFAULT_MIDI_CLIP_ID,
@@ -184,8 +182,8 @@ function makeMockUiRuntime(modules: ReturnType<typeof makeMockEngine>['modules']
       masterTrack: {
         trackId: DEFAULT_UI_PLAN.masterTrack.masterTrackId,
         displayName: DEFAULT_UI_PLAN.masterTrack.displayName,
-        trackStripId: EXPECTED_MASTER_TRACK_STRIP_ID,
-        trackStrip: modules.masterStripHook,
+        trackStripId: 'master-strip',
+        trackStrip: { masterVolume: 0, setMasterVolume: vi.fn(), meterSource: makeMockMeterSource() },
       },
     },
     devicePanelModel: {
@@ -195,16 +193,16 @@ function makeMockUiRuntime(modules: ReturnType<typeof makeMockEngine>['modules']
         {
           uiDeviceId: 'ui-device-synth',
           displayName: 'Synth',
-          moduleId: EXPECTED_SYNTH_MODULE_ID,
+          moduleId: 'synth',
           moduleKind: 'SYNTH' as const,
-          module: modules.synthHook,
+          module: synthHook,
         },
         {
           uiDeviceId: 'ui-device-panner',
           displayName: 'Panner',
-          moduleId: EXPECTED_PANNER_MODULE_ID,
+          moduleId: 'panner',
           moduleKind: 'PANNER' as const,
-          module: modules.pannerHook,
+          module: pannerHook,
         },
       ],
     },
@@ -230,32 +228,55 @@ describe('App runtime wiring', () => {
   })
 
   it('builds UI runtime from plan and passes runtime models to TrackZone and DevicePanel', async () => {
-    const { engine: mockEngine, modules } = makeMockEngine()
-    vi.mocked(useAudioEngine).mockReturnValue(mockEngine as unknown as ReturnType<typeof useAudioEngine>)
+    const { getAudioEngine } = await import('./engine/engineSingleton')
+    const { createToneSynth } = await import('./hooks/useToneSynth')
+    const { createPanner } = await import('./hooks/usePanner')
 
+    const mockTrackStrip = makeMockTrackStrip()
+    const mockLimiterGraph = makeMockLimiterGraph()
+    const mockMasterFacade = makeMockMasterFacade()
+    const mockSynthGraph = makeMockSynthGraph()
+    const mockPannerGraph = makeMockPannerGraph()
+
+    vi.mocked(createToneSynth).mockReturnValue(mockSynthGraph as any)
+    vi.mocked(createPanner).mockReturnValue(mockPannerGraph as any)
+
+    vi.mocked(getAudioEngine).mockReturnValue({
+      getTrackFacade: vi.fn(),
+      getMasterFacade: vi.fn(() => mockMasterFacade),
+      createTrackSubgraph: vi.fn(),
+      removeTrackSubgraph: vi.fn(),
+      getLimiterInputMeter: vi.fn(() => makeMockMeterSource()),
+      getLimiterReductionDb: vi.fn(() => 0),
+      _legacy: {
+        audioContext: {} as AudioContext,
+        limiterGraph: mockLimiterGraph,
+        getTrackStripGraph: vi.fn(() => mockTrackStrip),
+      },
+    } as any)
+
+    const mockPannerHook = { pan: 0, isEnabled: true, setPan: vi.fn(), setEnabled: vi.fn() }
     const App = (await import('./App')).default
     const { useTransportController } = await import('./hooks/useTransportController')
     const TrackZone = (await import('./components/TrackZone')).default
     const DevicePanel = (await import('./components/DevicePanel')).default
     const { buildUiRuntime } = await import('./ui-plan/buildUiRuntime')
 
-    vi.mocked(buildUiRuntime).mockReturnValue(makeMockUiRuntime(modules))
+    vi.mocked(buildUiRuntime).mockReturnValue(
+      makeMockUiRuntime(mockTrackStrip, mockSynthGraph, mockPannerHook) as any,
+    )
 
     flushSync(() => {
       root.render(<App />)
     })
 
-    expect(vi.mocked(buildUiRuntime)).toHaveBeenCalledWith({
-      uiPlan: DEFAULT_UI_PLAN,
-      midiClipStore: DEFAULT_MIDI_CLIP_STORE,
-      audioEngine: mockEngine,
-      selectedTrackId: INITIAL_TRACK_ID,
-    })
-    expect(mockEngine.getSynth).toHaveBeenCalledWith(EXPECTED_SYNTH_MODULE_ID)
-    expect(mockEngine.getPanner).toHaveBeenCalledWith(EXPECTED_PANNER_MODULE_ID)
-    expect(mockEngine.getTrackStrip).toHaveBeenCalledWith(EXPECTED_TRACK_STRIP_ID)
-    expect(mockEngine.getLimiter).toHaveBeenCalledWith(EXPECTED_LIMITER_MODULE_ID)
-    expect(mockEngine.getMasterStrip).toHaveBeenCalledWith(EXPECTED_MASTER_TRACK_STRIP_ID)
+    expect(vi.mocked(buildUiRuntime)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uiPlan: DEFAULT_UI_PLAN,
+        midiClipStore: DEFAULT_MIDI_CLIP_STORE,
+        selectedTrackId: INITIAL_TRACK_ID,
+      }),
+    )
     expect(vi.mocked(useTransportController)).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
@@ -302,10 +323,10 @@ describe('App runtime wiring', () => {
           selectedTrackDisplayName: 'synth1',
           devices: expect.arrayContaining([
             expect.objectContaining({
-              moduleId: EXPECTED_SYNTH_MODULE_ID,
+              moduleId: 'synth',
             }),
             expect.objectContaining({
-              moduleId: EXPECTED_PANNER_MODULE_ID,
+              moduleId: 'panner',
             }),
           ]),
         }),
