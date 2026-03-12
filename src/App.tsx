@@ -19,16 +19,9 @@ import {
   DEFAULT_MIDI_CLIP_SOURCE,
   DEFAULT_MIDI_CLIP_STORE,
 } from './project-runtime/midiClipStore'
-import {
-  DEFAULT_PLAN_SYNTH_ID,
-  DEFAULT_PLAN_PANNER_ID,
-  DEFAULT_PLAN_TRACK_STRIP_ID,
-  DEFAULT_PLAN_LIMITER_ID,
-  DEFAULT_PLAN_MASTER_STRIP_ID,
-} from './engine/audioGraphPlan'
 import { buildUiRuntime } from './ui-plan/buildUiRuntime'
 import { DEFAULT_UI_PLAN } from './ui-plan/defaultUiPlan'
-import { resolveInitialTrackId } from './ui-plan/uiPlan'
+import { resolveInitialTrackId, type UiDevicePlan } from './ui-plan/uiPlan'
 import './App.css'
 
 declare global {
@@ -40,7 +33,28 @@ declare global {
 }
 
 const INITIAL_TRACK_ID = resolveInitialTrackId(DEFAULT_UI_PLAN)
-const TRANSPORT_TRACK_STRIP_ID = DEFAULT_UI_PLAN.tracks[0]?.trackStripId
+
+function findDeviceModuleIdByKindOrThrow(devices: UiDevicePlan[], moduleKind: UiDevicePlan['moduleKind']): string {
+  const device = devices.find((candidate) => candidate.moduleKind === moduleKind)
+  if (!device) {
+    throw new Error(`[app] missing ${moduleKind} device in default UI plan`)
+  }
+
+  return device.moduleId
+}
+
+const INITIAL_TRACK_PLAN =
+  DEFAULT_UI_PLAN.tracks.find((track) => track.trackId === INITIAL_TRACK_ID) ?? DEFAULT_UI_PLAN.tracks[0]
+
+if (!INITIAL_TRACK_PLAN) {
+  throw new Error('[app] default UI plan must include at least one regular track')
+}
+
+const APP_SYNTH_MODULE_ID = findDeviceModuleIdByKindOrThrow(INITIAL_TRACK_PLAN.devices, 'SYNTH')
+const APP_PANNER_MODULE_ID = findDeviceModuleIdByKindOrThrow(INITIAL_TRACK_PLAN.devices, 'PANNER')
+const APP_TRACK_STRIP_ID = INITIAL_TRACK_PLAN.trackStripId
+const APP_LIMITER_MODULE_ID = findDeviceModuleIdByKindOrThrow(DEFAULT_UI_PLAN.masterTrack.devices, 'LIMITER')
+const APP_MASTER_STRIP_ID = DEFAULT_UI_PLAN.masterTrack.trackStripId
 
 function App() {
   const audioEngine = useAudioEngine()
@@ -53,11 +67,11 @@ function App() {
 }
 
 function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
-  const toneSynth = useToneSynth(audioEngine.getSynth(DEFAULT_PLAN_SYNTH_ID))
-  const panner = usePanner(audioEngine.getPanner(DEFAULT_PLAN_PANNER_ID))
-  const trackStrip = useTrackStrip(audioEngine.getTrackStrip(DEFAULT_PLAN_TRACK_STRIP_ID))
-  const masterStrip = useMasterStrip(audioEngine.getMasterStrip(DEFAULT_PLAN_MASTER_STRIP_ID))
-  const limiter = useLimiter(audioEngine.getLimiter(DEFAULT_PLAN_LIMITER_ID))
+  const toneSynth = useToneSynth(audioEngine.getSynth(APP_SYNTH_MODULE_ID))
+  const panner = usePanner(audioEngine.getPanner(APP_PANNER_MODULE_ID))
+  const trackStrip = useTrackStrip(audioEngine.getTrackStrip(APP_TRACK_STRIP_ID))
+  const masterStrip = useMasterStrip(audioEngine.getMasterStrip(APP_MASTER_STRIP_ID))
+  const limiter = useLimiter(audioEngine.getLimiter(APP_LIMITER_MODULE_ID))
   const transport = useTransportController(toneSynth, trackStrip, DEFAULT_MIDI_CLIP_SOURCE)
   const [trackRecByTrackId, setTrackRecByTrackId] = useState<Record<string, boolean>>({
     [INITIAL_TRACK_ID]: true,
@@ -81,15 +95,15 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
       displayName: runtimeTrack.displayName,
       clips: runtimeTrack.clips,
       meterSource:
-        runtimeTrack.trackStripId === TRANSPORT_TRACK_STRIP_ID
+        runtimeTrack.trackStripId === APP_TRACK_STRIP_ID
           ? trackStrip.meterSource
           : runtimeTrack.trackStrip.meterSource,
       volumeDb:
-        runtimeTrack.trackStripId === TRANSPORT_TRACK_STRIP_ID
+        runtimeTrack.trackStripId === APP_TRACK_STRIP_ID
           ? trackStrip.trackVolume
           : runtimeTrack.trackStrip.trackVolume,
       isMuted:
-        runtimeTrack.trackStripId === TRANSPORT_TRACK_STRIP_ID
+        runtimeTrack.trackStripId === APP_TRACK_STRIP_ID
           ? trackStrip.isTrackMuted
           : runtimeTrack.trackStrip.isTrackMuted,
       isRecEnabled: trackRecByTrackId[runtimeTrack.trackId] ?? false,
@@ -105,13 +119,13 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
   const devicePanelModel = {
     ...uiRuntime.devicePanelModel,
     devices: uiRuntime.devicePanelModel.devices.map((device) => {
-      if (device.moduleId === DEFAULT_PLAN_SYNTH_ID) {
+      if (device.moduleId === APP_SYNTH_MODULE_ID) {
         return { ...device, module: toneSynth }
       }
-      if (device.moduleId === DEFAULT_PLAN_PANNER_ID) {
+      if (device.moduleId === APP_PANNER_MODULE_ID) {
         return { ...device, module: panner }
       }
-      if (device.moduleId === DEFAULT_PLAN_LIMITER_ID) {
+      if (device.moduleId === APP_LIMITER_MODULE_ID) {
         return { ...device, module: limiter }
       }
       return device
@@ -126,7 +140,7 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
         return
       }
 
-      if (runtimeTrack.trackStripId === TRANSPORT_TRACK_STRIP_ID) {
+      if (runtimeTrack.trackStripId === APP_TRACK_STRIP_ID) {
         transport.setTrackMute(muted)
         return
       }
@@ -142,7 +156,7 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
         return
       }
 
-      if (runtimeTrack.trackStripId === TRANSPORT_TRACK_STRIP_ID) {
+      if (runtimeTrack.trackStripId === APP_TRACK_STRIP_ID) {
         trackStrip.setTrackVolume(db)
         return
       }

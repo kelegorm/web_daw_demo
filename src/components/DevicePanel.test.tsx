@@ -62,7 +62,6 @@ function makeDevicePanelModel(selectedTrackDisplayName: string, selectedTrackId:
     return {
       selectedTrackId,
       selectedTrackDisplayName,
-      selectedTrackIsMaster: true,
       devices: [
         {
           uiDeviceId: 'ui-device-limiter',
@@ -78,7 +77,6 @@ function makeDevicePanelModel(selectedTrackDisplayName: string, selectedTrackId:
   return {
     selectedTrackId,
     selectedTrackDisplayName,
-    selectedTrackIsMaster: false,
     devices: [
       {
         uiDeviceId: 'ui-device-synth',

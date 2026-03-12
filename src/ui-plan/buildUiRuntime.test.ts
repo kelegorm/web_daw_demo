@@ -206,7 +206,6 @@ describe('buildUiRuntime', () => {
     expect(runtime.devicePanelModel).toEqual({
       selectedTrackId: 'track-1',
       selectedTrackDisplayName: 'Track 1',
-      selectedTrackIsMaster: false,
       devices: [
         {
           uiDeviceId: 'ui-device-synth',
@@ -251,7 +250,6 @@ describe('buildUiRuntime', () => {
     ])
 
     expect(masterRuntime.devicePanelModel.selectedTrackDisplayName).toBe('Master')
-    expect(masterRuntime.devicePanelModel.selectedTrackIsMaster).toBe(true)
     expect(masterRuntime.devicePanelModel.devices).toEqual([
       {
         uiDeviceId: 'ui-device-limiter',

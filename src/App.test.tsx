@@ -3,13 +3,6 @@ import { flushSync } from 'react-dom'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAudioEngine } from './hooks/useAudioEngine'
-import {
-  DEFAULT_PLAN_SYNTH_ID,
-  DEFAULT_PLAN_PANNER_ID,
-  DEFAULT_PLAN_TRACK_STRIP_ID,
-  DEFAULT_PLAN_LIMITER_ID,
-  DEFAULT_PLAN_MASTER_STRIP_ID,
-} from './engine/audioGraphPlan'
 import type { MeterSource } from './engine/types'
 import {
   DEFAULT_MIDI_CLIP_ID,
@@ -17,7 +10,7 @@ import {
   DEFAULT_MIDI_CLIP_STORE,
 } from './project-runtime/midiClipStore'
 import { DEFAULT_UI_PLAN } from './ui-plan/defaultUiPlan'
-import { resolveInitialTrackId } from './ui-plan/uiPlan'
+import { resolveInitialTrackId, type UiDevicePlan } from './ui-plan/uiPlan'
 
 vi.mock('./engine/audioEngine', () => ({
   createAudioEngine: vi.fn(),
@@ -85,6 +78,29 @@ vi.mock('./ui-plan/buildUiRuntime', () => ({
   buildUiRuntime: vi.fn(),
 }))
 
+const INITIAL_TRACK_ID = resolveInitialTrackId(DEFAULT_UI_PLAN)
+const INITIAL_TRACK_PLAN =
+  DEFAULT_UI_PLAN.tracks.find((track) => track.trackId === INITIAL_TRACK_ID) ?? DEFAULT_UI_PLAN.tracks[0]
+
+if (!INITIAL_TRACK_PLAN) {
+  throw new Error('[test] default UI plan must include at least one regular track')
+}
+
+function findDeviceModuleIdByKindOrThrow(devices: UiDevicePlan[], moduleKind: UiDevicePlan['moduleKind']): string {
+  const device = devices.find((candidate) => candidate.moduleKind === moduleKind)
+  if (!device) {
+    throw new Error(`[test] missing ${moduleKind} device in default UI plan`)
+  }
+
+  return device.moduleId
+}
+
+const EXPECTED_SYNTH_MODULE_ID = findDeviceModuleIdByKindOrThrow(INITIAL_TRACK_PLAN.devices, 'SYNTH')
+const EXPECTED_PANNER_MODULE_ID = findDeviceModuleIdByKindOrThrow(INITIAL_TRACK_PLAN.devices, 'PANNER')
+const EXPECTED_TRACK_STRIP_ID = INITIAL_TRACK_PLAN.trackStripId
+const EXPECTED_LIMITER_MODULE_ID = findDeviceModuleIdByKindOrThrow(DEFAULT_UI_PLAN.masterTrack.devices, 'LIMITER')
+const EXPECTED_MASTER_TRACK_STRIP_ID = DEFAULT_UI_PLAN.masterTrack.trackStripId
+
 function makeMockMeterSource(): MeterSource {
   return { subscribe: vi.fn(() => vi.fn()) }
 }
@@ -149,12 +165,12 @@ function makeMockEngine() {
 function makeMockUiRuntime(modules: ReturnType<typeof makeMockEngine>['modules']) {
   return {
     trackZoneModel: {
-      selectedTrackId: resolveInitialTrackId(DEFAULT_UI_PLAN),
+      selectedTrackId: INITIAL_TRACK_ID,
       tracks: [
         {
-          trackId: resolveInitialTrackId(DEFAULT_UI_PLAN),
+          trackId: INITIAL_TRACK_ID,
           displayName: 'synth1',
-          trackStripId: DEFAULT_PLAN_TRACK_STRIP_ID,
+          trackStripId: EXPECTED_TRACK_STRIP_ID,
           trackStrip: modules.trackStripHook,
           clips: [
             {
@@ -167,26 +183,25 @@ function makeMockUiRuntime(modules: ReturnType<typeof makeMockEngine>['modules']
       masterTrack: {
         trackId: DEFAULT_UI_PLAN.masterTrack.masterTrackId,
         displayName: DEFAULT_UI_PLAN.masterTrack.displayName,
-        trackStripId: DEFAULT_PLAN_MASTER_STRIP_ID,
+        trackStripId: EXPECTED_MASTER_TRACK_STRIP_ID,
         trackStrip: modules.masterStripHook,
       },
     },
     devicePanelModel: {
-      selectedTrackId: resolveInitialTrackId(DEFAULT_UI_PLAN),
+      selectedTrackId: INITIAL_TRACK_ID,
       selectedTrackDisplayName: 'synth1',
-      selectedTrackIsMaster: false,
       devices: [
         {
           uiDeviceId: 'ui-device-synth',
           displayName: 'Synth',
-          moduleId: DEFAULT_PLAN_SYNTH_ID,
+          moduleId: EXPECTED_SYNTH_MODULE_ID,
           moduleKind: 'SYNTH' as const,
           module: modules.synthHook,
         },
         {
           uiDeviceId: 'ui-device-panner',
           displayName: 'Panner',
-          moduleId: DEFAULT_PLAN_PANNER_ID,
+          moduleId: EXPECTED_PANNER_MODULE_ID,
           moduleKind: 'PANNER' as const,
           module: modules.pannerHook,
         },
@@ -233,13 +248,13 @@ describe('App runtime wiring', () => {
       uiPlan: DEFAULT_UI_PLAN,
       midiClipStore: DEFAULT_MIDI_CLIP_STORE,
       audioEngine: mockEngine,
-      selectedTrackId: resolveInitialTrackId(DEFAULT_UI_PLAN),
+      selectedTrackId: INITIAL_TRACK_ID,
     })
-    expect(mockEngine.getSynth).toHaveBeenCalledWith(DEFAULT_PLAN_SYNTH_ID)
-    expect(mockEngine.getPanner).toHaveBeenCalledWith(DEFAULT_PLAN_PANNER_ID)
-    expect(mockEngine.getTrackStrip).toHaveBeenCalledWith(DEFAULT_PLAN_TRACK_STRIP_ID)
-    expect(mockEngine.getLimiter).toHaveBeenCalledWith(DEFAULT_PLAN_LIMITER_ID)
-    expect(mockEngine.getMasterStrip).toHaveBeenCalledWith(DEFAULT_PLAN_MASTER_STRIP_ID)
+    expect(mockEngine.getSynth).toHaveBeenCalledWith(EXPECTED_SYNTH_MODULE_ID)
+    expect(mockEngine.getPanner).toHaveBeenCalledWith(EXPECTED_PANNER_MODULE_ID)
+    expect(mockEngine.getTrackStrip).toHaveBeenCalledWith(EXPECTED_TRACK_STRIP_ID)
+    expect(mockEngine.getLimiter).toHaveBeenCalledWith(EXPECTED_LIMITER_MODULE_ID)
+    expect(mockEngine.getMasterStrip).toHaveBeenCalledWith(EXPECTED_MASTER_TRACK_STRIP_ID)
     expect(vi.mocked(useTransportController)).toHaveBeenCalledWith(
       expect.anything(),
       expect.anything(),
@@ -256,7 +271,7 @@ describe('App runtime wiring', () => {
     expect(trackZoneProps).toEqual(
       expect.objectContaining({
         model: expect.objectContaining({
-          selectedTrackId: resolveInitialTrackId(DEFAULT_UI_PLAN),
+          selectedTrackId: INITIAL_TRACK_ID,
           tracks: expect.arrayContaining([
             expect.objectContaining({
               clips: expect.arrayContaining([
@@ -282,14 +297,14 @@ describe('App runtime wiring', () => {
     expect(devicePanelProps).toEqual(
       expect.objectContaining({
         model: expect.objectContaining({
-          selectedTrackId: resolveInitialTrackId(DEFAULT_UI_PLAN),
+          selectedTrackId: INITIAL_TRACK_ID,
           selectedTrackDisplayName: 'synth1',
           devices: expect.arrayContaining([
             expect.objectContaining({
-              moduleId: DEFAULT_PLAN_SYNTH_ID,
+              moduleId: EXPECTED_SYNTH_MODULE_ID,
             }),
             expect.objectContaining({
-              moduleId: DEFAULT_PLAN_PANNER_ID,
+              moduleId: EXPECTED_PANNER_MODULE_ID,
             }),
           ]),
         }),

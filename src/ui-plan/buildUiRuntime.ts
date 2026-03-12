@@ -57,7 +57,6 @@ export interface TrackZoneModel {
 export interface DevicePanelModel {
   selectedTrackId: string
   selectedTrackDisplayName: string
-  selectedTrackIsMaster: boolean
   devices: UiRuntimeDeviceModel[]
 }
 
@@ -126,14 +125,12 @@ function resolveSelectedTrackRuntime(
 ): {
   selectedTrackId: string
   selectedTrackDisplayName: string
-  selectedTrackIsMaster: boolean
   devices: UiRuntimeDeviceModel[]
 } {
   if (selectedTrackId === resolvedMasterTrack.trackId) {
     return {
       selectedTrackId,
       selectedTrackDisplayName: resolvedMasterTrack.displayName,
-      selectedTrackIsMaster: true,
       devices: resolvedMasterTrack.devices,
     }
   }
@@ -146,7 +143,6 @@ function resolveSelectedTrackRuntime(
   return {
     selectedTrackId,
     selectedTrackDisplayName: selectedRegularTrack.displayName,
-    selectedTrackIsMaster: false,
     devices: selectedRegularTrack.devices,
   }
 }

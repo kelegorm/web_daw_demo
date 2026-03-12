@@ -152,7 +152,7 @@ Scope constraints:
 - [x] Mark completed.
 
 ### Task 7: Regression pass and cleanup
-- [ ] Remove dead code and obsolete hardcoded constants from UI components.
-- [ ] Ensure no UI component directly hardcodes device layout or track list.
-- [ ] Run full validation commands and fix regressions.
-- [ ] Mark completed.
+- [x] Remove dead code and obsolete hardcoded constants from UI components.
+- [x] Ensure no UI component directly hardcodes device layout or track list.
+- [x] Run full validation commands and fix regressions.
+- [x] Mark completed.
