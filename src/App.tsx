@@ -12,6 +12,13 @@ import { useTransportController } from './hooks/useTransportController'
 import { useTrackSelection, TrackSelectionContext } from './hooks/useTrackSelection'
 import type { AudioEngine } from './engine/audioEngine'
 import { useAudioEngine } from './hooks/useAudioEngine'
+import {
+  DEFAULT_PLAN_SYNTH_ID,
+  DEFAULT_PLAN_PANNER_ID,
+  DEFAULT_PLAN_TRACK_STRIP_ID,
+  DEFAULT_PLAN_LIMITER_ID,
+  DEFAULT_PLAN_MASTER_STRIP_ID,
+} from './engine/audioGraphPlan'
 import './App.css'
 
 declare global {
@@ -33,11 +40,11 @@ function App() {
 }
 
 function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
-  const toneSynth = useToneSynth(audioEngine.synth)
-  const panner = usePanner(audioEngine.panner)
-  const trackStrip = useTrackStrip(audioEngine.trackStrip)
-  const masterStrip = useMasterStrip(audioEngine.masterStrip)
-  const limiter = useLimiter(audioEngine.limiter)
+  const toneSynth = useToneSynth(audioEngine.getSynth(DEFAULT_PLAN_SYNTH_ID))
+  const panner = usePanner(audioEngine.getPanner(DEFAULT_PLAN_PANNER_ID))
+  const trackStrip = useTrackStrip(audioEngine.getTrackStrip(DEFAULT_PLAN_TRACK_STRIP_ID))
+  const masterStrip = useMasterStrip(audioEngine.getMasterStrip(DEFAULT_PLAN_MASTER_STRIP_ID))
+  const limiter = useLimiter(audioEngine.getLimiter(DEFAULT_PLAN_LIMITER_ID))
   const transport = useTransportController(toneSynth, trackStrip)
   const [isTrackRecEnabled, setIsTrackRecEnabled] = useState(true)
   const trackSelection = useTrackSelection()

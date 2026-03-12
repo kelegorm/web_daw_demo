@@ -55,12 +55,12 @@ Scope constraints:
 - [x] Mark completed
 
 ### Task 4: Migrate app wiring to id-based API
-- [ ] Update `useAudioEngine`/`App.tsx` flow to request modules by id from engine getters
-- [ ] Replace direct field usage (`audioEngine.synth`, etc.) in app composition paths
-- [ ] Keep existing UI hooks (`useToneSynth`, `usePanner`, etc.) as adapters over returned module APIs
-- [ ] Keep behavior unchanged in transport, meters, panic, and sequencer playback
-- [ ] Add/adjust tests to ensure app boot and playback behavior are unchanged after migration
-- [ ] Mark completed
+- [x] Update `useAudioEngine`/`App.tsx` flow to request modules by id from engine getters
+- [x] Replace direct field usage (`audioEngine.synth`, etc.) in app composition paths
+- [x] Keep existing UI hooks (`useToneSynth`, `usePanner`, etc.) as adapters over returned module APIs
+- [x] Keep behavior unchanged in transport, meters, panic, and sequencer playback
+- [x] Add/adjust tests to ensure app boot and playback behavior are unchanged after migration
+- [x] Mark completed
 
 ### Task 5: Remove legacy module fields from `AudioEngine` contract
 - [ ] Remove legacy public fields from `AudioEngine` interface: `synth`, `panner`, `trackStrip`, `limiter`, `masterStrip`
