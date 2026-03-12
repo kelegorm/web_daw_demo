@@ -9,13 +9,13 @@ Requirements for milestone v1.0: State Architecture & Dynamic Tracks.
 
 ### Engine Architecture
 
-- [ ] **ENG-01**: Audio engine lives as a module-level singleton, not managed by React lifecycle
-- [ ] **ENG-02**: Engine survives React StrictMode double-mount without creating duplicate AudioContexts
-- [ ] **ENG-03**: Engine exposes `createTrackSubgraph(trackId)` that creates a track strip (gain + mute + meter) wired to a shared pre-limiter bus
-- [ ] **ENG-04**: Engine exposes `removeTrackSubgraph(trackId)` that disposes audio nodes and disconnects from bus
-- [ ] **ENG-05**: Engine exposes `getTrackFacade(trackId)` replacing hardcoded APP_* constant lookups
-- [ ] **ENG-06**: Shared `preLimiterBus` GainNode sums all track outputs before limiter → master → destination
-- [ ] **ENG-07**: All APP_SYNTH_MODULE_ID, APP_PANNER_MODULE_ID, APP_TRACK_STRIP_ID, APP_LIMITER_MODULE_ID, APP_MASTER_STRIP_ID constants deleted
+- [x] **ENG-01**: Audio engine lives as a module-level singleton, not managed by React lifecycle
+- [x] **ENG-02**: Engine survives React StrictMode double-mount without creating duplicate AudioContexts
+- [x] **ENG-03**: Engine exposes `createTrackSubgraph(trackId)` that creates a track strip (gain + mute + meter) wired to a shared pre-limiter bus
+- [x] **ENG-04**: Engine exposes `removeTrackSubgraph(trackId)` that disposes audio nodes and disconnects from bus
+- [x] **ENG-05**: Engine exposes `getTrackFacade(trackId)` replacing hardcoded APP_* constant lookups
+- [x] **ENG-06**: Shared `preLimiterBus` GainNode sums all track outputs before limiter → master → destination
+- [x] **ENG-07**: All APP_SYNTH_MODULE_ID, APP_PANNER_MODULE_ID, APP_TRACK_STRIP_ID, APP_LIMITER_MODULE_ID, APP_MASTER_STRIP_ID constants deleted
 
 ### State Management
 
@@ -101,13 +101,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ENG-01 | Phase 1 | Pending |
-| ENG-02 | Phase 1 | Pending |
-| ENG-03 | Phase 1 | Pending |
-| ENG-04 | Phase 1 | Pending |
-| ENG-05 | Phase 1 | Pending |
-| ENG-06 | Phase 1 | Pending |
-| ENG-07 | Phase 1 | Pending |
+| ENG-01 | Phase 1 | Complete |
+| ENG-02 | Phase 1 | Complete |
+| ENG-03 | Phase 1 | Complete |
+| ENG-04 | Phase 1 | Complete |
+| ENG-05 | Phase 1 | Complete |
+| ENG-06 | Phase 1 | Complete |
+| ENG-07 | Phase 1 | Complete |
 | STATE-01 | Phase 2 | Pending |
 | STATE-02 | Phase 2 | Pending |
 | STATE-03 | Phase 2 | Pending |
@@ -144,4 +144,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-12*
-*Last updated: 2026-03-12 — traceability filled in after roadmap creation*
+*Last updated: 2026-03-12 — Phase 1 requirements complete*

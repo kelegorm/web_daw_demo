@@ -17,7 +17,7 @@ The existing E2E test suite acts as the regression gate at every phase boundary.
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Engine Multi-Track Foundation** - Establish engine singleton, preLimiterBus, and track subgraph API
+- [x] **Phase 1: Engine Multi-Track Foundation** - Establish engine singleton, preLimiterBus, and track subgraph API
 - [ ] **Phase 2: Reducer + Context** - Pure state layer with normalized track map and split context
 - [ ] **Phase 3: App.tsx Teardown** - Gut App.tsx to DawProvider + Layout, delete deprecated hooks
 - [ ] **Phase 4: Component Migration + Track CRUD** - Migrate all components to context, wire Add/Remove track
@@ -43,9 +43,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Engine singleton + preLimiterBus + master chain + facade type definitions
-- [ ] 01-02-PLAN.md — createTrackSubgraph / removeTrackSubgraph / getTrackFacade + TrackFacade class
-- [ ] 01-03-PLAN.md — Delete APP_* constants, migrate App.tsx to singleton, delete useAudioEngine.ts
+- [x] 01-01-PLAN.md — Engine singleton + preLimiterBus + master chain + facade type definitions
+- [x] 01-02-PLAN.md — createTrackSubgraph / removeTrackSubgraph / getTrackFacade + TrackFacade class
+- [x] 01-03-PLAN.md — Delete APP_* constants, migrate App.tsx to singleton, delete useAudioEngine.ts
 
 ---
 
@@ -149,7 +149,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Engine Multi-Track Foundation | 0/3 | Planned | - |
+| 1. Engine Multi-Track Foundation | 3/3 | ✓ Complete | 2026-03-12 |
 | 2. Reducer + Context | 0/3 | Not started | - |
 | 3. App.tsx Teardown | 0/2 | Not started | - |
 | 4. Component Migration + Track CRUD | 0/4 | Not started | - |
@@ -157,4 +157,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-03-12 for milestone v1.0 State Architecture & Dynamic Tracks*
-*Last updated: 2026-03-12*
+*Last updated: 2026-03-12 — Phase 1 complete*
