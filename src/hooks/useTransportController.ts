@@ -5,6 +5,7 @@ import type { SequencerClipInput } from './useSequencer';
 import type { ToneSynthHook } from './useToneSynth';
 import type { TrackStripHook } from './useTrackStrip';
 import { createTransportService, type TransportService } from '../engine/transportService';
+import { DEFAULT_MIDI_CLIP_SOURCE } from '../project-runtime/midiClipStore';
 
 export type PlaybackState = 'playing' | 'paused' | 'stopped';
 
@@ -128,6 +129,7 @@ export function createTransportCore(
 export function useTransportController(
   toneSynth: ToneSynthHook,
   trackStrip: TrackStripHook,
+  sequencerClip: SequencerClipInput = DEFAULT_MIDI_CLIP_SOURCE,
 ): TransportController {
   const [playbackState, setPlaybackState] = useState<PlaybackState>('stopped');
   const [bpm, setBpmState] = useState(120);
@@ -155,6 +157,7 @@ export function useTransportController(
         synthPanic: () => toneSynthRef.current.panic(),
         setTrackMuted: (muted) => trackStripRef.current.setTrackMuted(muted),
         onStepChange: (step) => setCurrentStep(step),
+        sequencerClip,
       },
       serviceRef.current,
     );

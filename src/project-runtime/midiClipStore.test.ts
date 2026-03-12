@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   DEFAULT_MIDI_CLIP_ID,
+  DEFAULT_MIDI_CLIP_SOURCE,
   DEFAULT_MIDI_CLIP_STORE,
   getMidiClipLengthBeats,
   getMidiClipOrThrow,
+  resolveMidiClipSourceOrThrow,
   type MidiClipStore,
 } from './midiClipStore';
 
@@ -46,5 +48,11 @@ describe('midiClipStore', () => {
     expect(() => getMidiClipOrThrow({}, DEFAULT_MIDI_CLIP_ID)).toThrow(
       `Missing MIDI clip for clipId "${DEFAULT_MIDI_CLIP_ID}"`,
     );
+  });
+
+  it('resolves default clip source via shared clip-source contract', () => {
+    const clip = resolveMidiClipSourceOrThrow(DEFAULT_MIDI_CLIP_SOURCE);
+
+    expect(clip).toBe(DEFAULT_MIDI_CLIP_STORE[DEFAULT_MIDI_CLIP_ID]);
   });
 });

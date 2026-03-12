@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import TrackZone from './TrackZone'
-import type { MidiClipStore, MidiStep } from '../project-runtime/midiClipStore'
+import type { MidiClipSource, MidiClipStore, MidiStep } from '../project-runtime/midiClipStore'
 import { STEP_BEATS } from '../project-runtime/midiClipStore'
 import { beatDurationSeconds, getPixelsPerSecond } from '../utils/timelineScale'
 
@@ -27,7 +27,7 @@ vi.mock('./TimelineRuler', () => ({
   ),
 }))
 
-function makeClipStore({
+function makeClipSource({
   clipId = 'clip-test',
   startBeat,
   notes,
@@ -37,7 +37,7 @@ function makeClipStore({
   startBeat: number
   notes: number[]
   enabledSteps?: boolean[]
-}): { clipStore: MidiClipStore; clipId: string } {
+}): MidiClipSource {
   const steps: MidiStep[] = notes.map((note, index) => ({
     enabled: enabledSteps?.[index] ?? true,
     note,
@@ -45,16 +45,18 @@ function makeClipStore({
     gate: 0.8,
   }))
 
+  const clipStore: MidiClipStore = {
+    [clipId]: {
+      clipId,
+      startBeat,
+      lengthSteps: steps.length,
+      steps,
+    },
+  }
+
   return {
     clipId,
-    clipStore: {
-      [clipId]: {
-        clipId,
-        startBeat,
-        lengthSteps: steps.length,
-        steps,
-      },
-    },
+    clipStore,
   }
 }
 
@@ -87,14 +89,15 @@ describe('TrackZone clip-driven layout', () => {
     startBeat,
     lengthSteps,
   }) => {
-    const clipInput = makeClipStore({
+    const clipSource = makeClipSource({
       startBeat,
       notes: makeNotes(lengthSteps),
     })
     const bpm = 120
     const pps = getPixelsPerSecond(bpm)
-    const expectedLeft = clipInput.clipStore[clipInput.clipId]!.startBeat * beatDurationSeconds(bpm) * pps
-    const expectedWidth = clipInput.clipStore[clipInput.clipId]!.lengthSteps * STEP_BEATS * beatDurationSeconds(bpm) * pps
+    const expectedLeft = clipSource.clipStore[clipSource.clipId]!.startBeat * beatDurationSeconds(bpm) * pps
+    const expectedWidth =
+      clipSource.clipStore[clipSource.clipId]!.lengthSteps * STEP_BEATS * beatDurationSeconds(bpm) * pps
 
     flushSync(() => {
       root.render(
@@ -102,8 +105,7 @@ describe('TrackZone clip-driven layout', () => {
           playbackState="stopped"
           bpm={bpm}
           loop={true}
-          clipStore={clipInput.clipStore}
-          clipId={clipInput.clipId}
+          clipSource={clipSource}
         />,
       )
     })
@@ -125,7 +127,7 @@ describe('TrackZone clip-driven layout', () => {
   })
 
   it('renders MIDI notes from clip step data instead of fixed inline notes', () => {
-    const clipInput = makeClipStore({
+    const clipSource = makeClipSource({
       startBeat: 0,
       notes: [62, 65, 69, 72],
       enabledSteps: [true, false, true, true],
@@ -136,8 +138,7 @@ describe('TrackZone clip-driven layout', () => {
         <TrackZone
           playbackState="stopped"
           bpm={120}
-          clipStore={clipInput.clipStore}
-          clipId={clipInput.clipId}
+          clipSource={clipSource}
         />,
       )
     })
@@ -147,13 +148,13 @@ describe('TrackZone clip-driven layout', () => {
   })
 
   it('wraps playhead inside clip start+length window when looping', async () => {
-    const clipInput = makeClipStore({
+    const clipSource = makeClipSource({
       startBeat: 0.5,
       notes: [60, 62, 64, 65, 67, 69, 71],
     })
     const bpm = 120
     const pps = getPixelsPerSecond(bpm)
-    const clip = clipInput.clipStore[clipInput.clipId]!
+    const clip = clipSource.clipStore[clipSource.clipId]!
     const clipStartPx = clip.startBeat * beatDurationSeconds(bpm) * pps
     const clipWidthPx = clip.lengthSteps * STEP_BEATS * beatDurationSeconds(bpm) * pps
     const absolutePlayheadPx = 2.4 * pps
@@ -165,8 +166,7 @@ describe('TrackZone clip-driven layout', () => {
           playbackState="paused"
           bpm={bpm}
           loop={true}
-          clipStore={clipInput.clipStore}
-          clipId={clipInput.clipId}
+          clipSource={clipSource}
           getPositionSeconds={() => 2.4}
         />,
       )
@@ -178,4 +178,5 @@ describe('TrackZone clip-driven layout', () => {
     expect(playhead).toBeTruthy()
     expect(parseFloat(playhead.style.left)).toBeCloseTo(expectedWrappedPx, 5)
   })
+
 })

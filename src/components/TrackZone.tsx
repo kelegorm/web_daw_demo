@@ -10,11 +10,10 @@ import {
   TRACK_VOLUME_DEFAULT_DB,
 } from '../audio/parameterDefaults'
 import {
-  DEFAULT_MIDI_CLIP_ID,
-  DEFAULT_MIDI_CLIP_STORE,
+  DEFAULT_MIDI_CLIP_SOURCE,
   getMidiClipLengthBeats,
-  getMidiClipOrThrow,
-  type MidiClipStore,
+  resolveMidiClipSourceOrThrow,
+  type MidiClipSource,
 } from '../project-runtime/midiClipStore'
 import type { MeterSource } from '../engine/types'
 
@@ -55,8 +54,7 @@ interface Props {
   masterVolumeDb?: number
   onMasterVolumeChange?: (db: number) => void
   getPositionSeconds?: () => number
-  clipStore?: MidiClipStore
-  clipId?: string
+  clipSource?: MidiClipSource
 }
 
 export default function TrackZone({
@@ -74,15 +72,14 @@ export default function TrackZone({
   masterVolumeDb = 0,
   onMasterVolumeChange,
   getPositionSeconds,
-  clipStore = DEFAULT_MIDI_CLIP_STORE,
-  clipId = DEFAULT_MIDI_CLIP_ID,
+  clipSource = DEFAULT_MIDI_CLIP_SOURCE,
 }: Props) {
   const [playheadPos, setPlayheadPos] = useState(0)
   const { selectedTrack, selectTrack } = useTrackSelectionContext()
 
   const rafRef = useRef<number | null>(null)
 
-  const clip = getMidiClipOrThrow(clipStore, clipId)
+  const clip = resolveMidiClipSourceOrThrow(clipSource)
   if (clip.steps.length < clip.lengthSteps) {
     throw new Error(
       `MIDI clip "${clip.clipId}" has ${clip.steps.length} steps, expected at least ${clip.lengthSteps}`,

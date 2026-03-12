@@ -29,6 +29,10 @@ export interface MidiClip {
 }
 
 export type MidiClipStore = Record<string, MidiClip>;
+export interface MidiClipSource {
+  clipStore: MidiClipStore;
+  clipId: string;
+}
 
 // Temporary default-id wiring for the current demo runtime only.
 export const DEFAULT_MIDI_CLIP_ID = 'default-midi-clip';
@@ -49,6 +53,10 @@ export const DEFAULT_MIDI_CLIP_STORE: MidiClipStore = {
     })),
   },
 };
+export const DEFAULT_MIDI_CLIP_SOURCE: MidiClipSource = {
+  clipStore: DEFAULT_MIDI_CLIP_STORE,
+  clipId: DEFAULT_MIDI_CLIP_ID,
+};
 
 export function getMidiClipOrThrow(store: MidiClipStore, clipId: string): MidiClip {
   const clip = store[clipId];
@@ -61,4 +69,8 @@ export function getMidiClipOrThrow(store: MidiClipStore, clipId: string): MidiCl
 
 export function getMidiClipLengthBeats(clip: MidiClip): number {
   return clip.lengthSteps * STEP_BEATS;
+}
+
+export function resolveMidiClipSourceOrThrow(source: MidiClipSource): MidiClip {
+  return getMidiClipOrThrow(source.clipStore, source.clipId);
 }

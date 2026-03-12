@@ -2,13 +2,12 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import * as Tone from 'tone';
 import { getE2EHooks } from '../testing/e2eHooks';
 import {
-  DEFAULT_MIDI_CLIP_ID,
-  DEFAULT_MIDI_CLIP_STORE,
+  DEFAULT_MIDI_CLIP_SOURCE,
   STEP_BEATS,
   getMidiClipLengthBeats,
-  getMidiClipOrThrow,
+  resolveMidiClipSourceOrThrow,
   type MidiClip,
-  type MidiClipStore,
+  type MidiClipSource,
 } from '../project-runtime/midiClipStore';
 import {
   createTransportService,
@@ -16,15 +15,9 @@ import {
   type TransportService,
 } from '../engine/transportService';
 
-export interface SequencerClipInput {
-  clipStore: MidiClipStore;
-  clipId: string;
-}
+export type SequencerClipInput = MidiClipSource;
 
-const DEFAULT_SEQUENCER_CLIP_INPUT: SequencerClipInput = {
-  clipStore: DEFAULT_MIDI_CLIP_STORE,
-  clipId: DEFAULT_MIDI_CLIP_ID,
-};
+const DEFAULT_SEQUENCER_CLIP_INPUT: SequencerClipInput = DEFAULT_MIDI_CLIP_SOURCE;
 
 interface StepEvent {
   enabled: boolean;
@@ -68,7 +61,7 @@ function resolveClipStepsOrThrow(clip: MidiClip): StepEvent[] {
 export function resolveSequencerClip(
   clipInput: SequencerClipInput = DEFAULT_SEQUENCER_CLIP_INPUT,
 ): MidiClip {
-  return getMidiClipOrThrow(clipInput.clipStore, clipInput.clipId);
+  return resolveMidiClipSourceOrThrow(clipInput);
 }
 
 export function getClipLoopEnd(clip: MidiClip): string {

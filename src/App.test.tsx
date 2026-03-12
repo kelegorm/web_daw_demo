@@ -12,6 +12,7 @@ import {
   DEFAULT_PLAN_MASTER_STRIP_ID,
 } from './engine/audioGraphPlan'
 import type { MeterSource } from './engine/types'
+import { DEFAULT_MIDI_CLIP_SOURCE } from './project-runtime/midiClipStore'
 
 vi.mock('./engine/audioEngine', () => ({
   createAudioEngine: vi.fn(),
@@ -65,7 +66,7 @@ vi.mock('./components/Toolbar', () => ({
 }))
 
 vi.mock('./components/TrackZone', () => ({
-  default: () => null,
+  default: vi.fn(() => null),
 }))
 
 vi.mock('./components/DevicePanel', () => ({
@@ -149,6 +150,8 @@ describe('App id-based module wiring', () => {
     vi.mocked(useAudioEngine).mockReturnValue(mockEngine as unknown as ReturnType<typeof createAudioEngine>)
 
     const App = (await import('./App')).default
+    const { useTransportController } = await import('./hooks/useTransportController')
+    const TrackZone = (await import('./components/TrackZone')).default
 
     flushSync(() => {
       root.render(<App />)
@@ -160,5 +163,19 @@ describe('App id-based module wiring', () => {
     expect(mockEngine.getTrackStrip).toHaveBeenCalledWith(DEFAULT_PLAN_TRACK_STRIP_ID)
     expect(mockEngine.getLimiter).toHaveBeenCalledWith(DEFAULT_PLAN_LIMITER_ID)
     expect(mockEngine.getMasterStrip).toHaveBeenCalledWith(DEFAULT_PLAN_MASTER_STRIP_ID)
+    expect(vi.mocked(useTransportController)).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      DEFAULT_MIDI_CLIP_SOURCE,
+    )
+    const trackZoneMock = vi.mocked(TrackZone)
+    expect(trackZoneMock).toHaveBeenCalled()
+    const trackZoneLastCall = trackZoneMock.mock.calls[trackZoneMock.mock.calls.length - 1]
+    const trackZoneProps = trackZoneLastCall?.[0]
+    expect(trackZoneProps).toEqual(
+      expect.objectContaining({
+        clipSource: DEFAULT_MIDI_CLIP_SOURCE,
+      }),
+    )
   })
 })

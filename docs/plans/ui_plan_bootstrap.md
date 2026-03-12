@@ -85,11 +85,11 @@ Scope constraints:
 ---
 
 ### Task 1: Stabilize MIDI Clip Store Integration
-- [ ] Treat `MidiClipStore` as the authoritative clip source for UI runtime inputs.
-- [ ] Keep clip semantics defined in code contracts/types and consume them consistently in this plan.
-- [ ] Keep `buildUiRuntime`/UI render paths clip-source-driven (via resolved clip ids/store data) and avoid reintroducing local hardcoded clip/note constants.
-- [ ] Keep current behavior unchanged when using the default clip runtime data.
-- [ ] Mark completed.
+- [x] Treat `MidiClipStore` as the authoritative clip source for UI runtime inputs.
+- [x] Keep clip semantics defined in code contracts/types and consume them consistently in this plan.
+- [x] Keep `buildUiRuntime`/UI render paths clip-source-driven (via resolved clip ids/store data) and avoid reintroducing local hardcoded clip/note constants.
+- [x] Keep current behavior unchanged when using the default clip runtime data.
+- [x] Mark completed.
 
 ### Task 2: Add `UiPlan` model and default UI plan
 - [ ] Create folder `src/ui-plan/` (separate from `src/engine/`).

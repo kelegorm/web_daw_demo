@@ -12,6 +12,7 @@ import { useTransportController } from './hooks/useTransportController'
 import { useTrackSelection, TrackSelectionContext } from './hooks/useTrackSelection'
 import type { AudioEngine } from './engine/audioEngine'
 import { useAudioEngine } from './hooks/useAudioEngine'
+import { DEFAULT_MIDI_CLIP_SOURCE } from './project-runtime/midiClipStore'
 import {
   DEFAULT_PLAN_SYNTH_ID,
   DEFAULT_PLAN_PANNER_ID,
@@ -45,7 +46,7 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
   const trackStrip = useTrackStrip(audioEngine.getTrackStrip(DEFAULT_PLAN_TRACK_STRIP_ID))
   const masterStrip = useMasterStrip(audioEngine.getMasterStrip(DEFAULT_PLAN_MASTER_STRIP_ID))
   const limiter = useLimiter(audioEngine.getLimiter(DEFAULT_PLAN_LIMITER_ID))
-  const transport = useTransportController(toneSynth, trackStrip)
+  const transport = useTransportController(toneSynth, trackStrip, DEFAULT_MIDI_CLIP_SOURCE)
   const [isTrackRecEnabled, setIsTrackRecEnabled] = useState(true)
   const trackSelection = useTrackSelection()
 
@@ -93,6 +94,7 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
           masterVolumeDb={masterStrip.masterVolume}
           onMasterVolumeChange={masterStrip.setMasterVolume}
           getPositionSeconds={transport.getPositionSeconds}
+          clipSource={DEFAULT_MIDI_CLIP_SOURCE}
         />
         <DevicePanel synth={toneSynth} panner={panner} limiter={limiter} />
         <MidiKeyboard synth={toneSynth} enabled={isTrackRecEnabled} />
