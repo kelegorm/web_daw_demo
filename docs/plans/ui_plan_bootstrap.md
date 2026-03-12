@@ -39,7 +39,7 @@ Scope constraints:
 - Contains: map `clipId -> MidiClip`
 
 - `MidiClip`
-- Contains: `clipId`, `startBeat` (number, beats), `lengthBeats` (number, beats), list of steps
+- Contains: `clipId`, `startBeat` (number, fractional beats), `lengthBeats` (number, fractional beats), list of steps
 
 - `MidiStep`
 - Contains: on/off flag, note, velocity, gate
@@ -49,11 +49,14 @@ Scope constraints:
 
 ## MidiClip Data Semantics
 - Step grid unit for this plan: `8n` (same feel as current sequencer; no groove change in this refactor).
-- `MidiClip.startBeat`: clip start offset on track timeline in metronome beats.
-- `MidiClip.lengthBeats`: loop/playback window size in beats and visual clip width basis.
+- `MidiClip.startBeat`: clip start offset on track timeline in metronome beats; supports fractional values (for example `0.5`, `1.75`).
+- `MidiClip.lengthBeats`: loop/playback window size in beats and visual clip width basis; supports fractional values (for example `2.5`, `3.5`).
+- `startBeat` and `lengthBeats` are finite positive numbers and must not be rounded/coerced to integers during runtime mapping.
 - Step index inside clip is local and is mapped to transport beat via `startBeat + (localStep * STEP_BEATS)` where `STEP_BEATS = 0.5` for the `8n` grid.
 - `MidiStep.gate` is normalized (`0..1`) and defines note duration as `stepDuration * gate`.
 - Default gate for migrated demo clip should preserve current behavior (`0.8`).
+- Sequencer loop window must be clip-derived: `part.loopEnd` and `TransportService.setLoopConfig(..., loopEnd)` are computed from `MidiClip.lengthBeats` (no fixed `'1m'` constant path for custom clip lengths).
+- For the default migrated demo clip, `lengthBeats = 4` is expected so externally-visible behavior remains equal to current one-bar loop.
 - Sequencer timing internals are out of scope for this plan (tracked in `docs/plans/sequencer_timing_hardening.md`).
 
 ## Responsibility Boundary
@@ -97,9 +100,12 @@ Scope constraints:
 - [ ] Add helper accessors for clip lookup with fail-fast errors on missing clip ids.
 - [ ] Introduce a sequencer clip input contract (for example: resolve clip by `clipId`) so sequencer does not own hardcoded note constants.
 - [ ] Wire current playback to pass a default `clipId` and resolve clip data from `DEFAULT_MIDI_CLIP_STORE`.
+- [ ] Replace fixed sequencer loop-end wiring with clip-derived loop-end: compute `loopEnd` from `MidiClip.lengthBeats` and route it to both `Tone.Part.loopEnd` and `TransportService.setLoopConfig`.
 - [ ] Remove duplicated inline clip-note constants from UI track rendering path; `TrackZone` clip visuals must read the same clip data source as playback.
+- [ ] Ensure clip visual width, timeline loop region width, and playhead wrap window are all derived from the same resolved clip length (no separate hardcoded step counts).
 - [ ] Keep current runtime behavior identical (same notes/order/timing).
-- [ ] Add/adjust unit tests for clip store lookup and playback using store data.
+- [ ] Add/adjust unit tests for clip store lookup, loop-end derivation (including fractional-beat clip lengths), and gate-based note-off scheduling using store data.
+- [ ] Update existing tests that currently hardcode `8` steps/notes so they assert via clip-driven expectations (`useSequencer.test.ts`, `useTransportController.test.ts`, `e2e/sequencer.spec.ts`, `e2e/trackzone.spec.ts`, `e2e/playhead.spec.ts`).
 - [ ] Mark completed.
 
 ### Task 2: Add `UiPlan` model and default UI plan
