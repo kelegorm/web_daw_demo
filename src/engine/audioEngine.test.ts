@@ -178,23 +178,27 @@ describe('createAudioEngine with DEFAULT_AUDIO_GRAPH_PLAN', () => {
     expect(build.limiterOutput.connect).toHaveBeenCalledWith(build.masterStripInput);
     expect(build.masterStripOutput.connect).toHaveBeenCalledWith(build.destinationInput);
 
-    expect(engine.destination).toBe(build.destinationInput);
     // Verify public interface has no AudioNode / Tone.* exposure
-    expect('getSynth' in engine.synth).toBe(false);
-    expect('getOutput' in engine.synth).toBe(false);
-    expect('connectSource' in engine.panner).toBe(false);
-    expect('input' in engine.trackStrip).toBe(false);
-    expect('output' in engine.trackStrip).toBe(false);
-    expect('input' in engine.limiter).toBe(false);
-    expect('output' in engine.limiter).toBe(false);
+    const synth = engine.getSynth(DEFAULT_PLAN_SYNTH_ID);
+    const panner = engine.getPanner(DEFAULT_PLAN_PANNER_ID);
+    const trackStrip = engine.getTrackStrip(DEFAULT_PLAN_TRACK_STRIP_ID);
+    const limiter = engine.getLimiter(DEFAULT_PLAN_LIMITER_ID);
+    expect('getSynth' in synth).toBe(false);
+    expect('getOutput' in synth).toBe(false);
+    expect('connectSource' in panner).toBe(false);
+    expect('input' in trackStrip).toBe(false);
+    expect('output' in trackStrip).toBe(false);
+    expect('input' in limiter).toBe(false);
+    expect('output' in limiter).toBe(false);
   });
 
   it('forwards scheduled note times through engine synth facade', () => {
     const build = createBuild(10);
     const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
 
-    engine.synth.noteOn(60, 100, 1.25);
-    engine.synth.noteOff(60, 1.45);
+    const synth = engine.getSynth(DEFAULT_PLAN_SYNTH_ID);
+    synth.noteOn(60, 100, 1.25);
+    synth.noteOff(60, 1.45);
 
     expect(build.synth.noteOn).toHaveBeenCalledWith(60, 100, 1.25);
     expect(build.synth.noteOff).toHaveBeenCalledWith(60, 1.45);
@@ -275,22 +279,28 @@ describe('createAudioEngine with DEFAULT_AUDIO_GRAPH_PLAN', () => {
 
     const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
 
+    const engineSynth = engine.getSynth(DEFAULT_PLAN_SYNTH_ID);
+    const enginePanner = engine.getPanner(DEFAULT_PLAN_PANNER_ID);
+    const engineTrackStrip = engine.getTrackStrip(DEFAULT_PLAN_TRACK_STRIP_ID);
+    const engineLimiter = engine.getLimiter(DEFAULT_PLAN_LIMITER_ID);
+    const engineMasterStrip = engine.getMasterStrip(DEFAULT_PLAN_MASTER_STRIP_ID);
+
     engine.dispose();
 
-    expect(() => engine.synth.noteOn(60, 100)).not.toThrow();
-    expect(() => engine.synth.noteOff(60)).not.toThrow();
-    expect(() => engine.synth.panic()).not.toThrow();
-    expect(() => engine.synth.setFilterCutoff(1000)).not.toThrow();
-    expect(() => engine.synth.setVoiceSpread(0.5)).not.toThrow();
-    expect(() => engine.synth.setVolume(-6)).not.toThrow();
-    expect(() => engine.synth.setEnabled(false)).not.toThrow();
-    expect(() => engine.panner.setPan(0.25)).not.toThrow();
-    expect(() => engine.panner.setEnabled(false)).not.toThrow();
-    expect(() => engine.trackStrip.setTrackVolume(-6)).not.toThrow();
-    expect(() => engine.trackStrip.setTrackMuted(true)).not.toThrow();
-    expect(() => engine.limiter.setThreshold(-10)).not.toThrow();
-    expect(() => engine.limiter.setEnabled(false)).not.toThrow();
-    expect(() => engine.masterStrip.setMasterVolume(-3)).not.toThrow();
+    expect(() => engineSynth.noteOn(60, 100)).not.toThrow();
+    expect(() => engineSynth.noteOff(60)).not.toThrow();
+    expect(() => engineSynth.panic()).not.toThrow();
+    expect(() => engineSynth.setFilterCutoff(1000)).not.toThrow();
+    expect(() => engineSynth.setVoiceSpread(0.5)).not.toThrow();
+    expect(() => engineSynth.setVolume(-6)).not.toThrow();
+    expect(() => engineSynth.setEnabled(false)).not.toThrow();
+    expect(() => enginePanner.setPan(0.25)).not.toThrow();
+    expect(() => enginePanner.setEnabled(false)).not.toThrow();
+    expect(() => engineTrackStrip.setTrackVolume(-6)).not.toThrow();
+    expect(() => engineTrackStrip.setTrackMuted(true)).not.toThrow();
+    expect(() => engineLimiter.setThreshold(-10)).not.toThrow();
+    expect(() => engineLimiter.setEnabled(false)).not.toThrow();
+    expect(() => engineMasterStrip.setMasterVolume(-3)).not.toThrow();
 
     expect(synthNoteOn).not.toHaveBeenCalled();
     expect(synthNoteOff).not.toHaveBeenCalled();
@@ -407,35 +417,56 @@ describe('graph validation', () => {
 });
 
 describe('id-based module accessors', () => {
-  it('getSynth returns synth facade for correct id', () => {
+  it('getSynth returns synth facade for correct id (delegates to underlying mock)', () => {
     const build = createBuild(20);
     const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
     const synth = engine.getSynth(DEFAULT_PLAN_SYNTH_ID);
-    expect(synth).toBe(engine.synth);
+    synth.noteOn(60, 100, 1.0);
+    expect(build.synth.noteOn).toHaveBeenCalledWith(60, 100, 1.0);
   });
 
-  it('getPanner returns panner facade for correct id', () => {
+  it('getSynth returns the same facade instance on repeated calls', () => {
+    const build = createBuild(20);
+    const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
+    expect(engine.getSynth(DEFAULT_PLAN_SYNTH_ID)).toBe(engine.getSynth(DEFAULT_PLAN_SYNTH_ID));
+  });
+
+  it('getPanner returns panner facade for correct id (delegates to underlying mock)', () => {
     const build = createBuild(21);
     const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
-    expect(engine.getPanner(DEFAULT_PLAN_PANNER_ID)).toBe(engine.panner);
+    engine.getPanner(DEFAULT_PLAN_PANNER_ID).setPan(0.5);
+    expect(build.panner.setPan).toHaveBeenCalledWith(0.5);
   });
 
-  it('getTrackStrip returns trackStrip facade for correct id', () => {
+  it('getTrackStrip returns trackStrip facade for correct id (delegates to underlying mock)', () => {
     const build = createBuild(22);
     const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
-    expect(engine.getTrackStrip(DEFAULT_PLAN_TRACK_STRIP_ID)).toBe(engine.trackStrip);
+    engine.getTrackStrip(DEFAULT_PLAN_TRACK_STRIP_ID).setTrackVolume(-6);
+    expect(build.trackStrip.setTrackVolume).toHaveBeenCalledWith(-6);
   });
 
-  it('getLimiter returns limiter facade for correct id', () => {
+  it('getLimiter returns limiter facade for correct id (delegates to underlying mock)', () => {
     const build = createBuild(23);
     const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
-    expect(engine.getLimiter(DEFAULT_PLAN_LIMITER_ID)).toBe(engine.limiter);
+    engine.getLimiter(DEFAULT_PLAN_LIMITER_ID).setThreshold(-3);
+    expect(build.limiter.setThreshold).toHaveBeenCalledWith(-3);
   });
 
-  it('getMasterStrip returns masterStrip facade for correct id', () => {
+  it('getMasterStrip returns masterStrip facade for correct id (delegates to underlying mock)', () => {
     const build = createBuild(24);
     const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
-    expect(engine.getMasterStrip(DEFAULT_PLAN_MASTER_STRIP_ID)).toBe(engine.masterStrip);
+    engine.getMasterStrip(DEFAULT_PLAN_MASTER_STRIP_ID).setMasterVolume(-3);
+    expect(build.masterStrip.setMasterVolume).toHaveBeenCalledWith(-3);
+  });
+
+  it('id-based accessors are the only module access path on the engine interface', () => {
+    const build = createBuild(20);
+    const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
+    expect('synth' in engine).toBe(false);
+    expect('panner' in engine).toBe(false);
+    expect('trackStrip' in engine).toBe(false);
+    expect('limiter' in engine).toBe(false);
+    expect('masterStrip' in engine).toBe(false);
   });
 
   it('throws for unknown module id', () => {

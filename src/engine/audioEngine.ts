@@ -37,12 +37,6 @@ export interface GraphEdge {
 
 // AudioEngine exposes public (intent-level) hook types — no AudioNode / Tone.* leakage.
 export interface AudioEngine {
-  synth: ToneSynthHook;
-  panner: PannerHook;
-  trackStrip: TrackStripHook;
-  limiter: LimiterHook;
-  masterStrip: MasterStripHook;
-  destination: AudioDestinationNode;
   getSynth: (id: string) => ToneSynthHook;
   getPanner: (id: string) => PannerHook;
   getTrackStrip: (id: string) => TrackStripHook;
@@ -284,7 +278,6 @@ export function createAudioEngine(plan: AudioGraphPlan, factoryMap: AudioModuleF
   const trackStrip = getRequiredRuntime<TrackStripGraph>(runtimeByKind, AudioModuleKind.TRACK_STRIP);
   const limiter = getRequiredRuntime<LimiterGraph>(runtimeByKind, AudioModuleKind.LIMITER);
   const masterStrip = getRequiredRuntime<MasterStripGraph>(runtimeByKind, AudioModuleKind.MASTER_STRIP);
-  const destination = audioContext.destination;
 
   const synthFacade: ToneSynthHook = {
     get isEnabled() { return synth.isEnabled; },
@@ -414,12 +407,6 @@ export function createAudioEngine(plan: AudioGraphPlan, factoryMap: AudioModuleF
   }
 
   return {
-    synth: synthFacade,
-    panner: pannerFacade,
-    trackStrip: trackStripFacade,
-    limiter: limiterFacade,
-    masterStrip: masterStripFacade,
-    destination,
     getSynth: (id) => (requireModule(id, AudioModuleKind.SYNTH) as { kind: AudioModuleKind.SYNTH; facade: ToneSynthHook }).facade,
     getPanner: (id) => (requireModule(id, AudioModuleKind.PANNER) as { kind: AudioModuleKind.PANNER; facade: PannerHook }).facade,
     getTrackStrip: (id) => (requireModule(id, AudioModuleKind.TRACK_STRIP) as { kind: AudioModuleKind.TRACK_STRIP; facade: TrackStripHook }).facade,

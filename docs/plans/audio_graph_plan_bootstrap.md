@@ -63,8 +63,8 @@ Scope constraints:
 - [x] Mark completed
 
 ### Task 5: Remove legacy module fields from `AudioEngine` contract
-- [ ] Remove legacy public fields from `AudioEngine` interface: `synth`, `panner`, `trackStrip`, `limiter`, `masterStrip`
-- [ ] Keep only id-based module accessors (`getSynth`, `getPanner`, `getTrackStrip`, `getLimiter`, `getMasterStrip`) + `dispose`
-- [ ] Update remaining call sites and tests that still read legacy fields
-- [ ] Add/adjust tests to assert the id-based API is the only public module access path
-- [ ] Mark completed
+- [x] Remove legacy public fields from `AudioEngine` interface: `synth`, `panner`, `trackStrip`, `limiter`, `masterStrip`
+- [x] Keep only id-based module accessors (`getSynth`, `getPanner`, `getTrackStrip`, `getLimiter`, `getMasterStrip`) + `dispose`
+- [x] Update remaining call sites and tests that still read legacy fields
+- [x] Add/adjust tests to assert the id-based API is the only public module access path
+- [x] Mark completed
