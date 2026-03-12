@@ -43,6 +43,11 @@ export interface AudioEngine {
   limiter: LimiterHook;
   masterStrip: MasterStripHook;
   destination: AudioDestinationNode;
+  getSynth: (id: string) => ToneSynthHook;
+  getPanner: (id: string) => PannerHook;
+  getTrackStrip: (id: string) => TrackStripHook;
+  getLimiter: (id: string) => LimiterHook;
+  getMasterStrip: (id: string) => MasterStripHook;
   dispose: () => void;
 }
 
@@ -367,6 +372,47 @@ export function createAudioEngine(plan: AudioGraphPlan, factoryMap: AudioModuleF
     get meterSource() { return masterStrip.meterSource; },
   };
 
+  // Build id -> { kind, facade } index for id-based accessors.
+  type ModuleEntry =
+    | { kind: AudioModuleKind.SYNTH; facade: ToneSynthHook }
+    | { kind: AudioModuleKind.PANNER; facade: PannerHook }
+    | { kind: AudioModuleKind.TRACK_STRIP; facade: TrackStripHook }
+    | { kind: AudioModuleKind.LIMITER; facade: LimiterHook }
+    | { kind: AudioModuleKind.MASTER_STRIP; facade: MasterStripHook };
+
+  const moduleIndex = new Map<string, ModuleEntry>();
+  for (const node of plan.nodes) {
+    switch (node.kind) {
+      case AudioModuleKind.SYNTH:
+        moduleIndex.set(node.id, { kind: AudioModuleKind.SYNTH, facade: synthFacade });
+        break;
+      case AudioModuleKind.PANNER:
+        moduleIndex.set(node.id, { kind: AudioModuleKind.PANNER, facade: pannerFacade });
+        break;
+      case AudioModuleKind.TRACK_STRIP:
+        moduleIndex.set(node.id, { kind: AudioModuleKind.TRACK_STRIP, facade: trackStripFacade });
+        break;
+      case AudioModuleKind.LIMITER:
+        moduleIndex.set(node.id, { kind: AudioModuleKind.LIMITER, facade: limiterFacade });
+        break;
+      case AudioModuleKind.MASTER_STRIP:
+        moduleIndex.set(node.id, { kind: AudioModuleKind.MASTER_STRIP, facade: masterStripFacade });
+        break;
+      // DESTINATION has no facade — intentionally excluded from the module index.
+    }
+  }
+
+  function requireModule(id: string, expectedKind: AudioModuleKind): ModuleEntry {
+    const entry = moduleIndex.get(id);
+    if (!entry) {
+      throw new Error(`[audio-engine] unknown module id: ${id}`);
+    }
+    if (entry.kind !== expectedKind) {
+      throw new Error(`[audio-engine] module id "${id}" has kind ${entry.kind}, expected ${expectedKind}`);
+    }
+    return entry;
+  }
+
   return {
     synth: synthFacade,
     panner: pannerFacade,
@@ -374,6 +420,11 @@ export function createAudioEngine(plan: AudioGraphPlan, factoryMap: AudioModuleF
     limiter: limiterFacade,
     masterStrip: masterStripFacade,
     destination,
+    getSynth: (id) => (requireModule(id, AudioModuleKind.SYNTH) as { kind: AudioModuleKind.SYNTH; facade: ToneSynthHook }).facade,
+    getPanner: (id) => (requireModule(id, AudioModuleKind.PANNER) as { kind: AudioModuleKind.PANNER; facade: PannerHook }).facade,
+    getTrackStrip: (id) => (requireModule(id, AudioModuleKind.TRACK_STRIP) as { kind: AudioModuleKind.TRACK_STRIP; facade: TrackStripHook }).facade,
+    getLimiter: (id) => (requireModule(id, AudioModuleKind.LIMITER) as { kind: AudioModuleKind.LIMITER; facade: LimiterHook }).facade,
+    getMasterStrip: (id) => (requireModule(id, AudioModuleKind.MASTER_STRIP) as { kind: AudioModuleKind.MASTER_STRIP; facade: MasterStripHook }).facade,
     dispose: () => {
       if (isDisposed) return;
       isDisposed = true;

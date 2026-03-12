@@ -6,7 +6,15 @@ import {
   type GraphModuleSpec,
   validateLinearGraph,
 } from './audioEngine';
-import { AudioModuleKind, DEFAULT_AUDIO_GRAPH_PLAN } from './audioGraphPlan';
+import {
+  AudioModuleKind,
+  DEFAULT_AUDIO_GRAPH_PLAN,
+  DEFAULT_PLAN_SYNTH_ID,
+  DEFAULT_PLAN_PANNER_ID,
+  DEFAULT_PLAN_TRACK_STRIP_ID,
+  DEFAULT_PLAN_LIMITER_ID,
+  DEFAULT_PLAN_MASTER_STRIP_ID,
+} from './audioGraphPlan';
 import type { LimiterGraph } from '../hooks/useLimiter';
 import type { MasterStripGraph } from '../hooks/useMasterStrip';
 import type { PannerGraph } from '../hooks/usePanner';
@@ -395,5 +403,53 @@ describe('graph validation', () => {
         [{ from: 'b', to: 'a' }],
       ),
     ).toThrow('backward edge is not allowed: b -> a');
+  });
+});
+
+describe('id-based module accessors', () => {
+  it('getSynth returns synth facade for correct id', () => {
+    const build = createBuild(20);
+    const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
+    const synth = engine.getSynth(DEFAULT_PLAN_SYNTH_ID);
+    expect(synth).toBe(engine.synth);
+  });
+
+  it('getPanner returns panner facade for correct id', () => {
+    const build = createBuild(21);
+    const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
+    expect(engine.getPanner(DEFAULT_PLAN_PANNER_ID)).toBe(engine.panner);
+  });
+
+  it('getTrackStrip returns trackStrip facade for correct id', () => {
+    const build = createBuild(22);
+    const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
+    expect(engine.getTrackStrip(DEFAULT_PLAN_TRACK_STRIP_ID)).toBe(engine.trackStrip);
+  });
+
+  it('getLimiter returns limiter facade for correct id', () => {
+    const build = createBuild(23);
+    const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
+    expect(engine.getLimiter(DEFAULT_PLAN_LIMITER_ID)).toBe(engine.limiter);
+  });
+
+  it('getMasterStrip returns masterStrip facade for correct id', () => {
+    const build = createBuild(24);
+    const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
+    expect(engine.getMasterStrip(DEFAULT_PLAN_MASTER_STRIP_ID)).toBe(engine.masterStrip);
+  });
+
+  it('throws for unknown module id', () => {
+    const build = createBuild(25);
+    const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
+    expect(() => engine.getSynth('nonexistent')).toThrow('unknown module id: nonexistent');
+  });
+
+  it('throws when id exists but kind does not match', () => {
+    const build = createBuild(26);
+    const engine = createAudioEngine(DEFAULT_AUDIO_GRAPH_PLAN, buildMockFactoryMap(build));
+    // panner id asked as synth
+    expect(() => engine.getSynth(DEFAULT_PLAN_PANNER_ID)).toThrow(
+      `module id "${DEFAULT_PLAN_PANNER_ID}" has kind PANNER, expected SYNTH`,
+    );
   });
 });

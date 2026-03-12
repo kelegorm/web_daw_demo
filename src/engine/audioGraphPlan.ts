@@ -83,20 +83,56 @@ export function validateAudioGraphPlan(plan: AudioGraphPlan): void {
   }
 }
 
+/**
+ * Default plan id for the synth module.
+ * Tied to DEFAULT_AUDIO_GRAPH_PLAN only — not a generic contract for custom plans.
+ */
+export const DEFAULT_PLAN_SYNTH_ID = 'synth';
+
+/**
+ * Default plan id for the panner module.
+ * Tied to DEFAULT_AUDIO_GRAPH_PLAN only — not a generic contract for custom plans.
+ */
+export const DEFAULT_PLAN_PANNER_ID = 'panner';
+
+/**
+ * Default plan id for the track-strip module.
+ * Tied to DEFAULT_AUDIO_GRAPH_PLAN only — not a generic contract for custom plans.
+ */
+export const DEFAULT_PLAN_TRACK_STRIP_ID = 'track-strip';
+
+/**
+ * Default plan id for the limiter module.
+ * Tied to DEFAULT_AUDIO_GRAPH_PLAN only — not a generic contract for custom plans.
+ */
+export const DEFAULT_PLAN_LIMITER_ID = 'limiter';
+
+/**
+ * Default plan id for the master-strip module.
+ * Tied to DEFAULT_AUDIO_GRAPH_PLAN only — not a generic contract for custom plans.
+ */
+export const DEFAULT_PLAN_MASTER_STRIP_ID = 'master-strip';
+
+/**
+ * Default plan id for the destination module.
+ * Tied to DEFAULT_AUDIO_GRAPH_PLAN only — not a generic contract for custom plans.
+ */
+export const DEFAULT_PLAN_DESTINATION_ID = 'destination';
+
 export const DEFAULT_AUDIO_GRAPH_PLAN: AudioGraphPlan = {
   nodes: [
-    { id: 'synth', kind: AudioModuleKind.SYNTH },
-    { id: 'panner', kind: AudioModuleKind.PANNER },
-    { id: 'track-strip', kind: AudioModuleKind.TRACK_STRIP },
-    { id: 'limiter', kind: AudioModuleKind.LIMITER },
-    { id: 'master-strip', kind: AudioModuleKind.MASTER_STRIP },
-    { id: 'destination', kind: AudioModuleKind.DESTINATION },
+    { id: DEFAULT_PLAN_SYNTH_ID, kind: AudioModuleKind.SYNTH },
+    { id: DEFAULT_PLAN_PANNER_ID, kind: AudioModuleKind.PANNER },
+    { id: DEFAULT_PLAN_TRACK_STRIP_ID, kind: AudioModuleKind.TRACK_STRIP },
+    { id: DEFAULT_PLAN_LIMITER_ID, kind: AudioModuleKind.LIMITER },
+    { id: DEFAULT_PLAN_MASTER_STRIP_ID, kind: AudioModuleKind.MASTER_STRIP },
+    { id: DEFAULT_PLAN_DESTINATION_ID, kind: AudioModuleKind.DESTINATION },
   ],
   edges: [
-    { from: 'synth', to: 'panner' },
-    { from: 'panner', to: 'track-strip' },
-    { from: 'track-strip', to: 'limiter' },
-    { from: 'limiter', to: 'master-strip' },
-    { from: 'master-strip', to: 'destination' },
+    { from: DEFAULT_PLAN_SYNTH_ID, to: DEFAULT_PLAN_PANNER_ID },
+    { from: DEFAULT_PLAN_PANNER_ID, to: DEFAULT_PLAN_TRACK_STRIP_ID },
+    { from: DEFAULT_PLAN_TRACK_STRIP_ID, to: DEFAULT_PLAN_LIMITER_ID },
+    { from: DEFAULT_PLAN_LIMITER_ID, to: DEFAULT_PLAN_MASTER_STRIP_ID },
+    { from: DEFAULT_PLAN_MASTER_STRIP_ID, to: DEFAULT_PLAN_DESTINATION_ID },
   ],
 };

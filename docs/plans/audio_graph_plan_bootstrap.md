@@ -45,14 +45,14 @@ Scope constraints:
 - [x] Mark completed
 
 ### Task 3: Add id-based public module access API
-- [ ] Add exported default plan id constants (for example `DEFAULT_PLAN_SYNTH_ID`, `DEFAULT_PLAN_LIMITER_ID`, etc.)
-- [ ] Document scope note: `DEFAULT_PLAN_*_ID` constants are tied to `DEFAULT_AUDIO_GRAPH_PLAN` only and are not a generic contract for custom plans
-- [ ] Add an inline/JSDoc comment on each `DEFAULT_PLAN_*_ID` constant with the same scope note (default-plan only, not for custom plans)
-- [ ] Extend `AudioEngine` public contract with id-based accessors: `getSynth(id)`, `getPanner(id)`, `getTrackStrip(id)`, `getLimiter(id)`, `getMasterStrip(id)`
-- [ ] Build internal `id -> module` index from materialized plan nodes
-- [ ] Make getters fail-fast with explicit errors when id is missing or kind does not match
-- [ ] Add unit tests for successful lookup and failure cases (unknown id, wrong kind)
-- [ ] Mark completed
+- [x] Add exported default plan id constants (for example `DEFAULT_PLAN_SYNTH_ID`, `DEFAULT_PLAN_LIMITER_ID`, etc.)
+- [x] Document scope note: `DEFAULT_PLAN_*_ID` constants are tied to `DEFAULT_AUDIO_GRAPH_PLAN` only and are not a generic contract for custom plans
+- [x] Add an inline/JSDoc comment on each `DEFAULT_PLAN_*_ID` constant with the same scope note (default-plan only, not for custom plans)
+- [x] Extend `AudioEngine` public contract with id-based accessors: `getSynth(id)`, `getPanner(id)`, `getTrackStrip(id)`, `getLimiter(id)`, `getMasterStrip(id)`
+- [x] Build internal `id -> module` index from materialized plan nodes
+- [x] Make getters fail-fast with explicit errors when id is missing or kind does not match
+- [x] Add unit tests for successful lookup and failure cases (unknown id, wrong kind)
+- [x] Mark completed
 
 ### Task 4: Migrate app wiring to id-based API
 - [ ] Update `useAudioEngine`/`App.tsx` flow to request modules by id from engine getters
