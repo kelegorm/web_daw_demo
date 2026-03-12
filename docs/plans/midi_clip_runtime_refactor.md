@@ -49,14 +49,14 @@ Scope constraints:
 ---
 
 ### Task 1: Introduce `MidiClipStore` and default clip data
-- [ ] Create `src/project-runtime/midiClipStore.ts` with `MidiStep`, `MidiClip`, `MidiClipStore`.
-- [ ] Export `DEFAULT_MIDI_CLIP_STORE` and default clip id matching current demo sequence.
-- [ ] Extract `DEFAULT_MIDI_CLIP_ID` as a dedicated constant and add a comment that this default-id wiring is temporary.
-- [ ] Migrate the currently hardcoded sequencer note data (currently in `useSequencer.ts`) into `DEFAULT_MIDI_CLIP_STORE` as canonical default clip content.
-- [ ] Add comment for `DEFAULT_MIDI_CLIP_STORE` that it's temporary and should be removed in short future.
-- [ ] Add fail-fast lookup helpers for missing clip ids.
-- [ ] Document `startBeat`, `lengthSteps`, derived `lengthBeats`, and `gate` semantics in code comments/types.
-- [ ] Mark completed.
+- [x] Create `src/project-runtime/midiClipStore.ts` with `MidiStep`, `MidiClip`, `MidiClipStore`.
+- [x] Export `DEFAULT_MIDI_CLIP_STORE` and default clip id matching current demo sequence.
+- [x] Extract `DEFAULT_MIDI_CLIP_ID` as a dedicated constant and add a comment that this default-id wiring is temporary.
+- [x] Migrate the currently hardcoded sequencer note data (currently in `useSequencer.ts`) into `DEFAULT_MIDI_CLIP_STORE` as canonical default clip content.
+- [x] Add comment for `DEFAULT_MIDI_CLIP_STORE` that it's temporary and should be removed in short future.
+- [x] Add fail-fast lookup helpers for missing clip ids.
+- [x] Document `startBeat`, `lengthSteps`, derived `lengthBeats`, and `gate` semantics in code comments/types.
+- [x] Mark completed.
 
 ### Task 2: Make sequencer clip-driven
 - [ ] Introduce clip input contract for sequencer (resolve by `clipId`).

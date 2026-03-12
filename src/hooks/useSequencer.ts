@@ -2,12 +2,19 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import * as Tone from 'tone';
 import { getE2EHooks } from '../testing/e2eHooks';
 import {
+  DEFAULT_MIDI_CLIP_ID,
+  DEFAULT_MIDI_CLIP_STORE,
+  getMidiClipOrThrow,
+} from '../project-runtime/midiClipStore';
+import {
   createTransportService,
   type SequencerTransport,
   type TransportService,
 } from '../engine/transportService';
 
-export const SEQUENCER_NOTES = [60, 62, 64, 65, 67, 69, 71, 72];
+const DEFAULT_SEQUENCER_CLIP = getMidiClipOrThrow(DEFAULT_MIDI_CLIP_STORE, DEFAULT_MIDI_CLIP_ID);
+
+export const SEQUENCER_NOTES = DEFAULT_SEQUENCER_CLIP.steps.map((step) => step.note);
 
 interface StepEvent {
   note: number;
