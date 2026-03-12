@@ -7,30 +7,32 @@ Current state:
 - Audio graph is already plan-driven, but UI is not.
 - We keep current direct audio module interfaces for now (no DAW engine refactor in this plan).
 - `useTrackSelection` still hardcodes track ids as `'synth1' | 'master'`.
-- Clip note source is duplicated between playback (`useSequencer.ts`) and visual track data (`TrackZone.tsx`).
+- UI runtime still depends on clip/store integration details that must remain clip-source-driven (`MidiClipStore`), without local hardcoded clip/note constants.
 - `App.tsx` still relies on a fixed hook/module wiring shape, so plan-driven device rendering must stay compatible with React Rules of Hooks.
 - `src/App.test.tsx` still validates direct `audioEngine.get*` calls inside `App`, which conflicts with target architecture (UI structure from `buildUiRuntime`).
 
 Goal:
 - Build UI from an explicit `UiPlan` model.
 - Keep MIDI clip data outside `UiPlan` in a temporary `MidiClipStore`.
-- Use one clip source for both playback and UI rendering.
 - Keep behavior unchanged.
 
 Scope constraints:
 - Do not introduce `ProjectDocument` / `DawEngine` yet.
 - Do not implement diff/patch/reconcile.
-- Do not change transport/sequencer topology or TransportService public API.
-- Master track is not part of `UiPlan.tracks`; it is referenced by `masterTrackId`.
+- Do not change transport/sequencer topology or TransportService public API in this plan.
+- Master track remains a fixed UI row in layout, but its data/devices must come from `UiPlan.masterTrack`.
 - Do not implement dynamic hook invocation from plan data; keep hook usage Rules-of-Hooks-safe.
 
 ## Class Schema
 
 - `UiPlan`
-- Contains: list of regular tracks, `masterTrackId`, optional `initialTrackId`
+- Contains: list of regular tracks, `masterTrack` (`UiMasterTrackPlan`), optional `initialTrackId`
 
 - `UiTrackPlan`
 - Contains: `trackId`, `displayName`, `trackStripId`, `clipIds`, list of `UiDevicePlan`
+
+- `UiMasterTrackPlan`
+- Contains: `masterTrackId`, `displayName`, `trackStripId`, list of `UiDevicePlan`
 
 - `UiDevicePlan`
 - Contains: `uiDeviceId`, `displayName`, `moduleId`, `moduleKind` (kind from audio-graph module kinds)
@@ -38,26 +40,14 @@ Scope constraints:
 - `MidiClipStore`
 - Contains: map `clipId -> MidiClip`
 
-- `MidiClip`
-- Contains: `clipId`, `startBeat` (number, fractional beats), `lengthBeats` (number, fractional beats), list of steps
-
-- `MidiStep`
-- Contains: on/off flag, note, velocity, gate
-
 - `DeviceRegistry`
 - Contains: mapping from `moduleKind` to UI adapter/render contract for device components
 
-## MidiClip Data Semantics
-- Step grid unit for this plan: `8n` (same feel as current sequencer; no groove change in this refactor).
-- `MidiClip.startBeat`: clip start offset on track timeline in metronome beats; supports fractional values (for example `0.5`, `1.75`).
-- `MidiClip.lengthBeats`: loop/playback window size in beats and visual clip width basis; supports fractional values (for example `2.5`, `3.5`).
-- `startBeat` and `lengthBeats` are finite positive numbers and must not be rounded/coerced to integers during runtime mapping.
-- Step index inside clip is local and is mapped to transport beat via `startBeat + (localStep * STEP_BEATS)` where `STEP_BEATS = 0.5` for the `8n` grid.
-- `MidiStep.gate` is normalized (`0..1`) and defines note duration as `stepDuration * gate`.
-- Default gate for migrated demo clip should preserve current behavior (`0.8`).
-- Sequencer loop window must be clip-derived: `part.loopEnd` and `TransportService.setLoopConfig(..., loopEnd)` are computed from `MidiClip.lengthBeats` (no fixed `'1m'` constant path for custom clip lengths).
-- For the default migrated demo clip, `lengthBeats = 4` is expected so externally-visible behavior remains equal to current one-bar loop.
-- Sequencer timing internals are out of scope for this plan (tracked in `docs/plans/sequencer_timing_hardening.md`).
+## ID Namespace Rules
+- UI ids (`trackId`, `masterTrack.masterTrackId`, `uiDeviceId`) belong to UI-plan structure and are never used for audio-module lookup.
+- Audio ids (`moduleId`, `trackStripId`) belong to audio-graph structure and are never reused as UI identity.
+- Cross-namespace mapping is explicit only via link fields (`UiDevicePlan.moduleId`, `UiTrackPlan.trackStripId`), never by accidental id-string equality.
+- Runtime mapping must fail fast when link fields reference missing audio ids.
 
 ## Responsibility Boundary
 - `buildUiRuntime` is a pure runtime constructor: derives UI data from `UiPlan`, `MidiClipStore`, selected track id, and engine lookup results; no hooks, no side effects.
@@ -77,7 +67,7 @@ Scope constraints:
 - Avoid `first()`/`nth()` for core assertions when id-based selectors are available.
 - If selector contracts change, update this section and Playwright tests in the same PR.
 
-## Done Criteria
+## Acceptance Criteria
 - `UiPlan` is the source of UI structure for track/device layout.
 - `MidiClipStore` is a separate temporary source for clip data.
 - `TrackZone` and `DevicePanel` are rendered from runtime output, not hardcoded branches.
@@ -86,37 +76,32 @@ Scope constraints:
 - Track selection ids are plan-derived strings; no hardcoded `'synth1' | 'master'` track-id union remains.
 - Initial selected track follows `UiPlan` policy (`initialTrackId` if provided, otherwise first regular track).
 - Track/device labels are provided by plan `displayName`; UI does not infer labels from ids.
+- UI-id namespace and audio-id namespace stay separated; cross-namespace mapping uses only explicit link fields.
+- Master-track device rendering is sourced from `UiPlan.masterTrack.devices`, not hardcoded in `DevicePanel`.
 - `src/App.test.tsx` expectations are aligned with runtime wiring contract.
-- Playback and clip visualization use one source of note truth (`MidiClipStore`), with no duplicated inline note constants.
-- `MidiClip` playback semantics are preserved (beat-based clip placement/length, gate-derived duration, clip window behavior).
+- UI runtime consumes `MidiClipStore` outputs without reintroducing local hardcoded clip/note constants.
 - App behavior remains unchanged and all validation commands are green.
 
 ---
 
-### Task 1: Add `MidiClipStore` and migrate current sequence to store
-- [ ] Create `src/project-runtime/midiClipStore.ts` with `MidiStep`, `MidiClip`, `MidiClipStore` types from the schema.
-- [ ] Export `DEFAULT_MIDI_CLIP_STORE` matching current sequence behavior.
-- [ ] Encode and document the clip data semantics from this plan (`8n` event grid, `startBeat/lengthBeats` timeline placement, `gate` value meaning).
-- [ ] Add helper accessors for clip lookup with fail-fast errors on missing clip ids.
-- [ ] Introduce a sequencer clip input contract (for example: resolve clip by `clipId`) so sequencer does not own hardcoded note constants.
-- [ ] Wire current playback to pass a default `clipId` and resolve clip data from `DEFAULT_MIDI_CLIP_STORE`.
-- [ ] Replace fixed sequencer loop-end wiring with clip-derived loop-end: compute `loopEnd` from `MidiClip.lengthBeats` and route it to both `Tone.Part.loopEnd` and `TransportService.setLoopConfig`.
-- [ ] Remove duplicated inline clip-note constants from UI track rendering path; `TrackZone` clip visuals must read the same clip data source as playback.
-- [ ] Ensure clip visual width, timeline loop region width, and playhead wrap window are all derived from the same resolved clip length (no separate hardcoded step counts).
-- [ ] Keep current runtime behavior identical (same notes/order/timing).
-- [ ] Add/adjust unit tests for clip store lookup, loop-end derivation (including fractional-beat clip lengths), and gate-based note-off scheduling using store data.
-- [ ] Update existing tests that currently hardcode `8` steps/notes so they assert via clip-driven expectations (`useSequencer.test.ts`, `useTransportController.test.ts`, `e2e/sequencer.spec.ts`, `e2e/trackzone.spec.ts`, `e2e/playhead.spec.ts`).
+### Task 1: Stabilize MIDI Clip Store Integration
+- [ ] Treat `MidiClipStore` as the authoritative clip source for UI runtime inputs.
+- [ ] Keep clip semantics defined in code contracts/types and consume them consistently in this plan.
+- [ ] Keep `buildUiRuntime`/UI render paths clip-source-driven (via resolved clip ids/store data) and avoid reintroducing local hardcoded clip/note constants.
+- [ ] Keep current behavior unchanged when using the default clip runtime data.
 - [ ] Mark completed.
 
 ### Task 2: Add `UiPlan` model and default UI plan
-- [x] Already completed: `DEFAULT_PLAN_*_ID` constants in `src/engine/audioGraphPlan.ts` already include "default-plan only" comments.
 - [ ] Create folder `src/ui-plan/` (separate from `src/engine/`).
 - [ ] Confirm shared `moduleKind` union exists in `src/engine/types.ts`; add/align it before using `UiDevicePlan.moduleKind`.
 - [ ] Create `src/ui-plan/uiPlan.ts`.
 - [ ] Create `src/ui-plan/defaultUiPlan.ts` with `DEFAULT_UI_PLAN` that reflects current app layout.
+- [ ] Define id namespace contract in `UiPlan`: stable UI ids (`trackId`, `masterTrack.masterTrackId`, `uiDeviceId`) are separate from audio ids (`moduleId`, `trackStripId`).
+- [ ] `DEFAULT_UI_PLAN_*_ID` constants in `src/ui-plan/defaultUiPlan.ts` should include "default-ui-plan only" comments.
+- [ ] Model master devices explicitly in `UiPlan.masterTrack.devices` (same `UiDevicePlan[]` contract as regular tracks).
 - [ ] Add `displayName` for tracks/devices in the default plan; UI labels must not depend on `trackId`/`moduleId` string formatting.
 - [ ] Define `initialTrackId` policy in `UiPlan`: use explicit `initialTrackId` when present, otherwise fallback to first regular track id.
-- [ ] Add unit tests for `DEFAULT_UI_PLAN` shape and id consistency.
+- [ ] Add unit tests for `DEFAULT_UI_PLAN` shape, UI-id uniqueness, and referential consistency (`moduleId`/`trackStripId` links), including `masterTrack.devices`.
 - [ ] Mark completed.
 
 ### Task 3: Add UI runtime constructor from plan
@@ -127,7 +112,8 @@ Scope constraints:
 - [ ] Output two runtime models: `trackZoneModel` and `devicePanelModel`.
 - [ ] Keep responsibility boundary strict: runtime constructor returns runtime data/contracts; `DeviceRegistry` remains separate.
 - [ ] Resolve track clips by `clipIds` from `MidiClipStore` (fail-fast if a clip id is missing).
-- [ ] Resolve device models by `UiDevicePlan.moduleId` and `moduleKind` (fail-fast on missing/mismatched ids).
+- [ ] Resolve device models by `UiDevicePlan.moduleId` and `moduleKind` (fail-fast on missing/mismatched ids) for both regular tracks and `masterTrack`.
+- [ ] Enforce namespace safety in runtime mapping: resolve audio modules only via explicit audio link fields, never via UI ids.
 - [ ] Use `DeviceRegistry` in renderers, so plan-driven device iteration does not require dynamic hook creation.
 - [ ] Explicit rule: no `use*` hook calls inside plan/device iteration paths in `DevicePanel` and related render helpers.
 - [ ] Add unit tests for success path and fail-fast path.
@@ -135,6 +121,7 @@ Scope constraints:
 
 ### Task 4: Refactor `DevicePanel` to model-driven rendering
 - [ ] Replace hardcoded `synth/panner/limiter` branch rendering with iteration over `devicePanelModel.devices`.
+- [ ] When master is selected, `devicePanelModel.devices` must come from `UiPlan.masterTrack.devices` (no master-device hardcoded branch).
 - [ ] Keep existing device components (`SynthDevice`, `PannerDevice`, `LimiterDevice`).
 - [ ] Choose component by `moduleKind` from `UiDevicePlan`.
 - [ ] Preserve existing visible behavior and CSS selectors used by e2e tests.
@@ -144,7 +131,7 @@ Scope constraints:
 ### Task 5: Refactor `TrackZone` to model-driven rendering
 - [ ] Replace fat prop list with `model + actions` style props.
 - [ ] Render normal track rows from `trackZoneModel.tracks` by iteration (no hardcoded `synth1` row).
-- [ ] Keep master row internal to `TrackZone`, keyed by `model.masterTrackId`.
+- [ ] Keep master row internal to `TrackZone`, but source its id/label/strip refs from `model.masterTrack` (no hardcoded master identifiers).
 - [ ] Add explicit TODO in `TrackZone` that master-special-case is temporary and should move to plan when master unification is in scope.
 - [ ] Use clip data resolved from `MidiClipStore` through runtime output; do not store clip notes in `UiPlan`.
 - [ ] Keep playhead/timeline/meter behavior unchanged.
