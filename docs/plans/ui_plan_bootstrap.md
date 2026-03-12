@@ -129,14 +129,14 @@ Scope constraints:
 - [x] Mark completed.
 
 ### Task 5: Refactor `TrackZone` to model-driven rendering
-- [ ] Replace fat prop list with `model + actions` style props.
-- [ ] Render normal track rows from `trackZoneModel.tracks` by iteration (no hardcoded `synth1` row).
-- [ ] Keep master row internal to `TrackZone`, but source its id/label/strip refs from `model.masterTrack` (no hardcoded master identifiers).
-- [ ] Add explicit TODO in `TrackZone` that master-special-case is temporary and should move to plan when master unification is in scope.
-- [ ] Use clip data resolved from `MidiClipStore` through runtime output; do not store clip notes in `UiPlan`.
-- [ ] Keep playhead/timeline/meter behavior unchanged.
-- [ ] Add/adjust tests for plan-driven track rendering.
-- [ ] Mark completed.
+- [x] Replace fat prop list with `model + actions` style props.
+- [x] Render normal track rows from `trackZoneModel.tracks` by iteration (no hardcoded `synth1` row).
+- [x] Keep master row internal to `TrackZone`, but source its id/label/strip refs from `model.masterTrack` (no hardcoded master identifiers).
+- [x] Add explicit TODO in `TrackZone` that master-special-case is temporary and should move to plan when master unification is in scope.
+- [x] Use clip data resolved from `MidiClipStore` through runtime output; do not store clip notes in `UiPlan`.
+- [x] Keep playhead/timeline/meter behavior unchanged.
+- [x] Add/adjust tests for plan-driven track rendering.
+- [x] Mark completed.
 
 ### Task 6: Wire `App.tsx` to build UI from plan
 - [ ] In `App.tsx`, import `DEFAULT_UI_PLAN`, `DEFAULT_MIDI_CLIP_STORE`, and `buildUiRuntime`.

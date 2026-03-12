@@ -12,7 +12,10 @@ import {
   DEFAULT_PLAN_MASTER_STRIP_ID,
 } from './engine/audioGraphPlan'
 import type { MeterSource } from './engine/types'
-import { DEFAULT_MIDI_CLIP_SOURCE } from './project-runtime/midiClipStore'
+import {
+  DEFAULT_MIDI_CLIP_ID,
+  DEFAULT_MIDI_CLIP_SOURCE,
+} from './project-runtime/midiClipStore'
 
 vi.mock('./engine/audioEngine', () => ({
   createAudioEngine: vi.fn(),
@@ -174,7 +177,24 @@ describe('App id-based module wiring', () => {
     const trackZoneProps = trackZoneLastCall?.[0]
     expect(trackZoneProps).toEqual(
       expect.objectContaining({
-        clipSource: DEFAULT_MIDI_CLIP_SOURCE,
+        model: expect.objectContaining({
+          tracks: expect.arrayContaining([
+            expect.objectContaining({
+              clips: expect.arrayContaining([
+                expect.objectContaining({
+                  clipId: DEFAULT_MIDI_CLIP_ID,
+                }),
+              ]),
+            }),
+          ]),
+        }),
+        actions: expect.objectContaining({
+          selectTrack: expect.any(Function),
+          setTrackMute: expect.any(Function),
+          setTrackRecEnabled: expect.any(Function),
+          setTrackVolume: expect.any(Function),
+          setMasterVolume: expect.any(Function),
+        }),
       }),
     )
   })
