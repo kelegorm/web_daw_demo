@@ -58,6 +58,10 @@ function makeClipStore({
   }
 }
 
+function makeNotes(lengthSteps: number): number[] {
+  return Array.from({ length: lengthSteps }, (_, index) => 60 + index)
+}
+
 describe('TrackZone clip-driven layout', () => {
   let container: HTMLDivElement
   let root: Root
@@ -75,10 +79,17 @@ describe('TrackZone clip-driven layout', () => {
     container.remove()
   })
 
-  it('derives clip and loop-region geometry from startBeat and lengthSteps', () => {
+  it.each([
+    { startBeat: 0, lengthSteps: 8 },
+    { startBeat: 0.5, lengthSteps: 8 },
+    { startBeat: 0, lengthSteps: 7 },
+  ])('derives geometry from clip data (startBeat=$startBeat, lengthSteps=$lengthSteps)', ({
+    startBeat,
+    lengthSteps,
+  }) => {
     const clipInput = makeClipStore({
-      startBeat: 0.5,
-      notes: [60, 62, 64, 65, 67, 69, 71],
+      startBeat,
+      notes: makeNotes(lengthSteps),
     })
     const bpm = 120
     const pps = getPixelsPerSecond(bpm)

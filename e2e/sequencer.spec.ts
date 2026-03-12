@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test'
 import { expectPlayState } from './helpers/toolbar'
+import {
+  DEFAULT_MIDI_CLIP_ID,
+  DEFAULT_MIDI_CLIP_STORE,
+  getMidiClipOrThrow,
+} from '../src/project-runtime/midiClipStore'
+
+const DEFAULT_CLIP = getMidiClipOrThrow(DEFAULT_MIDI_CLIP_STORE, DEFAULT_MIDI_CLIP_ID)
+const DEFAULT_CLIP_LENGTH_STEPS = DEFAULT_CLIP.lengthSteps
 
 test('click Play, wait 1000ms at 120 BPM, verify at least 2 different step indicators highlighted', async ({ page }) => {
   await page.goto('/')
@@ -69,12 +77,15 @@ test('with Loop off, sequence plays one clip length without repeating notes', as
   await playBtn.click()
   await expectPlayState(playBtn, 'pause')
 
-  await page.waitForFunction(() => (window.__activeSteps ?? []).length >= 2, { timeout: 5000 })
-  await page.waitForTimeout(4200)
+  await page.waitForFunction(
+    (expectedSteps) => (window.__activeSteps ?? []).length >= expectedSteps,
+    DEFAULT_CLIP_LENGTH_STEPS,
+    { timeout: 7000 },
+  )
+  await page.waitForTimeout(600)
 
   const stepCount = await page.evaluate(() => (window.__activeSteps ?? []).length)
-  expect(stepCount).toBeGreaterThanOrEqual(8)
-  expect(stepCount).toBeLessThanOrEqual(8)
+  expect(stepCount).toBe(DEFAULT_CLIP_LENGTH_STEPS)
 })
 
 test('with Loop on, sequence repeats beyond one clip length', async ({ page }) => {
@@ -91,9 +102,9 @@ test('with Loop on, sequence repeats beyond one clip length', async ({ page }) =
   await playBtn.click()
   await expectPlayState(playBtn, 'pause')
 
-  await page.waitForFunction(() => (window.__activeSteps ?? []).length >= 2, { timeout: 5000 })
-  await page.waitForTimeout(4200)
-
-  const stepCount = await page.evaluate(() => (window.__activeSteps ?? []).length)
-  expect(stepCount).toBeGreaterThan(8)
+  await page.waitForFunction(
+    (expectedSteps) => (window.__activeSteps ?? []).length > expectedSteps,
+    DEFAULT_CLIP_LENGTH_STEPS,
+    { timeout: 7000 },
+  )
 })

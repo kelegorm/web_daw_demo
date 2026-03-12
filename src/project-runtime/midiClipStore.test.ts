@@ -41,4 +41,10 @@ describe('midiClipStore', () => {
       'Missing MIDI clip for clipId "missing-clip"',
     );
   });
+
+  it('throws for missing clip ids in an empty store', () => {
+    expect(() => getMidiClipOrThrow({}, DEFAULT_MIDI_CLIP_ID)).toThrow(
+      `Missing MIDI clip for clipId "${DEFAULT_MIDI_CLIP_ID}"`,
+    );
+  });
 });

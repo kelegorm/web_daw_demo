@@ -1,6 +1,26 @@
 import { test, expect } from '@playwright/test'
-import { getPixelsPerSecond, clipDurationSeconds } from '../src/utils/timelineScale'
+import { getPixelsPerSecond, beatDurationSeconds } from '../src/utils/timelineScale'
 import { expectPlayState, setBpm } from './helpers/toolbar'
+import {
+  DEFAULT_MIDI_CLIP_ID,
+  DEFAULT_MIDI_CLIP_STORE,
+  getMidiClipLengthBeats,
+  getMidiClipOrThrow,
+} from '../src/project-runtime/midiClipStore'
+
+const DEFAULT_CLIP = getMidiClipOrThrow(DEFAULT_MIDI_CLIP_STORE, DEFAULT_MIDI_CLIP_ID)
+
+function getClipDurationMs(bpm: number): number {
+  return getMidiClipLengthBeats(DEFAULT_CLIP) * beatDurationSeconds(bpm) * 1000
+}
+
+function getClipStartPx(bpm: number): number {
+  return DEFAULT_CLIP.startBeat * beatDurationSeconds(bpm) * getPixelsPerSecond(bpm)
+}
+
+function getClipWidthPx(bpm: number): number {
+  return getMidiClipLengthBeats(DEFAULT_CLIP) * beatDurationSeconds(bpm) * getPixelsPerSecond(bpm)
+}
 
 test('playhead position is driven by transport controller (moves, pauses, resets via stop)', async ({ page }) => {
   await page.goto('/')
@@ -160,7 +180,7 @@ test('click Pause then Stop resets playhead to 0', async ({ page }) => {
   expect(actualPx).toBeCloseTo(0, 0)
 })
 
-test('enable Loop, click Play, after full clip duration + 200ms playhead has wrapped back near position 0', async ({ page }) => {
+test('enable Loop, click Play, after full clip duration + 200ms playhead wraps within clip window', async ({ page }) => {
   await page.goto('/')
 
   const loopBtn = page.locator('.toolbar-loop')
@@ -176,14 +196,16 @@ test('enable Loop, click Play, after full clip duration + 200ms playhead has wra
 
   await playBtn.click()
 
-  // clipDurationSeconds(120, 8) = 2.0s, wait 2200ms to ensure at least one loop
-  const clipMs = clipDurationSeconds(120, 8) * 1000 + 200
+  const clipMs = getClipDurationMs(120) + 200
   await page.waitForTimeout(clipMs)
 
   const leftStyle = await playhead.evaluate((el) => (el as HTMLElement).style.left)
   const actualPx = parseLeftPx(leftStyle)
 
-  // After wrapping, playhead should be well within the first 50% of clip duration in pixels
-  const loopEndPx = clipDurationSeconds(120, 8) * getPixelsPerSecond(120)
-  expect(actualPx).toBeLessThan(loopEndPx * 0.5)
+  // After wrapping, playhead should be inside the clip loop window and near the window start.
+  const clipStartPx = getClipStartPx(120)
+  const clipWidthPx = getClipWidthPx(120)
+  expect(actualPx).toBeGreaterThanOrEqual(clipStartPx)
+  expect(actualPx).toBeLessThan(clipStartPx + clipWidthPx)
+  expect(actualPx).toBeLessThan(clipStartPx + clipWidthPx * 0.6)
 })

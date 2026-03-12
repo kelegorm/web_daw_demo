@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createSequencer, type SequencerClipInput } from './useSequencer';
+import { createSequencer, getClipLoopEnd, type SequencerClipInput } from './useSequencer';
 import type { SequencerTransport } from '../engine/transportService';
 import {
   DEFAULT_MIDI_CLIP_ID,
@@ -17,7 +17,9 @@ interface SequencerStepEvent {
 }
 
 const DEFAULT_CLIP = getMidiClipOrThrow(DEFAULT_MIDI_CLIP_STORE, DEFAULT_MIDI_CLIP_ID);
-const DEFAULT_NOTES = DEFAULT_CLIP.steps.map((step) => step.note);
+const DEFAULT_CLIP_STEPS = DEFAULT_CLIP.steps.slice(0, DEFAULT_CLIP.lengthSteps);
+const DEFAULT_ENABLED_STEPS = DEFAULT_CLIP_STEPS.filter((step) => step.enabled);
+const DEFAULT_NOTES = DEFAULT_ENABLED_STEPS.map((step) => step.note);
 
 const { mockState } = vi.hoisted(() => ({
   mockState: {
@@ -91,7 +93,7 @@ describe('createSequencer (Tone.js)', () => {
     mockState.events = [];
   });
 
-  it('fires notes [60, 62, 64, 65, 67, 69, 71, 72] in order', () => {
+  it('fires enabled default-clip notes in order', () => {
     const noteOn = vi.fn();
     const noteOff = vi.fn();
     const panic = vi.fn();
@@ -108,7 +110,7 @@ describe('createSequencer (Tone.js)', () => {
     seq.start();
 
     expect(mockState.callback).not.toBeNull();
-    expect(mockState.events.length).toBe(8);
+    expect(mockState.events.length).toBe(DEFAULT_CLIP.lengthSteps);
 
     for (const [, event] of mockState.events) {
       mockState.callback!(0, event);
@@ -298,7 +300,7 @@ describe('createSequencer (Tone.js)', () => {
     seq.setLoop(true);
     expect(mockState.part.loop).toBe(true);
     expect(mockState.transport.loop).toBe(true);
-    expect(mockState.transport.loopEnd).toBe('1:0:0');
+    expect(mockState.transport.loopEnd).toBe(getClipLoopEnd(DEFAULT_CLIP));
 
     seq.setLoop(false);
     expect(mockState.part.loop).toBe(false);
@@ -355,5 +357,76 @@ describe('createSequencer (Tone.js)', () => {
     expect(noteOn.mock.calls[0]).toEqual([60, 90, 1]);
     expect(noteOff).toHaveBeenCalledTimes(6);
     expect(noteOff.mock.calls[0][1]).toBeCloseTo(1 + 0.25 * 0.5, 6);
+  });
+
+  it('derives loop end for odd clip lengths that produce fractional beat durations', () => {
+    const oddClip = {
+      clipId: 'odd-loop',
+      startBeat: 0,
+      lengthSteps: 7,
+      steps: [],
+    };
+
+    expect(getClipLoopEnd(oddClip)).toBe('0:3:2');
+  });
+
+  it('schedules noteOff using each clip step gate value', () => {
+    const noteOn = vi.fn();
+    const noteOff = vi.fn();
+    const panic = vi.fn();
+    const transport = createTransportMock();
+    const clipStore: MidiClipStore = {
+      gates: {
+        clipId: 'gates',
+        startBeat: 0,
+        lengthSteps: 2,
+        steps: [
+          { enabled: true, note: 60, velocity: 100, gate: 0.25 },
+          { enabled: true, note: 62, velocity: 100, gate: 1 },
+        ],
+      },
+    };
+
+    const seq = createSequencer(
+      noteOn,
+      noteOff,
+      panic,
+      transport,
+      undefined,
+      createClipInput(clipStore, 'gates'),
+    );
+
+    seq.start();
+    mockState.callback!(2, mockState.events[0][1]);
+    mockState.callback!(3, mockState.events[1][1]);
+
+    expect(noteOff).toHaveBeenNthCalledWith(1, 60, 2 + 0.25 * 0.25);
+    expect(noteOff).toHaveBeenNthCalledWith(2, 62, 3 + 0.25 * 1);
+  });
+
+  it('fails fast when clip lengthSteps exceeds available step data', () => {
+    const noteOn = vi.fn();
+    const noteOff = vi.fn();
+    const panic = vi.fn();
+    const transport = createTransportMock();
+    const clipStore: MidiClipStore = {
+      malformed: {
+        clipId: 'malformed',
+        startBeat: 0,
+        lengthSteps: 2,
+        steps: [{ enabled: true, note: 60, velocity: 100, gate: 0.8 }],
+      },
+    };
+
+    expect(() =>
+      createSequencer(
+        noteOn,
+        noteOff,
+        panic,
+        transport,
+        undefined,
+        createClipInput(clipStore, 'malformed'),
+      ),
+    ).toThrow('MIDI clip "malformed" has 1 steps, expected at least 2');
   });
 });

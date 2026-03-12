@@ -75,21 +75,21 @@ Scope constraints:
 - [x] Mark completed.
 
 ### Task 4: Regression coverage and test migration
-- [ ] Add/adjust unit tests for clip store lookup and fail-fast behavior.
-- [ ] Add/adjust unit tests for loop-end derivation, including odd `lengthSteps` that produce fractional `lengthBeats`.
-- [ ] Add/adjust unit tests for gate-based note-off scheduling driven by clip data.
-- [ ] Update tests that hardcode `8` steps/notes to use clip-driven expectations:
+- [x] Add/adjust unit tests for clip store lookup and fail-fast behavior.
+- [x] Add/adjust unit tests for loop-end derivation, including odd `lengthSteps` that produce fractional `lengthBeats`.
+- [x] Add/adjust unit tests for gate-based note-off scheduling driven by clip data.
+- [x] Update tests that hardcode `8` steps/notes to use clip-driven expectations:
   - `src/hooks/useSequencer.test.ts`
   - `src/hooks/useTransportController.test.ts`
   - `e2e/sequencer.spec.ts`
   - `e2e/trackzone.spec.ts`
   - `e2e/playhead.spec.ts`
-- [ ] Add visual test matrix for clip-dependent rendering:
+- [x] Add visual test matrix for clip-dependent rendering:
   - `startBeat=0,lengthSteps=8`
   - `startBeat=0.5,lengthSteps=8`
   - `startBeat=0,lengthSteps=7`
-- [ ] Add one end-to-end regression spec proving one-source clip chain: `MidiClipStore` drives sequencer delivery, loop window, clip width/position, and playhead wrap.
-- [ ] Mark completed.
+- [x] Add one end-to-end regression spec proving one-source clip chain: `MidiClipStore` drives sequencer delivery, loop window, clip width/position, and playhead wrap.
+- [x] Mark completed.
 
 ## Acceptance Criteria
 - `MidiClipStore` is the single source of clip content used by both playback and clip visuals; no duplicated inline note arrays remain in sequencer/UI rendering paths.

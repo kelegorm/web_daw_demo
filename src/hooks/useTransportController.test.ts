@@ -8,7 +8,9 @@ import {
 } from '../project-runtime/midiClipStore';
 
 const DEFAULT_CLIP = getMidiClipOrThrow(DEFAULT_MIDI_CLIP_STORE, DEFAULT_MIDI_CLIP_ID);
-const DEFAULT_NOTES = DEFAULT_CLIP.steps.map((step) => step.note);
+const DEFAULT_CLIP_STEPS = DEFAULT_CLIP.steps.slice(0, DEFAULT_CLIP.lengthSteps);
+const DEFAULT_ENABLED_STEPS = DEFAULT_CLIP_STEPS.filter((step) => step.enabled);
+const DEFAULT_NOTES = DEFAULT_ENABLED_STEPS.map((step) => step.note);
 
 // ── Tone.js mock ──────────────────────────────────────────────────────────────
 const { mockState } = vi.hoisted(() => ({
@@ -262,7 +264,7 @@ describe('createTransportCore', () => {
     expect(deps.synthPanic).toHaveBeenCalledOnce();
   });
 
-  it('one clip playback delivers full 8-note stream to synth sink', () => {
+  it('one clip playback delivers enabled default-clip notes to synth sink', () => {
     const synthSink = {
       noteOn: vi.fn(),
       noteOff: vi.fn(),
@@ -285,17 +287,17 @@ describe('createTransportCore', () => {
       mockState.callback!(eventTime, event);
     }
 
-    expect(synthSink.noteOn).toHaveBeenCalledTimes(DEFAULT_NOTES.length);
-    expect(synthSink.noteOff).toHaveBeenCalledTimes(DEFAULT_NOTES.length);
+    expect(synthSink.noteOn).toHaveBeenCalledTimes(DEFAULT_ENABLED_STEPS.length);
+    expect(synthSink.noteOff).toHaveBeenCalledTimes(DEFAULT_ENABLED_STEPS.length);
     expect(synthSink.noteOn.mock.calls.map((call) => call[0])).toEqual(DEFAULT_NOTES);
     expect(synthSink.noteOff.mock.calls.map((call) => call[0])).toEqual(DEFAULT_NOTES);
 
-    for (let i = 0; i < DEFAULT_NOTES.length; i += 1) {
+    for (let i = 0; i < DEFAULT_ENABLED_STEPS.length; i += 1) {
       const onTime = synthSink.noteOn.mock.calls[i][2];
       const offTime = synthSink.noteOff.mock.calls[i][1];
       expect(typeof onTime).toBe('number');
       expect(typeof offTime).toBe('number');
-      expect(offTime).toBeCloseTo(onTime + 0.25 * 0.8, 6);
+      expect(offTime).toBeCloseTo(onTime + 0.25 * DEFAULT_ENABLED_STEPS[i]!.gate, 6);
     }
   });
 });
