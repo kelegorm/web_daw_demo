@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LimiterGraph } from '../hooks/useLimiter';
 import type { MasterStripGraph } from '../hooks/useMasterStrip';
+import type { TrackStripGraph } from '../hooks/useTrackStrip';
 import type { MeterSource } from './types';
 
 // ---------------------------------------------------------------------------
@@ -20,6 +21,27 @@ function createMockMeterSource(): MeterSource {
   return { subscribe: vi.fn(() => vi.fn()) };
 }
 
+function createMockTrackStrip(): TrackStripGraph & {
+  _input: MockPort;
+  _output: MockPort;
+} {
+  const _input = createPort();
+  const _output = createPort();
+  const meterSource = createMockMeterSource();
+  return {
+    _input,
+    _output,
+    get input() { return _input as unknown as GainNode; },
+    get output() { return _output as unknown as GainNode; },
+    get trackVolume() { return 0; },
+    get isTrackMuted() { return false; },
+    setTrackVolume: vi.fn(),
+    setTrackMuted: vi.fn(),
+    meterSource,
+    dispose: vi.fn(),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
@@ -30,12 +52,15 @@ function createMockMeterSource(): MeterSource {
 // TypeScript happy and covers any future direct context usage.
 const mockDestination = createPort();
 
+// preLimiterBus GainNode — shared so tests can reference the exact object
+const mockPreLimiterBusGainNode = {
+  gain: { value: 1 },
+  connect: vi.fn(),
+  disconnect: vi.fn(),
+};
+
 const mockAudioContext = {
-  createGain: vi.fn(() => ({
-    gain: { value: 1 },
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-  })),
+  createGain: vi.fn(() => mockPreLimiterBusGainNode),
   createAnalyser: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn(), fftSize: 2048 })),
   createChannelSplitter: vi.fn(() => ({ connect: vi.fn(), disconnect: vi.fn() })),
   createDynamicsCompressor: vi.fn(() => ({
@@ -69,6 +94,11 @@ let mockMasterStripSetMasterVolume: ReturnType<typeof vi.fn>;
 let mockMasterStripMasterVolume: number;
 let mockMasterStripGraph: MasterStripGraph;
 
+// Ordered list of mock strips created — cleared in beforeEach (MUTATED, not reassigned,
+// so the vi.mock closure always references the same array instance).
+// createdStrips[0] = default track bootstrap strip, [1] = first explicit createTrackSubgraph, etc.
+const createdStrips: ReturnType<typeof createMockTrackStrip>[] = [];
+
 function resetMocks() {
   mockLimiterInput = createPort();
   mockLimiterOutput = createPort();
@@ -99,6 +129,13 @@ function resetMocks() {
     meterSource: mockMasterStripMeterSource,
     dispose: vi.fn(),
   };
+
+  // Clear the ordered strips list (mutate, not reassign — vi.mock closure holds this reference)
+  createdStrips.length = 0;
+
+  // Reset the preLimiterBus connect/disconnect call history
+  mockPreLimiterBusGainNode.connect.mockClear();
+  mockPreLimiterBusGainNode.disconnect.mockClear();
 }
 
 vi.mock('../hooks/useLimiter', () => ({
@@ -109,11 +146,19 @@ vi.mock('../hooks/useMasterStrip', () => ({
   createMasterStrip: vi.fn(() => mockMasterStripGraph),
 }));
 
+vi.mock('../hooks/useTrackStrip', () => ({
+  createTrackStrip: vi.fn(() => {
+    const strip = createMockTrackStrip();
+    createdStrips.push(strip);
+    return strip;
+  }),
+}));
+
 // ---------------------------------------------------------------------------
 // Import module under test AFTER mocks are registered
 // ---------------------------------------------------------------------------
 
-import { _resetEngineForTesting, getAudioEngine } from './engineSingleton';
+import { _resetEngineForTesting, DEFAULT_TRACK_ID, getAudioEngine } from './engineSingleton';
 import { createLimiter } from '../hooks/useLimiter';
 import { createMasterStrip } from '../hooks/useMasterStrip';
 import * as Tone from 'tone';
@@ -131,11 +176,7 @@ beforeEach(() => {
   vi.mocked(Tone.getContext).mockReturnValue({ rawContext: mockAudioContext } as any);
   vi.mocked(Tone.getContext).mockClear();
   // Reset AudioContext factory call counts
-  mockAudioContext.createGain = vi.fn(() => ({
-    gain: { value: 1 },
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-  }));
+  mockAudioContext.createGain = vi.fn(() => mockPreLimiterBusGainNode);
   _resetEngineForTesting();
 });
 
@@ -156,6 +197,7 @@ describe('Singleton idempotency', () => {
     resetMocks();
     vi.mocked(createLimiter).mockReturnValue(mockLimiterGraph);
     vi.mocked(createMasterStrip).mockReturnValue(mockMasterStripGraph);
+    mockAudioContext.createGain = vi.fn(() => mockPreLimiterBusGainNode);
     const second = getAudioEngine();
     expect(first).not.toBe(second);
   });
@@ -187,12 +229,7 @@ describe('StrictMode simulation', () => {
 describe('Master chain wiring', () => {
   it('preLimiterBus connects to limiter input', () => {
     getAudioEngine();
-    // createGain is called for preLimiterBus; its connect should have been called with limiterInput
-    const gainNodes = vi.mocked(mockAudioContext.createGain).mock.results;
-    // Find the preLimiterBus — first GainNode created
-    const preLimiterBus = gainNodes[0]?.value;
-    expect(preLimiterBus).toBeDefined();
-    expect(preLimiterBus.connect).toHaveBeenCalledWith(mockLimiterInput);
+    expect(mockPreLimiterBusGainNode.connect).toHaveBeenCalledWith(mockLimiterInput);
   });
 
   it('limiter output connects to master strip input', () => {
@@ -240,28 +277,214 @@ describe('Limiter accessors', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Group 5: Track API stubs
+// Group 5: Default track bootstrap
 // ---------------------------------------------------------------------------
 
-describe('Track API stubs', () => {
-  it('getTrackFacade() throws before Plan 01-02', () => {
+describe('Default track bootstrap', () => {
+  it('engine starts with default track already created', () => {
     const engine = getAudioEngine();
-    expect(() => engine.getTrackFacade('track-1')).toThrow(
-      '[engine] track API not yet implemented — see Plan 01-02',
+    // Should not throw — default track exists from bootstrap
+    expect(() => engine.getTrackFacade(DEFAULT_TRACK_ID)).not.toThrow();
+  });
+
+  it('DEFAULT_TRACK_ID is "track-1"', () => {
+    expect(DEFAULT_TRACK_ID).toBe('track-1');
+  });
+
+  it('default track strip output is connected to preLimiterBus on bootstrap', () => {
+    getAudioEngine();
+    // createdStrips[0] is the default track created during bootstrap
+    const defaultStrip = createdStrips[0];
+    expect(defaultStrip).toBeDefined();
+    expect(defaultStrip._output.connect).toHaveBeenCalledWith(mockPreLimiterBusGainNode);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Group 6: createTrackSubgraph
+// ---------------------------------------------------------------------------
+
+describe('createTrackSubgraph', () => {
+  it('creates a new track and returns its facade', () => {
+    const engine = getAudioEngine();
+    const facade = engine.createTrackSubgraph('track-2');
+    expect(facade).toBeDefined();
+    // getTrackFacade should return the same facade
+    expect(engine.getTrackFacade('track-2')).toBe(facade);
+  });
+
+  it('new track strip output is connected to preLimiterBus', () => {
+    const engine = getAudioEngine();
+    engine.createTrackSubgraph('track-2');
+    // createdStrips[1] is the track-2 strip (index 0 is the default track bootstrap)
+    const track2Strip = createdStrips[1];
+    expect(track2Strip).toBeDefined();
+    expect(track2Strip._output.connect).toHaveBeenCalledWith(mockPreLimiterBusGainNode);
+  });
+
+  it('facade.setGain delegates to strip.setTrackVolume', () => {
+    const engine = getAudioEngine();
+    const facade = engine.createTrackSubgraph('track-2');
+    const track2Strip = createdStrips[1];
+    facade.setGain(-6);
+    expect(track2Strip.setTrackVolume).toHaveBeenCalledWith(-6);
+  });
+
+  it('facade.setMute delegates to strip.setTrackMuted', () => {
+    const engine = getAudioEngine();
+    const facade = engine.createTrackSubgraph('track-2');
+    const track2Strip = createdStrips[1];
+    facade.setMute(true);
+    expect(track2Strip.setTrackMuted).toHaveBeenCalledWith(true);
+  });
+
+  it('facade.getGain returns strip.trackVolume', () => {
+    const engine = getAudioEngine();
+    const facade = engine.createTrackSubgraph('track-2');
+    // mock returns 0 for trackVolume
+    expect(facade.getGain()).toBe(0);
+  });
+
+  it('facade.isMuted returns strip.isTrackMuted', () => {
+    const engine = getAudioEngine();
+    const facade = engine.createTrackSubgraph('track-2');
+    // mock returns false for isTrackMuted
+    expect(facade.isMuted()).toBe(false);
+  });
+
+  it('facade.meterSource returns strip.meterSource', () => {
+    const engine = getAudioEngine();
+    const facade = engine.createTrackSubgraph('track-2');
+    const track2Strip = createdStrips[1];
+    expect(facade.meterSource).toBe(track2Strip.meterSource);
+  });
+
+  it('throws when creating track with duplicate id', () => {
+    const engine = getAudioEngine();
+    engine.createTrackSubgraph('track-2');
+    expect(() => engine.createTrackSubgraph('track-2')).toThrow(
+      '[engine] track already exists: track-2',
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Group 7: removeTrackSubgraph
+// ---------------------------------------------------------------------------
+
+describe('removeTrackSubgraph', () => {
+  it('removes track and disconnects strip output from preLimiterBus', () => {
+    const engine = getAudioEngine();
+    engine.createTrackSubgraph('track-2');
+    const track2Strip = createdStrips[1];
+
+    engine.removeTrackSubgraph('track-2');
+
+    expect(track2Strip._output.disconnect).toHaveBeenCalledWith(mockPreLimiterBusGainNode);
+    expect(track2Strip.dispose).toHaveBeenCalled();
+  });
+
+  it('getTrackFacade throws after removal', () => {
+    const engine = getAudioEngine();
+    engine.createTrackSubgraph('track-2');
+    engine.removeTrackSubgraph('track-2');
+    expect(() => engine.getTrackFacade('track-2')).toThrow('[engine] unknown track: track-2');
+  });
+
+  it('throws when removing unknown track', () => {
+    const engine = getAudioEngine();
+    expect(() => engine.removeTrackSubgraph('nonexistent')).toThrow(
+      '[engine] unknown track: nonexistent',
     );
   });
 
-  it('createTrackSubgraph() throws before Plan 01-02', () => {
+  it('disconnect is called before dispose', () => {
     const engine = getAudioEngine();
-    expect(() => engine.createTrackSubgraph('track-1')).toThrow(
-      '[engine] track API not yet implemented — see Plan 01-02',
-    );
+    engine.createTrackSubgraph('track-2');
+    const track2Strip = createdStrips[1];
+
+    // Track call order: disconnect must come before dispose
+    const callOrder: string[] = [];
+    track2Strip._output.disconnect.mockImplementation(() => { callOrder.push('disconnect'); });
+    vi.mocked(track2Strip.dispose).mockImplementation(() => { callOrder.push('dispose'); });
+
+    engine.removeTrackSubgraph('track-2');
+
+    expect(callOrder).toEqual(['disconnect', 'dispose']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Group 8: TrackFacade dispose guard
+// ---------------------------------------------------------------------------
+
+describe('TrackFacade dispose guard', () => {
+  it('setGain throws on disposed facade', () => {
+    const engine = getAudioEngine();
+    const facade = engine.createTrackSubgraph('track-2');
+    engine.removeTrackSubgraph('track-2');
+    expect(() => facade.setGain(-6)).toThrow('[TrackFacade] method called on disposed facade');
   });
 
-  it('removeTrackSubgraph() throws before Plan 01-02', () => {
+  it('setMute throws on disposed facade', () => {
     const engine = getAudioEngine();
-    expect(() => engine.removeTrackSubgraph('track-1')).toThrow(
-      '[engine] track API not yet implemented — see Plan 01-02',
-    );
+    const facade = engine.createTrackSubgraph('track-2');
+    engine.removeTrackSubgraph('track-2');
+    expect(() => facade.setMute(true)).toThrow('[TrackFacade] method called on disposed facade');
+  });
+
+  it('getGain throws on disposed facade', () => {
+    const engine = getAudioEngine();
+    const facade = engine.createTrackSubgraph('track-2');
+    engine.removeTrackSubgraph('track-2');
+    expect(() => facade.getGain()).toThrow('[TrackFacade] method called on disposed facade');
+  });
+
+  it('isMuted throws on disposed facade', () => {
+    const engine = getAudioEngine();
+    const facade = engine.createTrackSubgraph('track-2');
+    engine.removeTrackSubgraph('track-2');
+    expect(() => facade.isMuted()).toThrow('[TrackFacade] method called on disposed facade');
+  });
+
+  it('meterSource access throws on disposed facade', () => {
+    const engine = getAudioEngine();
+    const facade = engine.createTrackSubgraph('track-2');
+    engine.removeTrackSubgraph('track-2');
+    expect(() => facade.meterSource).toThrow('[TrackFacade] method called on disposed facade');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Group 9: Multiple tracks
+// ---------------------------------------------------------------------------
+
+describe('Multiple tracks', () => {
+  it('can create and access multiple tracks simultaneously', () => {
+    const engine = getAudioEngine();
+    const f2 = engine.createTrackSubgraph('track-2');
+    const f3 = engine.createTrackSubgraph('track-3');
+    const f4 = engine.createTrackSubgraph('track-4');
+
+    expect(engine.getTrackFacade('track-2')).toBe(f2);
+    expect(engine.getTrackFacade('track-3')).toBe(f3);
+    expect(engine.getTrackFacade('track-4')).toBe(f4);
+
+    // createdStrips[0] = default, [1] = track-2, [2] = track-3, [3] = track-4
+    expect(createdStrips[1]._output.connect).toHaveBeenCalledWith(mockPreLimiterBusGainNode);
+    expect(createdStrips[2]._output.connect).toHaveBeenCalledWith(mockPreLimiterBusGainNode);
+    expect(createdStrips[3]._output.connect).toHaveBeenCalledWith(mockPreLimiterBusGainNode);
+  });
+
+  it('removing one track does not affect others', () => {
+    const engine = getAudioEngine();
+    engine.createTrackSubgraph('track-2');
+    const f3 = engine.createTrackSubgraph('track-3');
+
+    engine.removeTrackSubgraph('track-2');
+
+    // track-3 facade should still be accessible and usable
+    expect(() => f3.setGain(-3)).not.toThrow();
+    expect(engine.getTrackFacade('track-3')).toBe(f3);
   });
 });
