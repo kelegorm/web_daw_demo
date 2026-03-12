@@ -139,17 +139,17 @@ Scope constraints:
 - [x] Mark completed.
 
 ### Task 6: Wire `App.tsx` to build UI from plan
-- [ ] In `App.tsx`, import `DEFAULT_UI_PLAN`, `DEFAULT_MIDI_CLIP_STORE`, and `buildUiRuntime`.
-- [ ] Migrate `useTrackSelection` from hardcoded union ids to plan-derived `string` ids.
-- [ ] Update `src/hooks/useTrackSelection.ts` and all consumers so no `'synth1' | 'master'` union remains.
-- [ ] Initial selection must come from `UiPlan` policy (`initialTrackId` or first regular track fallback), not hardcoded literals.
-- [ ] Build UI runtime model in `AppWithEngine`.
-- [ ] Pass only `trackZoneModel` and `devicePanelModel` (+ actions) to `TrackZone` and `DevicePanel`.
-- [ ] Remove remaining hardcoded UI composition logic for track/device structure.
-- [ ] Keep direct `toneSynth` wiring only for `MidiKeyboard` (explicit temporary exception outside UI-structure wiring).
-- [ ] Update `src/App.test.tsx` in the same task so assertions match the new runtime wiring contract.
-- [ ] Keep current transport/panic/keyboard behavior unchanged.
-- [ ] Mark completed.
+- [x] In `App.tsx`, import `DEFAULT_UI_PLAN`, `DEFAULT_MIDI_CLIP_STORE`, and `buildUiRuntime`.
+- [x] Migrate `useTrackSelection` from hardcoded union ids to plan-derived `string` ids.
+- [x] Update `src/hooks/useTrackSelection.ts` and all consumers so no `'synth1' | 'master'` union remains.
+- [x] Initial selection must come from `UiPlan` policy (`initialTrackId` or first regular track fallback), not hardcoded literals.
+- [x] Build UI runtime model in `AppWithEngine`.
+- [x] Pass only `trackZoneModel` and `devicePanelModel` (+ actions) to `TrackZone` and `DevicePanel`.
+- [x] Remove remaining hardcoded UI composition logic for track/device structure.
+- [x] Keep direct `toneSynth` wiring only for `MidiKeyboard` (explicit temporary exception outside UI-structure wiring).
+- [x] Update `src/App.test.tsx` in the same task so assertions match the new runtime wiring contract.
+- [x] Keep current transport/panic/keyboard behavior unchanged.
+- [x] Mark completed.
 
 ### Task 7: Regression pass and cleanup
 - [ ] Remove dead code and obsolete hardcoded constants from UI components.

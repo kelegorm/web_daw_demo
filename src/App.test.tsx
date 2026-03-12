@@ -2,7 +2,6 @@ import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createAudioEngine, DEFAULT_AUDIO_MODULE_FACTORY_MAP } from './engine/audioEngine'
 import { useAudioEngine } from './hooks/useAudioEngine'
 import {
   DEFAULT_PLAN_SYNTH_ID,
@@ -15,11 +14,13 @@ import type { MeterSource } from './engine/types'
 import {
   DEFAULT_MIDI_CLIP_ID,
   DEFAULT_MIDI_CLIP_SOURCE,
+  DEFAULT_MIDI_CLIP_STORE,
 } from './project-runtime/midiClipStore'
+import { DEFAULT_UI_PLAN } from './ui-plan/defaultUiPlan'
+import { resolveInitialTrackId } from './ui-plan/uiPlan'
 
 vi.mock('./engine/audioEngine', () => ({
   createAudioEngine: vi.fn(),
-  DEFAULT_AUDIO_MODULE_FACTORY_MAP: {},
 }))
 
 vi.mock('./hooks/useAudioEngine', () => ({
@@ -73,11 +74,15 @@ vi.mock('./components/TrackZone', () => ({
 }))
 
 vi.mock('./components/DevicePanel', () => ({
-  default: () => null,
+  default: vi.fn(() => null),
 }))
 
 vi.mock('./components/MidiKeyboard', () => ({
   default: () => null,
+}))
+
+vi.mock('./ui-plan/buildUiRuntime', () => ({
+  buildUiRuntime: vi.fn(),
 }))
 
 function makeMockMeterSource(): MeterSource {
@@ -120,7 +125,7 @@ function makeMockEngine() {
     meterSource: makeMockMeterSource(),
   }
 
-  return {
+  const engine = {
     getSynth: vi.fn(() => synthHook),
     getPanner: vi.fn(() => pannerHook),
     getTrackStrip: vi.fn(() => trackStripHook),
@@ -128,9 +133,69 @@ function makeMockEngine() {
     getMasterStrip: vi.fn(() => masterStripHook),
     dispose: vi.fn(),
   }
+
+  return {
+    engine,
+    modules: {
+      synthHook,
+      pannerHook,
+      trackStripHook,
+      limiterHook,
+      masterStripHook,
+    },
+  }
 }
 
-describe('App id-based module wiring', () => {
+function makeMockUiRuntime(modules: ReturnType<typeof makeMockEngine>['modules']) {
+  return {
+    trackZoneModel: {
+      selectedTrackId: resolveInitialTrackId(DEFAULT_UI_PLAN),
+      tracks: [
+        {
+          trackId: resolveInitialTrackId(DEFAULT_UI_PLAN),
+          displayName: 'synth1',
+          trackStripId: DEFAULT_PLAN_TRACK_STRIP_ID,
+          trackStrip: modules.trackStripHook,
+          clips: [
+            {
+              clipId: DEFAULT_MIDI_CLIP_ID,
+              clip: DEFAULT_MIDI_CLIP_STORE[DEFAULT_MIDI_CLIP_ID],
+            },
+          ],
+        },
+      ],
+      masterTrack: {
+        trackId: DEFAULT_UI_PLAN.masterTrack.masterTrackId,
+        displayName: DEFAULT_UI_PLAN.masterTrack.displayName,
+        trackStripId: DEFAULT_PLAN_MASTER_STRIP_ID,
+        trackStrip: modules.masterStripHook,
+      },
+    },
+    devicePanelModel: {
+      selectedTrackId: resolveInitialTrackId(DEFAULT_UI_PLAN),
+      selectedTrackDisplayName: 'synth1',
+      selectedTrackIsMaster: false,
+      devices: [
+        {
+          uiDeviceId: 'ui-device-synth',
+          displayName: 'Synth',
+          moduleId: DEFAULT_PLAN_SYNTH_ID,
+          moduleKind: 'SYNTH' as const,
+          module: modules.synthHook,
+        },
+        {
+          uiDeviceId: 'ui-device-panner',
+          displayName: 'Panner',
+          moduleId: DEFAULT_PLAN_PANNER_ID,
+          moduleKind: 'PANNER' as const,
+          module: modules.pannerHook,
+        },
+      ],
+    },
+  }
+}
+
+describe('App runtime wiring', () => {
   let container: HTMLDivElement
   let root: Root
 
@@ -148,19 +213,28 @@ describe('App id-based module wiring', () => {
     container.remove()
   })
 
-  it('requests modules from engine using DEFAULT_PLAN_*_ID constants', async () => {
-    const mockEngine = makeMockEngine()
-    vi.mocked(useAudioEngine).mockReturnValue(mockEngine as unknown as ReturnType<typeof createAudioEngine>)
+  it('builds UI runtime from plan and passes runtime models to TrackZone and DevicePanel', async () => {
+    const { engine: mockEngine, modules } = makeMockEngine()
+    vi.mocked(useAudioEngine).mockReturnValue(mockEngine as unknown as ReturnType<typeof useAudioEngine>)
 
     const App = (await import('./App')).default
     const { useTransportController } = await import('./hooks/useTransportController')
     const TrackZone = (await import('./components/TrackZone')).default
+    const DevicePanel = (await import('./components/DevicePanel')).default
+    const { buildUiRuntime } = await import('./ui-plan/buildUiRuntime')
+
+    vi.mocked(buildUiRuntime).mockReturnValue(makeMockUiRuntime(modules))
 
     flushSync(() => {
       root.render(<App />)
     })
 
-    // App must use id-based getters, not legacy direct fields
+    expect(vi.mocked(buildUiRuntime)).toHaveBeenCalledWith({
+      uiPlan: DEFAULT_UI_PLAN,
+      midiClipStore: DEFAULT_MIDI_CLIP_STORE,
+      audioEngine: mockEngine,
+      selectedTrackId: resolveInitialTrackId(DEFAULT_UI_PLAN),
+    })
     expect(mockEngine.getSynth).toHaveBeenCalledWith(DEFAULT_PLAN_SYNTH_ID)
     expect(mockEngine.getPanner).toHaveBeenCalledWith(DEFAULT_PLAN_PANNER_ID)
     expect(mockEngine.getTrackStrip).toHaveBeenCalledWith(DEFAULT_PLAN_TRACK_STRIP_ID)
@@ -171,13 +245,18 @@ describe('App id-based module wiring', () => {
       expect.anything(),
       DEFAULT_MIDI_CLIP_SOURCE,
     )
+
     const trackZoneMock = vi.mocked(TrackZone)
+    const devicePanelMock = vi.mocked(DevicePanel)
     expect(trackZoneMock).toHaveBeenCalled()
+    expect(devicePanelMock).toHaveBeenCalled()
+
     const trackZoneLastCall = trackZoneMock.mock.calls[trackZoneMock.mock.calls.length - 1]
     const trackZoneProps = trackZoneLastCall?.[0]
     expect(trackZoneProps).toEqual(
       expect.objectContaining({
         model: expect.objectContaining({
+          selectedTrackId: resolveInitialTrackId(DEFAULT_UI_PLAN),
           tracks: expect.arrayContaining([
             expect.objectContaining({
               clips: expect.arrayContaining([
@@ -194,6 +273,25 @@ describe('App id-based module wiring', () => {
           setTrackRecEnabled: expect.any(Function),
           setTrackVolume: expect.any(Function),
           setMasterVolume: expect.any(Function),
+        }),
+      }),
+    )
+
+    const devicePanelLastCall = devicePanelMock.mock.calls[devicePanelMock.mock.calls.length - 1]
+    const devicePanelProps = devicePanelLastCall?.[0]
+    expect(devicePanelProps).toEqual(
+      expect.objectContaining({
+        model: expect.objectContaining({
+          selectedTrackId: resolveInitialTrackId(DEFAULT_UI_PLAN),
+          selectedTrackDisplayName: 'synth1',
+          devices: expect.arrayContaining([
+            expect.objectContaining({
+              moduleId: DEFAULT_PLAN_SYNTH_ID,
+            }),
+            expect.objectContaining({
+              moduleId: DEFAULT_PLAN_PANNER_ID,
+            }),
+          ]),
         }),
       }),
     )

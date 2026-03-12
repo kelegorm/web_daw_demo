@@ -1,48 +1,44 @@
-import { useState, useCallback, createContext, useContext } from 'react';
-
-export type TrackId = 'synth1' | 'master';
+import { useState, useCallback, createContext, useContext } from 'react'
 
 export interface TrackSelectionHook {
-  selectedTrack: TrackId;
-  selectTrack: (id: TrackId) => void;
+  selectedTrack: string
+  selectTrack: (id: string) => void
 }
 
-export function createTrackSelection(): TrackSelectionHook {
-  let selectedTrack: TrackId = 'synth1';
-  const listeners: Array<() => void> = [];
+export function createTrackSelection(initialTrackId = ''): TrackSelectionHook {
+  let selectedTrack = initialTrackId
 
-  function selectTrack(id: TrackId) {
-    selectedTrack = id;
-    listeners.forEach(fn => fn());
+  function selectTrack(id: string) {
+    selectedTrack = id
   }
 
-  function getSelectedTrack(): TrackId {
-    return selectedTrack;
+  function getSelectedTrack(): string {
+    return selectedTrack
   }
 
   return {
     get selectedTrack() {
-      return getSelectedTrack();
+      return getSelectedTrack()
     },
     selectTrack,
-  };
+  }
 }
 
-export function useTrackSelection(): TrackSelectionHook {
-  const [selectedTrack, setSelectedTrack] = useState<TrackId>('synth1');
+export function useTrackSelection(initialTrackId = ''): TrackSelectionHook {
+  const [selectedTrack, setSelectedTrack] = useState<string>(initialTrackId)
 
-  const selectTrack = useCallback((id: TrackId) => {
-    setSelectedTrack(id);
-  }, []);
+  const selectTrack = useCallback((id: string) => {
+    setSelectedTrack(id)
+  }, [])
 
-  return { selectedTrack, selectTrack };
+  return { selectedTrack, selectTrack }
 }
 
 export const TrackSelectionContext = createContext<TrackSelectionHook>({
-  selectedTrack: 'synth1',
+  selectedTrack: '',
   selectTrack: () => {},
-});
+})
 
 export function useTrackSelectionContext(): TrackSelectionHook {
-  return useContext(TrackSelectionContext);
+  return useContext(TrackSelectionContext)
 }

@@ -2,8 +2,8 @@ import * as React from 'react'
 import { flushSync } from 'react-dom'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TrackSelectionContext } from '../hooks/useTrackSelection'
 import DevicePanel from './DevicePanel'
+import type { DevicePanelModel } from '../ui-plan/buildUiRuntime'
 
 vi.mock('./SynthDevice', () => ({
   default: () => <div className="device synth-device" data-device-kind="SYNTH" />,
@@ -53,6 +53,51 @@ function makeLimiterHook() {
   }
 }
 
+function makeDevicePanelModel(selectedTrackDisplayName: string, selectedTrackId: string): DevicePanelModel {
+  const synth = makeSynthHook()
+  const panner = makePannerHook()
+  const limiter = makeLimiterHook()
+
+  if (selectedTrackId === 'master') {
+    return {
+      selectedTrackId,
+      selectedTrackDisplayName,
+      selectedTrackIsMaster: true,
+      devices: [
+        {
+          uiDeviceId: 'ui-device-limiter',
+          displayName: 'Limiter',
+          moduleId: 'limiter-1',
+          moduleKind: 'LIMITER',
+          module: limiter,
+        },
+      ],
+    }
+  }
+
+  return {
+    selectedTrackId,
+    selectedTrackDisplayName,
+    selectedTrackIsMaster: false,
+    devices: [
+      {
+        uiDeviceId: 'ui-device-synth',
+        displayName: 'Synth',
+        moduleId: 'synth-1',
+        moduleKind: 'SYNTH',
+        module: synth,
+      },
+      {
+        uiDeviceId: 'ui-device-panner',
+        displayName: 'Panner',
+        moduleId: 'panner-1',
+        moduleKind: 'PANNER',
+        module: panner,
+      },
+    ],
+  }
+}
+
 describe('DevicePanel model-driven rendering', () => {
   let container: HTMLDivElement
   let root: Root
@@ -73,18 +118,7 @@ describe('DevicePanel model-driven rendering', () => {
   it('renders selected regular-track devices by iterating the runtime device list', () => {
     flushSync(() => {
       root.render(
-        <TrackSelectionContext.Provider
-          value={{
-            selectedTrack: 'synth1',
-            selectTrack: vi.fn(),
-          }}
-        >
-          <DevicePanel
-            synth={makeSynthHook()}
-            panner={makePannerHook()}
-            limiter={makeLimiterHook()}
-          />
-        </TrackSelectionContext.Provider>,
+        <DevicePanel model={makeDevicePanelModel('synth1', 'synth1')} />,
       )
     })
 
@@ -102,18 +136,7 @@ describe('DevicePanel model-driven rendering', () => {
   it('renders selected master-track devices from UiPlan.masterTrack.devices', () => {
     flushSync(() => {
       root.render(
-        <TrackSelectionContext.Provider
-          value={{
-            selectedTrack: 'master',
-            selectTrack: vi.fn(),
-          }}
-        >
-          <DevicePanel
-            synth={makeSynthHook()}
-            panner={makePannerHook()}
-            limiter={makeLimiterHook()}
-          />
-        </TrackSelectionContext.Provider>,
+        <DevicePanel model={makeDevicePanelModel('Master', 'master')} />,
       )
     })
 

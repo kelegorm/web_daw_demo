@@ -12,8 +12,6 @@ import { useLimiter } from './hooks/useLimiter'
 import { useTransportController } from './hooks/useTransportController'
 import {
   useTrackSelection,
-  TrackSelectionContext,
-  type TrackId,
 } from './hooks/useTrackSelection'
 import type { AudioEngine } from './engine/audioEngine'
 import { useAudioEngine } from './hooks/useAudioEngine'
@@ -29,7 +27,8 @@ import {
   DEFAULT_PLAN_MASTER_STRIP_ID,
 } from './engine/audioGraphPlan'
 import { buildUiRuntime } from './ui-plan/buildUiRuntime'
-import { DEFAULT_UI_PLAN, DEFAULT_UI_PLAN_TRACK_ID } from './ui-plan/defaultUiPlan'
+import { DEFAULT_UI_PLAN } from './ui-plan/defaultUiPlan'
+import { resolveInitialTrackId } from './ui-plan/uiPlan'
 import './App.css'
 
 declare global {
@@ -39,6 +38,9 @@ declare global {
     __vuMeterLevel?: number
   }
 }
+
+const INITIAL_TRACK_ID = resolveInitialTrackId(DEFAULT_UI_PLAN)
+const TRANSPORT_TRACK_STRIP_ID = DEFAULT_UI_PLAN.tracks[0]?.trackStripId
 
 function App() {
   const audioEngine = useAudioEngine()
@@ -57,8 +59,10 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
   const masterStrip = useMasterStrip(audioEngine.getMasterStrip(DEFAULT_PLAN_MASTER_STRIP_ID))
   const limiter = useLimiter(audioEngine.getLimiter(DEFAULT_PLAN_LIMITER_ID))
   const transport = useTransportController(toneSynth, trackStrip, DEFAULT_MIDI_CLIP_SOURCE)
-  const [isTrackRecEnabled, setIsTrackRecEnabled] = useState(true)
-  const trackSelection = useTrackSelection()
+  const [trackRecByTrackId, setTrackRecByTrackId] = useState<Record<string, boolean>>({
+    [INITIAL_TRACK_ID]: true,
+  })
+  const trackSelection = useTrackSelection(INITIAL_TRACK_ID)
   const uiRuntime = buildUiRuntime({
     uiPlan: DEFAULT_UI_PLAN,
     midiClipStore: DEFAULT_MIDI_CLIP_STORE,
@@ -77,18 +81,18 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
       displayName: runtimeTrack.displayName,
       clips: runtimeTrack.clips,
       meterSource:
-        runtimeTrack.trackStripId === DEFAULT_PLAN_TRACK_STRIP_ID
+        runtimeTrack.trackStripId === TRANSPORT_TRACK_STRIP_ID
           ? trackStrip.meterSource
           : runtimeTrack.trackStrip.meterSource,
       volumeDb:
-        runtimeTrack.trackStripId === DEFAULT_PLAN_TRACK_STRIP_ID
+        runtimeTrack.trackStripId === TRANSPORT_TRACK_STRIP_ID
           ? trackStrip.trackVolume
           : runtimeTrack.trackStrip.trackVolume,
       isMuted:
-        runtimeTrack.trackStripId === DEFAULT_PLAN_TRACK_STRIP_ID
+        runtimeTrack.trackStripId === TRANSPORT_TRACK_STRIP_ID
           ? trackStrip.isTrackMuted
           : runtimeTrack.trackStrip.isTrackMuted,
-      isRecEnabled: runtimeTrack.trackId === DEFAULT_UI_PLAN_TRACK_ID ? isTrackRecEnabled : false,
+      isRecEnabled: trackRecByTrackId[runtimeTrack.trackId] ?? false,
     })),
     masterTrack: {
       trackId: uiRuntime.trackZoneModel.masterTrack.trackId,
@@ -98,15 +102,31 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
     },
   }
 
+  const devicePanelModel = {
+    ...uiRuntime.devicePanelModel,
+    devices: uiRuntime.devicePanelModel.devices.map((device) => {
+      if (device.moduleId === DEFAULT_PLAN_SYNTH_ID) {
+        return { ...device, module: toneSynth }
+      }
+      if (device.moduleId === DEFAULT_PLAN_PANNER_ID) {
+        return { ...device, module: panner }
+      }
+      if (device.moduleId === DEFAULT_PLAN_LIMITER_ID) {
+        return { ...device, module: limiter }
+      }
+      return device
+    }),
+  }
+
   const trackZoneActions: TrackZoneActions = {
-    selectTrack: (trackId) => trackSelection.selectTrack(trackId as TrackId),
+    selectTrack: (trackId) => trackSelection.selectTrack(trackId),
     setTrackMute: (trackId, muted) => {
       const runtimeTrack = uiRuntime.trackZoneModel.tracks.find((track) => track.trackId === trackId)
       if (!runtimeTrack) {
         return
       }
 
-      if (runtimeTrack.trackStripId === DEFAULT_PLAN_TRACK_STRIP_ID) {
+      if (runtimeTrack.trackStripId === TRANSPORT_TRACK_STRIP_ID) {
         transport.setTrackMute(muted)
         return
       }
@@ -114,9 +134,7 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
       runtimeTrack.trackStrip.setTrackMuted(muted)
     },
     setTrackRecEnabled: (trackId, recEnabled) => {
-      if (trackId === DEFAULT_UI_PLAN_TRACK_ID) {
-        setIsTrackRecEnabled(recEnabled)
-      }
+      setTrackRecByTrackId((current) => ({ ...current, [trackId]: recEnabled }))
     },
     setTrackVolume: (trackId, db) => {
       const runtimeTrack = uiRuntime.trackZoneModel.tracks.find((track) => track.trackId === trackId)
@@ -124,7 +142,7 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
         return
       }
 
-      if (runtimeTrack.trackStripId === DEFAULT_PLAN_TRACK_STRIP_ID) {
+      if (runtimeTrack.trackStripId === TRANSPORT_TRACK_STRIP_ID) {
         trackStrip.setTrackVolume(db)
         return
       }
@@ -151,26 +169,24 @@ function AppWithEngine({ audioEngine }: { audioEngine: AudioEngine }) {
   }
 
   return (
-    <TrackSelectionContext.Provider value={trackSelection}>
-      <div id="app">
-        <Toolbar
-          isPlaying={transport.isPlaying}
-          onPlay={transport.toggle}
-          onStop={transport.stop}
-          onPanic={handlePanic}
-          bpm={transport.bpm}
-          onBpmChange={transport.setBpm}
-          loop={transport.loop}
-          onLoopToggle={() => transport.setLoop(!transport.loop)}
-        />
-        <TrackZone
-          model={trackZoneModel}
-          actions={trackZoneActions}
-        />
-        <DevicePanel synth={toneSynth} panner={panner} limiter={limiter} />
-        <MidiKeyboard synth={toneSynth} enabled={isTrackRecEnabled} />
-      </div>
-    </TrackSelectionContext.Provider>
+    <div id="app">
+      <Toolbar
+        isPlaying={transport.isPlaying}
+        onPlay={transport.toggle}
+        onStop={transport.stop}
+        onPanic={handlePanic}
+        bpm={transport.bpm}
+        onBpmChange={transport.setBpm}
+        loop={transport.loop}
+        onLoopToggle={() => transport.setLoop(!transport.loop)}
+      />
+      <TrackZone
+        model={trackZoneModel}
+        actions={trackZoneActions}
+      />
+      <DevicePanel model={devicePanelModel} />
+      <MidiKeyboard synth={toneSynth} enabled={trackRecByTrackId[INITIAL_TRACK_ID] ?? false} />
+    </div>
   )
 }
 
