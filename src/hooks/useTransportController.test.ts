@@ -1,7 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createTransportCore } from './useTransportController';
-import { SEQUENCER_NOTES } from './useSequencer';
 import type { TransportService } from '../engine/transportService';
+import {
+  DEFAULT_MIDI_CLIP_ID,
+  DEFAULT_MIDI_CLIP_STORE,
+  getMidiClipOrThrow,
+} from '../project-runtime/midiClipStore';
+
+const DEFAULT_CLIP = getMidiClipOrThrow(DEFAULT_MIDI_CLIP_STORE, DEFAULT_MIDI_CLIP_ID);
+const DEFAULT_NOTES = DEFAULT_CLIP.steps.map((step) => step.note);
 
 // ── Tone.js mock ──────────────────────────────────────────────────────────────
 const { mockState } = vi.hoisted(() => ({
@@ -270,7 +277,7 @@ describe('createTransportCore', () => {
     const core = createTransportCore(deps, transportService);
 
     core.play();
-    expect(mockState.events).toHaveLength(SEQUENCER_NOTES.length);
+    expect(mockState.events).toHaveLength(DEFAULT_NOTES.length);
 
     for (let i = 0; i < mockState.events.length; i += 1) {
       const [, event] = mockState.events[i];
@@ -278,12 +285,12 @@ describe('createTransportCore', () => {
       mockState.callback!(eventTime, event);
     }
 
-    expect(synthSink.noteOn).toHaveBeenCalledTimes(SEQUENCER_NOTES.length);
-    expect(synthSink.noteOff).toHaveBeenCalledTimes(SEQUENCER_NOTES.length);
-    expect(synthSink.noteOn.mock.calls.map((call) => call[0])).toEqual(SEQUENCER_NOTES);
-    expect(synthSink.noteOff.mock.calls.map((call) => call[0])).toEqual(SEQUENCER_NOTES);
+    expect(synthSink.noteOn).toHaveBeenCalledTimes(DEFAULT_NOTES.length);
+    expect(synthSink.noteOff).toHaveBeenCalledTimes(DEFAULT_NOTES.length);
+    expect(synthSink.noteOn.mock.calls.map((call) => call[0])).toEqual(DEFAULT_NOTES);
+    expect(synthSink.noteOff.mock.calls.map((call) => call[0])).toEqual(DEFAULT_NOTES);
 
-    for (let i = 0; i < SEQUENCER_NOTES.length; i += 1) {
+    for (let i = 0; i < DEFAULT_NOTES.length; i += 1) {
       const onTime = synthSink.noteOn.mock.calls[i][2];
       const offTime = synthSink.noteOff.mock.calls[i][1];
       expect(typeof onTime).toBe('number');

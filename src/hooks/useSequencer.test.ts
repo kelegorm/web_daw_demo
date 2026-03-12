@@ -1,11 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createSequencer, SEQUENCER_NOTES } from './useSequencer';
+import { createSequencer, type SequencerClipInput } from './useSequencer';
 import type { SequencerTransport } from '../engine/transportService';
+import {
+  DEFAULT_MIDI_CLIP_ID,
+  DEFAULT_MIDI_CLIP_STORE,
+  getMidiClipOrThrow,
+  type MidiClipStore,
+} from '../project-runtime/midiClipStore';
+
+interface SequencerStepEvent {
+  enabled: boolean;
+  note: number;
+  velocity: number;
+  gate: number;
+  step: number;
+}
+
+const DEFAULT_CLIP = getMidiClipOrThrow(DEFAULT_MIDI_CLIP_STORE, DEFAULT_MIDI_CLIP_ID);
+const DEFAULT_NOTES = DEFAULT_CLIP.steps.map((step) => step.note);
 
 const { mockState } = vi.hoisted(() => ({
   mockState: {
-    callback: null as ((time: number, event: { note: number; step: number }) => void) | null,
-    events: [] as [string, { note: number; step: number }][],
+    callback: null as ((time: number, event: SequencerStepEvent) => void) | null,
+    events: [] as [string, SequencerStepEvent][],
     part: {
       start: vi.fn(),
       stop: vi.fn(),
@@ -60,6 +77,13 @@ function createTransportMock(): SequencerTransport & {
   };
 }
 
+function createClipInput(
+  clipStore: MidiClipStore = DEFAULT_MIDI_CLIP_STORE,
+  clipId: string = DEFAULT_MIDI_CLIP_ID,
+): SequencerClipInput {
+  return { clipStore, clipId };
+}
+
 describe('createSequencer (Tone.js)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -73,7 +97,14 @@ describe('createSequencer (Tone.js)', () => {
     const panic = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, transport, undefined);
+    const seq = createSequencer(
+      noteOn,
+      noteOff,
+      panic,
+      transport,
+      undefined,
+      createClipInput(),
+    );
     seq.start();
 
     expect(mockState.callback).not.toBeNull();
@@ -83,7 +114,7 @@ describe('createSequencer (Tone.js)', () => {
       mockState.callback!(0, event);
     }
 
-    expect(noteOn.mock.calls.map((c) => c[0])).toEqual(SEQUENCER_NOTES);
+    expect(noteOn.mock.calls.map((c) => c[0])).toEqual(DEFAULT_NOTES);
   });
 
   it('stop mid-sequence prevents further notes from firing', () => {
@@ -92,7 +123,14 @@ describe('createSequencer (Tone.js)', () => {
     const panic = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, transport, undefined);
+    const seq = createSequencer(
+      noteOn,
+      noteOff,
+      panic,
+      transport,
+      undefined,
+      createClipInput(),
+    );
     seq.start();
 
     // Fire first event
@@ -113,7 +151,14 @@ describe('createSequencer (Tone.js)', () => {
     const onStepChange = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, transport, onStepChange);
+    const seq = createSequencer(
+      noteOn,
+      noteOff,
+      panic,
+      transport,
+      onStepChange,
+      createClipInput(),
+    );
     seq.start();
 
     mockState.callback!(0, mockState.events[0][1]);
@@ -133,7 +178,14 @@ describe('createSequencer (Tone.js)', () => {
     const panic = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, transport, undefined);
+    const seq = createSequencer(
+      noteOn,
+      noteOff,
+      panic,
+      transport,
+      undefined,
+      createClipInput(),
+    );
     seq.start();
     mockState.callback!(0, mockState.events[0][1]);
     expect(noteOn).toHaveBeenCalledTimes(1);
@@ -151,7 +203,14 @@ describe('createSequencer (Tone.js)', () => {
     const panic = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, transport, undefined);
+    const seq = createSequencer(
+      noteOn,
+      noteOff,
+      panic,
+      transport,
+      undefined,
+      createClipInput(),
+    );
     seq.start();
 
     mockState.callback!(0, mockState.events[2][1]);
@@ -170,7 +229,14 @@ describe('createSequencer (Tone.js)', () => {
     const panic = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, transport, undefined);
+    const seq = createSequencer(
+      noteOn,
+      noteOff,
+      panic,
+      transport,
+      undefined,
+      createClipInput(),
+    );
     seq.start();
 
     // Tone.Time mock returns { toSeconds: () => 0.25 }, so noteDuration = 0.25 * 0.8 = 0.2
@@ -179,10 +245,10 @@ describe('createSequencer (Tone.js)', () => {
 
     // noteOff should be called immediately with the future audio time, not via setTimeout
     expect(noteOff).toHaveBeenCalledOnce();
-    expect(noteOff).toHaveBeenCalledWith(SEQUENCER_NOTES[0], audioTime + 0.25 * 0.8);
+    expect(noteOff).toHaveBeenCalledWith(DEFAULT_NOTES[0], audioTime + 0.25 * 0.8);
 
     // noteOn should also carry the audio time
-    expect(noteOn).toHaveBeenCalledWith(SEQUENCER_NOTES[0], 100, audioTime);
+    expect(noteOn).toHaveBeenCalledWith(DEFAULT_NOTES[0], 100, audioTime);
   });
 
   it('noteOff is not called after stop()', () => {
@@ -191,7 +257,14 @@ describe('createSequencer (Tone.js)', () => {
     const panic = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, transport, undefined);
+    const seq = createSequencer(
+      noteOn,
+      noteOff,
+      panic,
+      transport,
+      undefined,
+      createClipInput(),
+    );
     seq.start();
 
     mockState.callback!(0, mockState.events[0][1]);
@@ -213,15 +286,74 @@ describe('createSequencer (Tone.js)', () => {
     const panic = vi.fn();
     const transport = createTransportMock();
 
-    const seq = createSequencer(noteOn, noteOff, panic, transport, undefined);
+    const seq = createSequencer(
+      noteOn,
+      noteOff,
+      panic,
+      transport,
+      undefined,
+      createClipInput(),
+    );
 
     seq.setLoop(true);
     expect(mockState.part.loop).toBe(true);
     expect(mockState.transport.loop).toBe(true);
-    expect(mockState.transport.loopEnd).toBe('1m');
+    expect(mockState.transport.loopEnd).toBe('1:0:0');
 
     seq.setLoop(false);
     expect(mockState.part.loop).toBe(false);
     expect(mockState.transport.loop).toBe(false);
+  });
+
+  it('resolves clip by clipId and derives events and loop end from clip shape', () => {
+    const noteOn = vi.fn();
+    const noteOff = vi.fn();
+    const panic = vi.fn();
+    const transport = createTransportMock();
+
+    const clipStore: MidiClipStore = {
+      odd: {
+        clipId: 'odd',
+        startBeat: 0.5,
+        lengthSteps: 7,
+        steps: [60, 61, 62, 63, 64, 65, 66].map((note, step) => ({
+          enabled: step !== 3,
+          note,
+          velocity: 90 + step,
+          gate: 0.5,
+        })),
+      },
+    };
+
+    const seq = createSequencer(
+      noteOn,
+      noteOff,
+      panic,
+      transport,
+      undefined,
+      createClipInput(clipStore, 'odd'),
+    );
+
+    expect(mockState.events.map(([time]) => time)).toEqual([
+      '0:0:2',
+      '0:1:0',
+      '0:1:2',
+      '0:2:0',
+      '0:2:2',
+      '0:3:0',
+      '0:3:2',
+    ]);
+    expect(mockState.transport.loopEnd).toBe('0:3:2');
+
+    seq.start();
+
+    for (const [, event] of mockState.events) {
+      mockState.callback!(1, event);
+    }
+
+    expect(noteOn.mock.calls.map((call) => call[0])).toEqual([60, 61, 62, 64, 65, 66]);
+    expect(noteOn.mock.calls[0]).toEqual([60, 90, 1]);
+    expect(noteOff).toHaveBeenCalledTimes(6);
+    expect(noteOff.mock.calls[0][1]).toBeCloseTo(1 + 0.25 * 0.5, 6);
   });
 });

@@ -4,7 +4,11 @@ import { getE2EHooks } from '../testing/e2eHooks';
 import {
   DEFAULT_MIDI_CLIP_ID,
   DEFAULT_MIDI_CLIP_STORE,
+  STEP_BEATS,
+  getMidiClipLengthBeats,
   getMidiClipOrThrow,
+  type MidiClip,
+  type MidiClipStore,
 } from '../project-runtime/midiClipStore';
 import {
   createTransportService,
@@ -12,13 +16,63 @@ import {
   type TransportService,
 } from '../engine/transportService';
 
-const DEFAULT_SEQUENCER_CLIP = getMidiClipOrThrow(DEFAULT_MIDI_CLIP_STORE, DEFAULT_MIDI_CLIP_ID);
+export interface SequencerClipInput {
+  clipStore: MidiClipStore;
+  clipId: string;
+}
 
-export const SEQUENCER_NOTES = DEFAULT_SEQUENCER_CLIP.steps.map((step) => step.note);
+const DEFAULT_SEQUENCER_CLIP_INPUT: SequencerClipInput = {
+  clipStore: DEFAULT_MIDI_CLIP_STORE,
+  clipId: DEFAULT_MIDI_CLIP_ID,
+};
 
 interface StepEvent {
+  enabled: boolean;
   note: number;
+  velocity: number;
+  gate: number;
   step: number;
+}
+
+function beatToBarsBeatsSixteenths(beatPosition: number): string {
+  const totalSixteenths = Math.round(beatPosition * 4);
+  const bars = Math.floor(totalSixteenths / 16);
+  const sixteenthsIntoBar = totalSixteenths % 16;
+  const beats = Math.floor(sixteenthsIntoBar / 4);
+  const sixteenths = sixteenthsIntoBar % 4;
+  return `${bars}:${beats}:${sixteenths}`;
+}
+
+function resolveClipStepsOrThrow(clip: MidiClip): StepEvent[] {
+  if (clip.steps.length < clip.lengthSteps) {
+    throw new Error(
+      `MIDI clip "${clip.clipId}" has ${clip.steps.length} steps, expected at least ${clip.lengthSteps}`,
+    );
+  }
+
+  return Array.from({ length: clip.lengthSteps }, (_, step) => {
+    const clipStep = clip.steps[step];
+    if (!clipStep) {
+      throw new Error(`Missing MIDI step ${step} for clip "${clip.clipId}"`);
+    }
+    return {
+      step,
+      enabled: clipStep.enabled,
+      note: clipStep.note,
+      velocity: clipStep.velocity,
+      gate: clipStep.gate,
+    };
+  });
+}
+
+export function resolveSequencerClip(
+  clipInput: SequencerClipInput = DEFAULT_SEQUENCER_CLIP_INPUT,
+): MidiClip {
+  return getMidiClipOrThrow(clipInput.clipStore, clipInput.clipId);
+}
+
+export function getClipLoopEnd(clip: MidiClip): string {
+  return beatToBarsBeatsSixteenths(getMidiClipLengthBeats(clip));
 }
 
 export interface Sequencer {
@@ -36,33 +90,46 @@ export function createSequencer(
   panic: () => void,
   transport: SequencerTransport,
   onStepChange?: (step: number) => void,
+  clipInput: SequencerClipInput = DEFAULT_SEQUENCER_CLIP_INPUT,
 ): Sequencer {
   let _currentStep = -1;
   let _isPlaying = false;
   let _active = false;
   let _partStarted = false;
-  const loopEnd = '1m';
+  const clip = resolveSequencerClip(clipInput);
+  const clipSteps = resolveClipStepsOrThrow(clip);
+  const loopEnd = getClipLoopEnd(clip);
 
-  const events: [string, StepEvent][] = SEQUENCER_NOTES.map((note, i) => {
-    const beat = Math.floor(i / 2);
-    const sixteenth = (i % 2) * 2;
-    return [`0:${beat}:${sixteenth}`, { note, step: i }];
+  const events: [string, StepEvent][] = clipSteps.map((clipStep) => {
+    const absoluteBeat = clip.startBeat + clipStep.step * STEP_BEATS;
+    return [beatToBarsBeatsSixteenths(absoluteBeat), clipStep];
   });
 
-  const part = new Tone.Part<StepEvent>((time, { note, step }) => {
+  const part = new Tone.Part<StepEvent>((time, { note, velocity, gate, step, enabled }) => {
     if (!_active) return;
     const e2eHooks = getE2EHooks();
     if (e2eHooks) {
       e2eHooks.sequencerTicks += 1;
-      e2eHooks.sequencerNoteOnSent += 1;
     }
-    noteOn(note, 100, time);
+
     _currentStep = step;
     onStepChange?.(step);
-    const noteDuration = Tone.Time('8n').toSeconds() * 0.8;
+
+    if (!enabled) {
+      return;
+    }
+
+    if (e2eHooks) {
+      e2eHooks.sequencerNoteOnSent += 1;
+    }
+
+    noteOn(note, velocity, time);
+    const noteDuration = Tone.Time('8n').toSeconds() * gate;
+
     if (e2eHooks) {
       e2eHooks.sequencerNoteOffSent += 1;
     }
+
     noteOff(note, time + noteDuration);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   }, events as any);

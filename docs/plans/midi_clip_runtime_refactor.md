@@ -59,12 +59,12 @@ Scope constraints:
 - [x] Mark completed.
 
 ### Task 2: Make sequencer clip-driven
-- [ ] Introduce clip input contract for sequencer (resolve by `clipId`).
-- [ ] Remove hardcoded sequencer note constants from playback path.
-- [ ] Build sequencer events from resolved clip steps.
-- [ ] Derive loop-end from `lengthSteps` -> `lengthBeats` and route to both `Tone.Part.loopEnd` and `TransportService.setLoopConfig`.
-- [ ] Keep current runtime behavior identical for default clip (same notes/order/timing, loop behavior, panic/stop behavior).
-- [ ] Mark completed.
+- [x] Introduce clip input contract for sequencer (resolve by `clipId`).
+- [x] Remove hardcoded sequencer note constants from playback path.
+- [x] Build sequencer events from resolved clip steps.
+- [x] Derive loop-end from `lengthSteps` -> `lengthBeats` and route to both `Tone.Part.loopEnd` and `TransportService.setLoopConfig`.
+- [x] Keep current runtime behavior identical for default clip (same notes/order/timing, loop behavior, panic/stop behavior).
+- [x] Mark completed.
 
 ### Task 3: Make clip visuals clip-driven
 - [ ] Remove duplicated inline clip-note constants from `TrackZone` rendering path.

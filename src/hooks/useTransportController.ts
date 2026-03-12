@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import * as Tone from 'tone';
 import { createSequencer, Sequencer } from './useSequencer';
+import type { SequencerClipInput } from './useSequencer';
 import type { ToneSynthHook } from './useToneSynth';
 import type { TrackStripHook } from './useTrackStrip';
 import { createTransportService, type TransportService } from '../engine/transportService';
@@ -49,6 +50,7 @@ export interface TransportCoreDeps {
   synthPanic: () => void;
   setTrackMuted: (muted: boolean) => void;
   onStepChange?: (step: number) => void;
+  sequencerClip?: SequencerClipInput;
 }
 
 /**
@@ -73,6 +75,7 @@ export function createTransportCore(
       transportService.updateCurrentStep(step);
       deps.onStepChange?.(step);
     },
+    deps.sequencerClip,
   );
 
   function play() {
