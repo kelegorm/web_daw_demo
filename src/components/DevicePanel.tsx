@@ -3,11 +3,20 @@ import type { PannerHook } from '../hooks/usePanner'
 import type { LimiterHook } from '../hooks/useLimiter'
 import { useTrackSelectionContext } from '../hooks/useTrackSelection'
 import {
-  DEFAULT_UI_PLAN_LIMITER_DEVICE_ID,
-  DEFAULT_UI_PLAN_PANNER_DEVICE_ID,
-  DEFAULT_UI_PLAN_SYNTH_DEVICE_ID,
+  DEFAULT_PLAN_LIMITER_ID,
+  DEFAULT_PLAN_PANNER_ID,
+  DEFAULT_PLAN_SYNTH_ID,
+} from '../engine/audioGraphPlan'
+import {
+  DEFAULT_UI_PLAN,
+  DEFAULT_UI_PLAN_MASTER_TRACK_ID,
 } from '../ui-plan/defaultUiPlan'
-import { renderDeviceFromRegistry } from '../ui-plan/deviceRegistry'
+import {
+  getDeviceRegistryEntry,
+  renderDeviceFromRegistry,
+  type AnyDeviceModule,
+} from '../ui-plan/deviceRegistry'
+import type { DevicePanelModel } from '../ui-plan/buildUiRuntime'
 
 interface Props {
   synth: ToneSynthHook
@@ -15,9 +24,50 @@ interface Props {
   limiter: LimiterHook
 }
 
+function buildDevicePanelModel(
+  selectedTrackId: string,
+  input: Pick<Props, 'synth' | 'panner' | 'limiter'>,
+): DevicePanelModel {
+  const moduleById: Record<string, AnyDeviceModule> = {
+    [DEFAULT_PLAN_SYNTH_ID]: input.synth,
+    [DEFAULT_PLAN_PANNER_ID]: input.panner,
+    [DEFAULT_PLAN_LIMITER_ID]: input.limiter,
+  }
+
+  const selectedTrack =
+    selectedTrackId === DEFAULT_UI_PLAN_MASTER_TRACK_ID
+      ? DEFAULT_UI_PLAN.masterTrack
+      : DEFAULT_UI_PLAN.tracks.find((track) => track.trackId === selectedTrackId)
+
+  if (!selectedTrack) {
+    throw new Error(`[ui-plan] unknown selectedTrackId: ${selectedTrackId}`)
+  }
+
+  return {
+    selectedTrackId,
+    selectedTrackDisplayName: selectedTrack.displayName,
+    selectedTrackIsMaster: selectedTrackId === DEFAULT_UI_PLAN.masterTrack.masterTrackId,
+    devices: selectedTrack.devices.map((device) => {
+      const registryEntry = getDeviceRegistryEntry(device.moduleKind)
+      const module = moduleById[device.moduleId]
+      if (!module) {
+        throw new Error(`[ui-plan] missing module for ui device: ${device.uiDeviceId}`)
+      }
+
+      return {
+        uiDeviceId: device.uiDeviceId,
+        displayName: device.displayName,
+        moduleId: device.moduleId,
+        moduleKind: registryEntry.moduleKind,
+        module,
+      }
+    }),
+  }
+}
+
 export default function DevicePanel({ synth, panner, limiter }: Props) {
   const { selectedTrack } = useTrackSelectionContext()
-  const selectedTrackName = selectedTrack === 'master' ? 'Master' : 'synth1'
+  const devicePanelModel = buildDevicePanelModel(selectedTrack, { synth, panner, limiter })
 
   return (
     <div
@@ -72,12 +122,12 @@ export default function DevicePanel({ synth, panner, limiter }: Props) {
               lineHeight: 1,
             }}
           >
-            {selectedTrackName}
+            {devicePanelModel.selectedTrackDisplayName}
           </span>
         </div>
 
         <div
-          key={selectedTrack}
+          key={devicePanelModel.selectedTrackId}
           className="device-panel-content"
           style={{
             display: 'flex',
@@ -93,29 +143,16 @@ export default function DevicePanel({ synth, panner, limiter }: Props) {
             animation: 'devicePanelFadeIn 120ms ease',
           }}
         >
-          {selectedTrack === 'synth1' ? (
-            <>
+          {devicePanelModel.devices.map((device) => (
+            <div key={device.uiDeviceId}>
               {renderDeviceFromRegistry({
-                uiDeviceId: DEFAULT_UI_PLAN_SYNTH_DEVICE_ID,
-                displayName: 'Synth',
-                moduleKind: 'SYNTH',
-                module: synth,
+                uiDeviceId: device.uiDeviceId,
+                displayName: device.displayName,
+                moduleKind: device.moduleKind,
+                module: device.module,
               })}
-              {renderDeviceFromRegistry({
-                uiDeviceId: DEFAULT_UI_PLAN_PANNER_DEVICE_ID,
-                displayName: 'Panner',
-                moduleKind: 'PANNER',
-                module: panner,
-              })}
-            </>
-          ) : (
-            renderDeviceFromRegistry({
-              uiDeviceId: DEFAULT_UI_PLAN_LIMITER_DEVICE_ID,
-              displayName: 'Limiter',
-              moduleKind: 'LIMITER',
-              module: limiter,
-            })
-          )}
+            </div>
+          ))}
         </div>
       </div>
     </div>

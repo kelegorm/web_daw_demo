@@ -120,13 +120,13 @@ Scope constraints:
 - [x] Mark completed.
 
 ### Task 4: Refactor `DevicePanel` to model-driven rendering
-- [ ] Replace hardcoded `synth/panner/limiter` branch rendering with iteration over `devicePanelModel.devices`.
-- [ ] When master is selected, `devicePanelModel.devices` must come from `UiPlan.masterTrack.devices` (no master-device hardcoded branch).
-- [ ] Keep existing device components (`SynthDevice`, `PannerDevice`, `LimiterDevice`).
-- [ ] Choose component by `moduleKind` from `UiDevicePlan`.
-- [ ] Preserve existing visible behavior and CSS selectors used by e2e tests.
-- [ ] Add/adjust tests for selected-track device list rendering.
-- [ ] Mark completed.
+- [x] Replace hardcoded `synth/panner/limiter` branch rendering with iteration over `devicePanelModel.devices`.
+- [x] When master is selected, `devicePanelModel.devices` must come from `UiPlan.masterTrack.devices` (no master-device hardcoded branch).
+- [x] Keep existing device components (`SynthDevice`, `PannerDevice`, `LimiterDevice`).
+- [x] Choose component by `moduleKind` from `UiDevicePlan`.
+- [x] Preserve existing visible behavior and CSS selectors used by e2e tests.
+- [x] Add/adjust tests for selected-track device list rendering.
+- [x] Mark completed.
 
 ### Task 5: Refactor `TrackZone` to model-driven rendering
 - [ ] Replace fat prop list with `model + actions` style props.
