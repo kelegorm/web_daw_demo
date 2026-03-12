@@ -40,12 +40,12 @@ Decimal phases appear between their surrounding integers in numeric order.
 4. `getTrackFacade(trackId)` returns the correct facade for the given ID — no more APP_* constant lookups exist anywhere in the codebase
 5. All unit tests that touch the audio graph pass; no existing Vitest tests are broken by this phase
 
-**Plans:** TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 01-01: Engine singleton + preLimiterBus GainNode + StrictMode guard
-- [ ] 01-02: createTrackSubgraph / removeTrackSubgraph / getTrackFacade API + TrackFacade type
-- [ ] 01-03: Delete APP_* constants, update all callsites to use getTrackFacade
+- [ ] 01-01-PLAN.md — Engine singleton + preLimiterBus + master chain + facade type definitions
+- [ ] 01-02-PLAN.md — createTrackSubgraph / removeTrackSubgraph / getTrackFacade + TrackFacade class
+- [ ] 01-03-PLAN.md — Delete APP_* constants, migrate App.tsx to singleton, delete useAudioEngine.ts
 
 ---
 
@@ -145,11 +145,11 @@ Plans:
 
 ## Progress
 
-**Execution Order:** 1 → 2 → 3 → 4 → 5
+**Execution Order:** 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Engine Multi-Track Foundation | 0/3 | Not started | - |
+| 1. Engine Multi-Track Foundation | 0/3 | Planned | - |
 | 2. Reducer + Context | 0/3 | Not started | - |
 | 3. App.tsx Teardown | 0/2 | Not started | - |
 | 4. Component Migration + Track CRUD | 0/4 | Not started | - |
