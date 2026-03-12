@@ -92,17 +92,17 @@ Scope constraints:
 - [x] Mark completed.
 
 ### Task 2: Add `UiPlan` model and default UI plan
-- [ ] Create folder `src/ui-plan/` (separate from `src/engine/`).
-- [ ] Confirm shared `moduleKind` union exists in `src/engine/types.ts`; add/align it before using `UiDevicePlan.moduleKind`.
-- [ ] Create `src/ui-plan/uiPlan.ts`.
-- [ ] Create `src/ui-plan/defaultUiPlan.ts` with `DEFAULT_UI_PLAN` that reflects current app layout.
-- [ ] Define id namespace contract in `UiPlan`: stable UI ids (`trackId`, `masterTrack.masterTrackId`, `uiDeviceId`) are separate from audio ids (`moduleId`, `trackStripId`).
-- [ ] `DEFAULT_UI_PLAN_*_ID` constants in `src/ui-plan/defaultUiPlan.ts` should include "default-ui-plan only" comments.
-- [ ] Model master devices explicitly in `UiPlan.masterTrack.devices` (same `UiDevicePlan[]` contract as regular tracks).
-- [ ] Add `displayName` for tracks/devices in the default plan; UI labels must not depend on `trackId`/`moduleId` string formatting.
-- [ ] Define `initialTrackId` policy in `UiPlan`: use explicit `initialTrackId` when present, otherwise fallback to first regular track id.
-- [ ] Add unit tests for `DEFAULT_UI_PLAN` shape, UI-id uniqueness, and referential consistency (`moduleId`/`trackStripId` links), including `masterTrack.devices`.
-- [ ] Mark completed.
+- [x] Create folder `src/ui-plan/` (separate from `src/engine/`).
+- [x] Confirm shared `moduleKind` union exists in `src/engine/types.ts`; add/align it before using `UiDevicePlan.moduleKind`.
+- [x] Create `src/ui-plan/uiPlan.ts`.
+- [x] Create `src/ui-plan/defaultUiPlan.ts` with `DEFAULT_UI_PLAN` that reflects current app layout.
+- [x] Define id namespace contract in `UiPlan`: stable UI ids (`trackId`, `masterTrack.masterTrackId`, `uiDeviceId`) are separate from audio ids (`moduleId`, `trackStripId`).
+- [x] `DEFAULT_UI_PLAN_*_ID` constants in `src/ui-plan/defaultUiPlan.ts` should include "default-ui-plan only" comments.
+- [x] Model master devices explicitly in `UiPlan.masterTrack.devices` (same `UiDevicePlan[]` contract as regular tracks).
+- [x] Add `displayName` for tracks/devices in the default plan; UI labels must not depend on `trackId`/`moduleId` string formatting.
+- [x] Define `initialTrackId` policy in `UiPlan`: use explicit `initialTrackId` when present, otherwise fallback to first regular track id.
+- [x] Add unit tests for `DEFAULT_UI_PLAN` shape, UI-id uniqueness, and referential consistency (`moduleId`/`trackStripId` links), including `masterTrack.devices`.
+- [x] Mark completed.
 
 ### Task 3: Add UI runtime constructor from plan
 - [ ] Create `src/ui-plan/buildUiRuntime.ts`.

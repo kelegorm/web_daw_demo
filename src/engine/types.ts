@@ -5,6 +5,17 @@ export interface AudioModule {
   dispose(): void;
 }
 
+export const MODULE_KINDS = [
+  'SYNTH',
+  'PANNER',
+  'TRACK_STRIP',
+  'LIMITER',
+  'MASTER_STRIP',
+  'DESTINATION',
+] as const
+
+export type ModuleKind = (typeof MODULE_KINDS)[number]
+
 export interface MeterFrame {
   leftRms: number;
   rightRms: number;
