@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import VUMeter from './VUMeter'
 import TimelineRuler from './TimelineRuler'
-import { clipDurationSeconds, getPixelsPerSecond } from '../utils/timelineScale'
+import { beatDurationSeconds, getPixelsPerSecond } from '../utils/timelineScale'
 import { useTrackSelectionContext } from '../hooks/useTrackSelection'
 import {
   AUDIO_DB_MAX,
@@ -9,11 +9,14 @@ import {
   MASTER_VOLUME_DEFAULT_DB,
   TRACK_VOLUME_DEFAULT_DB,
 } from '../audio/parameterDefaults'
+import {
+  DEFAULT_MIDI_CLIP_ID,
+  DEFAULT_MIDI_CLIP_STORE,
+  getMidiClipLengthBeats,
+  getMidiClipOrThrow,
+  type MidiClipStore,
+} from '../project-runtime/midiClipStore'
 import type { MeterSource } from '../engine/types'
-
-const SEQUENCE_NOTES = [60, 62, 64, 65, 67, 69, 71, 72]
-const MIN_PITCH = 60
-const MAX_PITCH = 72
 
 const FADER_MIN_DB = AUDIO_DB_MIN
 const FADER_MAX_DB = AUDIO_DB_MAX
@@ -52,6 +55,8 @@ interface Props {
   masterVolumeDb?: number
   onMasterVolumeChange?: (db: number) => void
   getPositionSeconds?: () => number
+  clipStore?: MidiClipStore
+  clipId?: string
 }
 
 export default function TrackZone({
@@ -69,13 +74,32 @@ export default function TrackZone({
   masterVolumeDb = 0,
   onMasterVolumeChange,
   getPositionSeconds,
+  clipStore = DEFAULT_MIDI_CLIP_STORE,
+  clipId = DEFAULT_MIDI_CLIP_ID,
 }: Props) {
   const [playheadPos, setPlayheadPos] = useState(0)
   const { selectedTrack, selectTrack } = useTrackSelectionContext()
 
   const rafRef = useRef<number | null>(null)
 
-  const clipWidth = clipDurationSeconds(bpm, SEQUENCE_NOTES.length) * getPixelsPerSecond(bpm)
+  const clip = getMidiClipOrThrow(clipStore, clipId)
+  if (clip.steps.length < clip.lengthSteps) {
+    throw new Error(
+      `MIDI clip "${clip.clipId}" has ${clip.steps.length} steps, expected at least ${clip.lengthSteps}`,
+    )
+  }
+
+  const clipSteps = clip.steps.slice(0, clip.lengthSteps)
+  const noteValues = clipSteps.filter((step) => step.enabled).map((step) => step.note)
+  const minPitch = noteValues.length > 0 ? Math.min(...noteValues) : 60
+  const maxPitch = noteValues.length > 0 ? Math.max(...noteValues) : 72
+  const pitchRange = Math.max(maxPitch - minPitch, 1)
+
+  const pps = getPixelsPerSecond(bpm)
+  const clipStartSeconds = clip.startBeat * beatDurationSeconds(bpm)
+  const clipLengthSeconds = getMidiClipLengthBeats(clip) * beatDurationSeconds(bpm)
+  const clipStartPx = clipStartSeconds * pps
+  const clipWidth = clipLengthSeconds * pps
 
   useEffect(() => {
     const getPlayheadPx = () => {
@@ -84,13 +108,12 @@ export default function TrackZone({
       }
 
       const seconds = getPositionSeconds ? getPositionSeconds() : 0
-      const pps = getPixelsPerSecond(bpm)
       let px = seconds * pps
 
-      if (loop) {
-        const loopEndPx = clipWidth
-        if (loopEndPx > 0) {
-          px = px % loopEndPx
+      if (loop && clipWidth > 0 && px >= clipStartPx) {
+        const loopWindowOffsetPx = px - clipStartPx
+        if (loopWindowOffsetPx >= 0) {
+          px = clipStartPx + (loopWindowOffsetPx % clipWidth)
         }
       }
 
@@ -110,9 +133,7 @@ export default function TrackZone({
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
     }
-  }, [playbackState, bpm, loop, clipWidth])
-
-  const pitchRange = MAX_PITCH - MIN_PITCH
+  }, [playbackState, loop, clipStartPx, clipWidth, getPositionSeconds, pps])
 
   return (
     <div
@@ -128,7 +149,12 @@ export default function TrackZone({
         boxSizing: 'border-box',
       }}
     >
-      <TimelineRuler bpm={bpm} loop={loop} loopRegionWidth={clipWidth} />
+      <TimelineRuler
+        bpm={bpm}
+        loop={loop}
+        loopRegionLeft={clipStartPx}
+        loopRegionWidth={clipWidth}
+      />
       <div
         className="track-list"
         style={{
@@ -346,7 +372,7 @@ export default function TrackZone({
             className="timeline-loop-region-track"
             style={{
               position: 'absolute',
-              left: 0,
+              left: clipStartPx,
               top: 0,
               bottom: 0,
               width: clipWidth,
@@ -363,7 +389,7 @@ export default function TrackZone({
           style={{
             position: 'absolute',
             top: 8,
-            left: 0,
+            left: clipStartPx,
             width: clipWidth,
             bottom: 8,
             background: '#1e3a5f',
@@ -373,17 +399,19 @@ export default function TrackZone({
             boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 6px rgba(0, 0, 0, 0.24)',
           }}
         >
-          {SEQUENCE_NOTES.map((note, i) => {
-            const x = (i / SEQUENCE_NOTES.length) * 100
-            const y = 100 - ((note - MIN_PITCH) / pitchRange) * 100
+          {clipSteps.map((step, i) => {
+            if (!step.enabled) return null
+            const x = (i / clip.lengthSteps) * 100
+            const y = 100 - ((step.note - minPitch) / pitchRange) * 100
             return (
               <div
-                key={i}
+                className="midi-clip-note"
+                key={`${i}-${step.note}`}
                 style={{
                   position: 'absolute',
                   left: `${x}%`,
                   top: `${Math.min(y, 90)}%`,
-                  width: `${100 / SEQUENCE_NOTES.length - 1}%`,
+                  width: `${100 / clip.lengthSteps - 1}%`,
                   height: 5,
                   background: 'var(--color-accent)',
                   borderRadius: 1,

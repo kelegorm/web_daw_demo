@@ -4,12 +4,18 @@ import { getPixelsPerSecond, barDurationSeconds, beatDurationSeconds } from '../
 interface Props {
   bpm: number
   loop?: boolean
+  loopRegionLeft?: number
   loopRegionWidth?: number
 }
 
 const RULER_HEIGHT = 24
 
-export default function TimelineRuler({ bpm, loop = false, loopRegionWidth = 0 }: Props) {
+export default function TimelineRuler({
+  bpm,
+  loop = false,
+  loopRegionLeft = 0,
+  loopRegionWidth = 0,
+}: Props) {
   const timelineRef = useRef<HTMLDivElement>(null)
   const [timelineWidth, setTimelineWidth] = useState(600)
 
@@ -30,6 +36,8 @@ export default function TimelineRuler({ bpm, loop = false, loopRegionWidth = 0 }
   const beatWidth = beatDurationSeconds(bpm) * pps
 
   const numBars = Math.ceil(timelineWidth / barWidth) + 1
+  const availableLoopRegionWidth = Math.max(0, timelineWidth - loopRegionLeft)
+  const loopRegionVisibleWidth = Math.min(loopRegionWidth, availableLoopRegionWidth)
 
   const bars: React.ReactElement[] = []
   for (let b = 0; b < numBars; b++) {
@@ -132,15 +140,15 @@ export default function TimelineRuler({ bpm, loop = false, loopRegionWidth = 0 }
           boxShadow: 'inset 1px 0 0 rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255,255,255,0.02)',
         }}
       >
-        {loop && loopRegionWidth > 0 && (
+        {loop && loopRegionVisibleWidth > 0 && (
           <div
             className="timeline-loop-region"
             style={{
               position: 'absolute',
-              left: 0,
+              left: loopRegionLeft,
               top: 0,
               bottom: 0,
-              width: Math.min(loopRegionWidth, timelineWidth),
+              width: loopRegionVisibleWidth,
               pointerEvents: 'none',
               background: 'rgba(65, 180, 120, 0.12)',
               borderTop: '2px solid var(--color-success, #2a7)',

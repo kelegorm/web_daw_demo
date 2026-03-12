@@ -67,12 +67,12 @@ Scope constraints:
 - [x] Mark completed.
 
 ### Task 3: Make clip visuals clip-driven
-- [ ] Remove duplicated inline clip-note constants from `TrackZone` rendering path.
-- [ ] Derive clip left position from `startBeat` (including fractional offsets).
-- [ ] Derive clip width from `lengthSteps` via derived `lengthBeats`.
-- [ ] Derive loop-region position/width and playhead wrap window from the same clip start+length data.
-- [ ] Keep current visible behavior unchanged for default clip data.
-- [ ] Mark completed.
+- [x] Remove duplicated inline clip-note constants from `TrackZone` rendering path.
+- [x] Derive clip left position from `startBeat` (including fractional offsets).
+- [x] Derive clip width from `lengthSteps` via derived `lengthBeats`.
+- [x] Derive loop-region position/width and playhead wrap window from the same clip start+length data.
+- [x] Keep current visible behavior unchanged for default clip data.
+- [x] Mark completed.
 
 ### Task 4: Regression coverage and test migration
 - [ ] Add/adjust unit tests for clip store lookup and fail-fast behavior.
