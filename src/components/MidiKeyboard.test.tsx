@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import * as React from 'react'
 import { createRoot, Root } from 'react-dom/client'
 import { flushSync } from 'react-dom'
