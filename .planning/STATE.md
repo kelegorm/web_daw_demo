@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-12)
 
 **Core value:** Audio and visual state stay synchronized through a clean reducer boundary — the engine is never directly touched by UI components
-**Current focus:** Phase 2: State Management (Reducer + Context)
+**Current focus:** Phase 3: App.tsx Teardown
 
 ## Current Position
 
-Phase: 2 of 5 (Reducer + Context) — Phase complete
-Plan: 3 of 3 in phase 2 (plan 6/15 overall)
-Status: Phase 2 complete — all three plans done; ready for Phase 3
-Last activity: 2026-03-13 — Completed 02-03-PLAN.md (DawProvider React bridge: useSyncExternalStore, split contexts, consumer hooks)
+Phase: 2 of 5 (Reducer + Context) — COMPLETE
+Plan: 3 of 3 in phase 2 — Phase 2 complete
+Status: Phase complete — ready for Phase 3
+Last activity: 2026-03-13 — Phase 2 verified (5/5 must-haves passed)
 
 Progress: [██████░░░░] 40% (6/15 plans across all phases)
 

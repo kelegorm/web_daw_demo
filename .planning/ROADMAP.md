@@ -18,7 +18,7 @@ The existing E2E test suite acts as the regression gate at every phase boundary.
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Engine Multi-Track Foundation** - Establish engine singleton, preLimiterBus, and track subgraph API
-- [ ] **Phase 2: Reducer + Context** - Pure state layer with normalized track map and split context
+- [x] **Phase 2: Reducer + Context** - Pure state layer with normalized track map and split context
 - [ ] **Phase 3: App.tsx Teardown** - Gut App.tsx to DawProvider + Layout, delete deprecated hooks
 - [ ] **Phase 4: Component Migration + Track CRUD** - Migrate all components to context, wire Add/Remove track
 - [ ] **Phase 5: Transport Decoupling + Integration Close-Out** - Isolate transport, sequencer cleanup, full regression gate
@@ -67,9 +67,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Domain types + discriminated union actions + pure reducers + ID service + default state
-- [ ] 02-02-PLAN.md — DawStore class (BLoC pattern) with engine coordination and snapshot caching
-- [ ] 02-03-PLAN.md — DawProvider + split contexts + consumer hooks (useProjectState, useUiState, useDawDispatch)
+- [x] 02-01-PLAN.md — Domain types + discriminated union actions + pure reducers + ID service + default state
+- [x] 02-02-PLAN.md — DawStore class (BLoC pattern) with engine coordination and snapshot caching
+- [x] 02-03-PLAN.md — DawProvider + split contexts + consumer hooks (useProjectState, useUiState, useDawDispatch)
 
 ---
 
@@ -150,11 +150,11 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Engine Multi-Track Foundation | 3/3 | ✓ Complete | 2026-03-12 |
-| 2. Reducer + Context | 0/3 | Not started | - |
+| 2. Reducer + Context | 3/3 | ✓ Complete | 2026-03-13 |
 | 3. App.tsx Teardown | 0/2 | Not started | - |
 | 4. Component Migration + Track CRUD | 0/4 | Not started | - |
 | 5. Transport Decoupling + Integration Close-Out | 0/2 | Not started | - |
 
 ---
 *Roadmap created: 2026-03-12 for milestone v1.0 State Architecture & Dynamic Tracks*
-*Last updated: 2026-03-13 — Phase 2 plans finalized*
+*Last updated: 2026-03-13 — Phase 2 complete*

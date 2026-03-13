@@ -19,14 +19,14 @@ Requirements for milestone v1.0: State Architecture & Dynamic Tracks.
 
 ### State Management
 
-- [ ] **STATE-01**: App state managed by `useReducer` with discriminated union actions
-- [ ] **STATE-02**: State shape uses normalized track map (`byId` + `ids` array), not flat array
-- [ ] **STATE-03**: Split Context pattern — separate StateContext and DispatchContext
-- [ ] **STATE-04**: `DawProvider` wraps app and bridges reducer ↔ engine
-- [ ] **STATE-05**: Track selection, rec-arm, and track list live in reducer state
-- [ ] **STATE-06**: Transport playback values (isPlaying, currentStep, bpm) stay outside Context (read from hooks, not context)
-- [ ] **STATE-07**: Audio values (volume, mute, meter levels) never stored in reducer — read from engine facades
-- [ ] **STATE-08**: No new runtime libraries added — only React built-ins (useReducer, createContext)
+- [x] **STATE-01**: App state managed by `useReducer` with discriminated union actions
+- [x] **STATE-02**: State shape uses normalized track map (`byId` + `ids` array), not flat array
+- [x] **STATE-03**: Split Context pattern — separate StateContext and DispatchContext
+- [x] **STATE-04**: `DawProvider` wraps app and bridges reducer ↔ engine
+- [x] **STATE-05**: Track selection, rec-arm, and track list live in reducer state
+- [x] **STATE-06**: Transport playback values (isPlaying, currentStep, bpm) stay outside Context (read from hooks, not context)
+- [x] **STATE-07**: Audio values (volume, mute, meter levels) never stored in reducer — read from engine facades
+- [x] **STATE-08**: No new runtime libraries added — only React built-ins (useReducer, createContext)
 
 ### Track CRUD
 
@@ -108,14 +108,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ENG-05 | Phase 1 | Complete |
 | ENG-06 | Phase 1 | Complete |
 | ENG-07 | Phase 1 | Complete |
-| STATE-01 | Phase 2 | Pending |
-| STATE-02 | Phase 2 | Pending |
-| STATE-03 | Phase 2 | Pending |
-| STATE-04 | Phase 2 | Pending |
-| STATE-05 | Phase 2 | Pending |
-| STATE-06 | Phase 2 | Pending |
-| STATE-07 | Phase 2 | Pending |
-| STATE-08 | Phase 2 | Pending |
+| STATE-01 | Phase 2 | Complete |
+| STATE-02 | Phase 2 | Complete |
+| STATE-03 | Phase 2 | Complete |
+| STATE-04 | Phase 2 | Complete |
+| STATE-05 | Phase 2 | Complete |
+| STATE-06 | Phase 2 | Complete |
+| STATE-07 | Phase 2 | Complete |
+| STATE-08 | Phase 2 | Complete |
 | CRUD-01 | Phase 4 | Pending |
 | CRUD-02 | Phase 4 | Pending |
 | CRUD-03 | Phase 4 | Pending |
@@ -144,4 +144,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-12*
-*Last updated: 2026-03-12 — Phase 1 requirements complete*
+*Last updated: 2026-03-13 — Phase 2 requirements complete*
