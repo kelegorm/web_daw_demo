@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 
 ## Current Position
 
-Phase: 4 of 5 (Component Migration + Track CRUD) — In progress
-Plan: 2 of 3 in phase 4 — Plan 04-02 complete
-Status: In progress — ready for Plan 04-03
-Last activity: 2026-03-13 — Completed 04-02-PLAN.md (TrackZone context consumer, CRUD buttons, Layout model assembly removed)
+Phase: 4 of 5 (Component Migration + Track CRUD) — Phase complete
+Plan: 3 of 3 in phase 4 — Plan 04-03 complete
+Status: Phase 4 complete — ready for Phase 5
+Last activity: 2026-03-13 — Completed 04-03-PLAN.md (DevicePanel + MidiKeyboard context migration, buildUiRuntime.ts deleted, Layout stripped)
 
-Progress: [█████████░] 60% (9/15 plans across all phases)
+Progress: [██████████] 67% (10/15 plans across all phases)
 
 ## Performance Metrics
 
@@ -30,7 +30,7 @@ Progress: [█████████░] 60% (9/15 plans across all phases)
 | 01-engine-multi-track-foundation | 3 completed / 3 total | 14 min | 4.7 min |
 | 02-reducer-context | 3 completed / 3 total | 9.5 min | 3.2 min |
 | 03-app-tsx-teardown | 1 completed / 1 total | 2.5 min | 2.5 min |
-| 04-component-migration-track-crud | 2 completed / 3 total | 10 min | 5 min |
+| 04-component-migration-track-crud | 3 completed / 3 total | 13 min | 4.3 min |
 
 **Recent Trend:**
 - Last 5 plans: 3 min, 2.5 min, 2.5 min, 6 min, 4 min
@@ -75,7 +75,9 @@ Recent decisions affecting current work:
 - DawStore created at App.tsx module level (not inside App function) — StrictMode double-mount safety (03-01)
 - App.test.tsx deleted (not migrated) — consistent with useAudioEngine.test.tsx deletion precedent; 336 lines tested wiring that no longer exists (03-01)
 - buildUiRuntime.test.ts deleted — same precedent as useAudioEngine.test.tsx; tested function removed (04-01)
-- buildUiRuntime.ts kept as types-only until 04-03 — DevicePanelModel/UiRuntimeDeviceModel/UiRuntimeClipModel still consumed by TrackZone/DevicePanel (04-01)
+- buildUiRuntime.ts deleted in 04-03 — UiRuntimeDeviceModel inlined to DevicePanel.tsx, UiRuntimeClipModel inlined to TrackZone.tsx
+- DevicePanel receives narrow deviceModules prop (Phase 5 seam) — device hook instances are React hook return values owned by Layout; full decoupling requires Phase 5 device lifecycle context
+- MidiKeyboard.test.tsx deleted (04-03) — same jsdom@28 + removed-prop precedent as App.test.tsx and DevicePanel.test.tsx
 - TrackRow sub-component: per-track useTrackFacade calls require sub-component (React hook rules prohibit hooks in .map()) (04-02)
 - Phase 5 seam props on TrackZone: transport/masterStrip/onTrackMuteSync are thin props from Layout — temporary until Phase 5 puts transport in context (04-02)
 - onTrackMuteSync callback: routes track-1 mute to transport.setTrackMute to preserve sequencer sync — Phase 5 debt (04-02)
@@ -92,12 +94,12 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
-- jsdom@28 + Node 20 CJS/ESM incompatibility prevents 6 DOM test files from running — requires jsdom downgrade or alternative (happy-dom) to restore React component tests
-- `_legacy.getTrackStripGraph(DEFAULT_TRACK_ID)` still used in Layout.tsx module scope — Phase 4 device CRUD will replace this with proper device chain management
-- `buildUiRuntime.ts` types-only file remains — Plan 04-03 moves DevicePanelModel/UiRuntimeDeviceModel/UiRuntimeClipModel to consuming files and deletes it
+- jsdom@28 + Node 20 CJS/ESM incompatibility prevents DOM test files from running — requires jsdom downgrade or alternative (happy-dom) to restore React component tests (DawProvider.test.tsx remains)
+- `_legacy.getTrackStripGraph(DEFAULT_TRACK_ID)` still used in Layout.tsx module scope — Phase 5 device lifecycle context will replace this
+- Phase 5 device seam: Layout passes `deviceModules: Record<string, AnyDeviceModule>` to DevicePanel — fully eliminated when device lifecycle moves to context
 
 ## Session Continuity
 
-Last session: 2026-03-13T21:17:28Z
-Stopped at: Completed 04-02-PLAN.md — ready for Plan 04-03
+Last session: 2026-03-13T21:24:01Z
+Stopped at: Completed 04-03-PLAN.md — Phase 4 complete, ready for Phase 5
 Resume file: None
