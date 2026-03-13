@@ -6,7 +6,7 @@ import type { MasterFacade, MeterSource, TrackFacade } from './types';
 
 export const DEFAULT_TRACK_ID = 'track-1';
 
-interface EngineApi {
+export interface EngineApi {
   getTrackFacade(trackId: string): TrackFacade;
   getMasterFacade(): MasterFacade;
   createTrackSubgraph(trackId: string): TrackFacade;
