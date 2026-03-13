@@ -9,29 +9,29 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 
 ## Current Position
 
-Phase: 2 of 5 (Reducer + Context) — In progress
-Plan: 2 of 3 in phase 2 (plan 5/15 overall)
-Status: In progress — 02-02 complete, ready for 02-03 (DawProvider/context)
-Last activity: 2026-03-13 — Completed 02-02-PLAN.md (DawStore class: BLoC controller, snapshot caching, engine-first coordination)
+Phase: 2 of 5 (Reducer + Context) — Phase complete
+Plan: 3 of 3 in phase 2 (plan 6/15 overall)
+Status: Phase 2 complete — all three plans done; ready for Phase 3
+Last activity: 2026-03-13 — Completed 02-03-PLAN.md (DawProvider React bridge: useSyncExternalStore, split contexts, consumer hooks)
 
-Progress: [█████░░░░░] 33% (5/15 plans across all phases)
+Progress: [██████░░░░] 40% (6/15 plans across all phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 4.2 min
-- Total execution time: 21 min
+- Total plans completed: 6
+- Average duration: 3.9 min
+- Total execution time: 23.5 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-engine-multi-track-foundation | 3 completed / 3 total | 14 min | 4.7 min |
-| 02-reducer-context | 2 completed / 3 total | 7 min | 3.5 min |
+| 02-reducer-context | 3 completed / 3 total | 9.5 min | 3.2 min |
 
 **Recent Trend:**
-- Last 5 plans: 5 min, 5 min, 3 min, 4 min
+- Last 5 plans: 5 min, 3 min, 4 min, 3 min, 2.5 min
 - Trend: stable/improving
 
 *Updated after each plan completion*
@@ -64,6 +64,11 @@ Recent decisions affecting current work:
 - EngineApi exported from engineSingleton.ts — DawStore imports it as a type; adding export keyword is non-breaking
 - DawStore snapshot caching uses per-slice Object.is checks — selectTrack does not replace #projectSnapshot (only ui slice changes)
 - DawStore arrow-method class fields for subscribe/getProjectSnapshot/getUiSnapshot — stable references, safe to pass directly to useSyncExternalStore without useCallback
+- DawDispatch interface defined in DawProvider.tsx (co-located with the contexts it wraps)
+- ProjectContext/UiContext/DispatchContext exported from DawProvider.tsx for sibling hook files; hooks are the public API
+- Null initial context values + null-check in hooks — fail-fast over silent bugs from missing provider
+- useMemo([store]) for dispatch object — stable reference for component lifetime
+- React 19 `<Context value=...>` syntax used (`.Provider` deprecated in React 19)
 
 ### Pending Todos
 
@@ -74,11 +79,11 @@ Recent decisions affecting current work:
 ### Blockers/Concerns
 
 - `buildUiRuntime` replacement scope not locked down — decide during Phase 2 planning (affects DawState shape and DevicePanel props)
-- jsdom@28 + Node 20 CJS/ESM incompatibility prevents 5 DOM test files from running — requires jsdom downgrade or alternative (happy-dom) to restore React component tests (was 6 files; reduced to 5 after useAudioEngine.test.tsx deletion)
+- jsdom@28 + Node 20 CJS/ESM incompatibility prevents 6 DOM test files from running — requires jsdom downgrade or alternative (happy-dom) to restore React component tests (was 5 files; DawProvider.test.tsx adds a 6th)
 - `_legacy.getTrackStripGraph(DEFAULT_TRACK_ID)` is still used in App.tsx — Phase 3 device CRUD will replace this with proper device chain management
 
 ## Session Continuity
 
-Last session: 2026-03-13T14:58:01Z
-Stopped at: Completed 02-02-PLAN.md — DawStore BLoC class (engine-first coordination, snapshot caching, 38 tests)
+Last session: 2026-03-13T15:03:56Z
+Stopped at: Completed 02-03-PLAN.md — DawProvider React bridge (useSyncExternalStore, split contexts, consumer hooks, 5 files)
 Resume file: None
