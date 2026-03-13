@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import Toolbar from './Toolbar'
 import TrackZone from './TrackZone'
-import type { TrackZoneActions, TrackZoneModel } from './TrackZone'
 import DevicePanel from './DevicePanel'
 import type { DevicePanelModel } from '../ui-plan/buildUiRuntime'
 import MidiKeyboard from './MidiKeyboard'
@@ -14,12 +13,9 @@ import { useLimiter } from '../hooks/useLimiter'
 import { useTransportController } from '../hooks/useTransportController'
 import { getAudioEngine, DEFAULT_TRACK_ID } from '../engine/engineSingleton'
 import {
-  DEFAULT_MIDI_CLIP_ID,
   DEFAULT_MIDI_CLIP_SOURCE,
-  DEFAULT_MIDI_CLIP_STORE,
 } from '../project-runtime/midiClipStore'
 import { useUiState } from '../context/useUiState'
-import { useDawDispatch } from '../context/useDawDispatch'
 import '../App.css'
 
 declare global {
@@ -68,30 +64,6 @@ export default function Layout() {
 
   // COMP-07: selectedTrackId and recArmByTrackId come from context, not local useState.
   const { selectedTrackId, recArmByTrackId } = useUiState()
-  const dispatch = useDawDispatch()
-
-  const trackZoneModel: TrackZoneModel = {
-    playbackState: transport.playbackState,
-    bpm: transport.bpm,
-    loop: transport.loop,
-    selectedTrackId,
-    getPositionSeconds: transport.getPositionSeconds,
-    tracks: [{
-      trackId: DEFAULT_TRACK_ID,
-      displayName: 'synth1',
-      clips: [{ clipId: DEFAULT_MIDI_CLIP_ID, clip: DEFAULT_MIDI_CLIP_STORE[DEFAULT_MIDI_CLIP_ID] }],
-      meterSource: trackStrip.meterSource,
-      volumeDb: trackStrip.trackVolume,
-      isMuted: trackStrip.isTrackMuted,
-      isRecEnabled: recArmByTrackId[DEFAULT_TRACK_ID] ?? false,
-    }],
-    masterTrack: {
-      trackId: 'master',
-      displayName: 'Master',
-      meterSource: masterStrip.meterSource,
-      volumeDb: masterStrip.masterVolume,
-    },
-  }
 
   const devicePanelModel: DevicePanelModel = {
     selectedTrackId,
@@ -102,22 +74,6 @@ export default function Layout() {
           { uiDeviceId: 'dev-synth', displayName: 'Synth', moduleId: 'dev-synth', moduleKind: 'SYNTH' as const, module: toneSynth },
           { uiDeviceId: 'dev-panner', displayName: 'Panner', moduleId: 'dev-panner', moduleKind: 'PANNER' as const, module: panner },
         ],
-  }
-
-  const trackZoneActions: TrackZoneActions = {
-    selectTrack: (trackId) => dispatch.selectTrack(trackId),
-    setTrackMute: (_trackId, muted) => {
-      // Single-track transitional: all mute calls go to transport.setTrackMute.
-      // Phase 04-02 will route per-track via useTrackFacade.
-      transport.setTrackMute(muted)
-    },
-    setTrackRecEnabled: (trackId, recEnabled) => dispatch.setRecArm(trackId, recEnabled),
-    setTrackVolume: (_trackId, db) => {
-      // Single-track transitional: all volume calls go to trackStrip.setTrackVolume.
-      // Phase 04-02 will route per-track via useTrackFacade.
-      trackStrip.setTrackVolume(db)
-    },
-    setMasterVolume: (db) => masterStrip.setMasterVolume(db),
   }
 
   useEffect(() => {
@@ -149,8 +105,22 @@ export default function Layout() {
         onLoopToggle={() => transport.setLoop(!transport.loop)}
       />
       <TrackZone
-        model={trackZoneModel}
-        actions={trackZoneActions}
+        transport={{
+          playbackState: transport.playbackState,
+          bpm: transport.bpm,
+          loop: transport.loop,
+          getPositionSeconds: transport.getPositionSeconds,
+        }}
+        masterStrip={{
+          volumeDb: masterStrip.masterVolume,
+          meterSource: masterStrip.meterSource,
+          setMasterVolume: masterStrip.setMasterVolume,
+        }}
+        onTrackMuteSync={(trackId, muted) => {
+          if (trackId === DEFAULT_TRACK_ID) {
+            transport.setTrackMute(muted)
+          }
+        }}
       />
       <DevicePanel model={devicePanelModel} />
       <MidiKeyboard synth={toneSynth} enabled={recArmByTrackId[selectedTrackId] ?? false} />
