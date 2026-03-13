@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import Toolbar from './Toolbar'
 import TrackZone from './TrackZone'
 import DevicePanel from './DevicePanel'
-import type { DevicePanelModel } from '../ui-plan/buildUiRuntime'
 import MidiKeyboard from './MidiKeyboard'
 import { useToneSynth, createToneSynth } from '../hooks/useToneSynth'
 import { usePanner, createPanner } from '../hooks/usePanner'
@@ -15,7 +14,6 @@ import { getAudioEngine, DEFAULT_TRACK_ID } from '../engine/engineSingleton'
 import {
   DEFAULT_MIDI_CLIP_SOURCE,
 } from '../project-runtime/midiClipStore'
-import { useUiState } from '../context/useUiState'
 import '../App.css'
 
 declare global {
@@ -61,20 +59,6 @@ export default function Layout() {
   const masterStrip = useMasterStrip(_masterStripHook)
   const limiter = useLimiter(_limiterGraph)
   const transport = useTransportController(toneSynth, trackStrip, DEFAULT_MIDI_CLIP_SOURCE)
-
-  // COMP-07: selectedTrackId and recArmByTrackId come from context, not local useState.
-  const { selectedTrackId, recArmByTrackId } = useUiState()
-
-  const devicePanelModel: DevicePanelModel = {
-    selectedTrackId,
-    selectedTrackDisplayName: selectedTrackId === 'master' ? 'Master' : 'synth1',
-    devices: selectedTrackId === 'master'
-      ? [{ uiDeviceId: 'dev-limiter', displayName: 'Limiter', moduleId: 'dev-limiter', moduleKind: 'LIMITER' as const, module: limiter }]
-      : [
-          { uiDeviceId: 'dev-synth', displayName: 'Synth', moduleId: 'dev-synth', moduleKind: 'SYNTH' as const, module: toneSynth },
-          { uiDeviceId: 'dev-panner', displayName: 'Panner', moduleId: 'dev-panner', moduleKind: 'PANNER' as const, module: panner },
-        ],
-  }
 
   useEffect(() => {
     window.__panicCount = 0
@@ -122,8 +106,14 @@ export default function Layout() {
           }
         }}
       />
-      <DevicePanel model={devicePanelModel} />
-      <MidiKeyboard synth={toneSynth} enabled={recArmByTrackId[selectedTrackId] ?? false} />
+      <DevicePanel
+        deviceModules={{
+          'dev-synth': toneSynth,
+          'dev-panner': panner,
+          'dev-limiter': limiter,
+        }}
+      />
+      <MidiKeyboard synth={toneSynth} />
     </div>
   )
 }

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { ToneSynthHook } from '../hooks/useToneSynth'
+import { useUiState } from '../context/useUiState'
 
 interface Props {
   synth: ToneSynthHook
-  enabled?: boolean
 }
 
 const NOTES_PER_OCTAVE = 12
@@ -45,7 +45,9 @@ const WHITE_KEY_COUNT = KEYS.filter((k) => !k.isBlack).length
 const WHITE_KEY_WIDTH = 40 // px
 const KEYBOARD_WIDTH = WHITE_KEY_COUNT * WHITE_KEY_WIDTH // 560px for 14 white keys
 
-export default function MidiKeyboard({ synth, enabled = true }: Props) {
+export default function MidiKeyboard({ synth }: Props) {
+  const ui = useUiState()
+  const enabled = ui.recArmByTrackId[ui.selectedTrackId] ?? false
   const [pressedKeys, setPressedKeys] = useState<Set<number>>(new Set())
   const [activeOutputNotes, setActiveOutputNotes] = useState<Set<number>>(new Set())
 
