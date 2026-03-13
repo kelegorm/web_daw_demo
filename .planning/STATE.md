@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 
 ## Current Position
 
-Phase: 3 of 5 (App.tsx Teardown) — COMPLETE
-Plan: 1 of 1 in phase 3 — Phase 3 complete
-Status: Phase complete — ready for Phase 4
-Last activity: 2026-03-13 — Phase 3 verified (4/5 must-haves passed, selection-in-reducer deferred to Phase 4 as COMP-07)
+Phase: 4 of 5 (Component Migration + Track CRUD) — In progress
+Plan: 1 of 3 in phase 4 — Plan 04-01 complete
+Status: In progress — ready for Plan 04-02
+Last activity: 2026-03-13 — Completed 04-01-PLAN.md (COMP-07 wired, buildUiRuntime blocker removed, useTrackFacade created)
 
-Progress: [███████░░░] 47% (7/15 plans across all phases)
+Progress: [████████░░] 53% (8/15 plans across all phases)
 
 ## Performance Metrics
 
@@ -30,10 +30,11 @@ Progress: [███████░░░] 47% (7/15 plans across all phases)
 | 01-engine-multi-track-foundation | 3 completed / 3 total | 14 min | 4.7 min |
 | 02-reducer-context | 3 completed / 3 total | 9.5 min | 3.2 min |
 | 03-app-tsx-teardown | 1 completed / 1 total | 2.5 min | 2.5 min |
+| 04-component-migration-track-crud | 1 completed / 3 total | 6 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 3 min, 4 min, 3 min, 2.5 min, 2.5 min
-- Trend: stable/improving
+- Last 5 plans: 4 min, 3 min, 2.5 min, 2.5 min, 6 min
+- Trend: stable
 
 *Updated after each plan completion*
 
@@ -73,22 +74,27 @@ Recent decisions affecting current work:
 - useTrackSelection inlined in Layout.tsx (useState + useCallback) — hook had no reuse consumers; inlining reduces file count (03-01)
 - DawStore created at App.tsx module level (not inside App function) — StrictMode double-mount safety (03-01)
 - App.test.tsx deleted (not migrated) — consistent with useAudioEngine.test.tsx deletion precedent; 336 lines tested wiring that no longer exists (03-01)
+- buildUiRuntime.test.ts deleted — same precedent as useAudioEngine.test.tsx; tested function removed (04-01)
+- buildUiRuntime.ts kept as types-only until 04-03 — DevicePanelModel/UiRuntimeDeviceModel/UiRuntimeClipModel still consumed by TrackZone/DevicePanel (04-01)
+- REMOVE_TRACK no longer returns same object reference — recArmByTrackId cleanup always produces new object (04-01)
+- @testing-library/react installed as devDep — unblocked pre-existing DawProvider.test.tsx build type error (04-01)
+- useTrackFacade: seeds React state from getGain()/isMuted() at mount, syncs on write — per-track engine facade hook pattern (04-01)
+- recArmByTrackId lifecycle: ADD_TRACK auto-arms, REMOVE_TRACK always cleans up entry, SET_REC_ARM sets (04-01)
 
 ### Pending Todos
 
 - ~~Plan 01-02 needs to expose `preLimiterBus` on EngineApi~~ — RESOLVED
 - ~~Plan 01-03 needs to wire the existing Tone.js synth into track-1 via _legacy.getTrackStripGraph(DEFAULT_TRACK_ID)~~ — RESOLVED: synthGraph/pannerGraph wired at module level in Layout.tsx (moved from App.tsx in 03-01)
-- `legacyEngineAdapter` and `buildUiRuntime` replacement scope needs to be locked down during Phase 4 planning
+- ~~`legacyEngineAdapter` and `buildUiRuntime` replacement scope needs to be locked down during Phase 4 planning~~ — RESOLVED in 04-01
 
 ### Blockers/Concerns
 
-- `buildUiRuntime` replacement scope not locked down — evaluate during Phase 4 planning (affects DawState shape and DevicePanel props)
-- jsdom@28 + Node 20 CJS/ESM incompatibility prevents 6 DOM test files from running — requires jsdom downgrade or alternative (happy-dom) to restore React component tests (was 5 files; DawProvider.test.tsx adds a 6th)
+- jsdom@28 + Node 20 CJS/ESM incompatibility prevents 6 DOM test files from running — requires jsdom downgrade or alternative (happy-dom) to restore React component tests
 - `_legacy.getTrackStripGraph(DEFAULT_TRACK_ID)` still used in Layout.tsx module scope — Phase 4 device CRUD will replace this with proper device chain management
-- `legacyEngineAdapter` still lives in Layout.tsx module scope — Phase 4 may relocate to engineSingleton or a dedicated adapter file
+- `buildUiRuntime.ts` types-only file remains — Plan 04-03 moves DevicePanelModel/UiRuntimeDeviceModel/UiRuntimeClipModel to consuming files and deletes it
 
 ## Session Continuity
 
-Last session: 2026-03-13T15:55:00Z
-Stopped at: Phase 3 complete — ready for Phase 4
+Last session: 2026-03-13T21:09:00Z
+Stopped at: Completed 04-01-PLAN.md — ready for Plan 04-02
 Resume file: None
