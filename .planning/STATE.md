@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 ## Current Position
 
 Phase: 4 of 5 (Component Migration + Track CRUD) — In progress
-Plan: 1 of 3 in phase 4 — Plan 04-01 complete
-Status: In progress — ready for Plan 04-02
-Last activity: 2026-03-13 — Completed 04-01-PLAN.md (COMP-07 wired, buildUiRuntime blocker removed, useTrackFacade created)
+Plan: 2 of 3 in phase 4 — Plan 04-02 complete
+Status: In progress — ready for Plan 04-03
+Last activity: 2026-03-13 — Completed 04-02-PLAN.md (TrackZone context consumer, CRUD buttons, Layout model assembly removed)
 
-Progress: [████████░░] 53% (8/15 plans across all phases)
+Progress: [█████████░] 60% (9/15 plans across all phases)
 
 ## Performance Metrics
 
@@ -30,10 +30,10 @@ Progress: [████████░░] 53% (8/15 plans across all phases)
 | 01-engine-multi-track-foundation | 3 completed / 3 total | 14 min | 4.7 min |
 | 02-reducer-context | 3 completed / 3 total | 9.5 min | 3.2 min |
 | 03-app-tsx-teardown | 1 completed / 1 total | 2.5 min | 2.5 min |
-| 04-component-migration-track-crud | 1 completed / 3 total | 6 min | 6 min |
+| 04-component-migration-track-crud | 2 completed / 3 total | 10 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 4 min, 3 min, 2.5 min, 2.5 min, 6 min
+- Last 5 plans: 3 min, 2.5 min, 2.5 min, 6 min, 4 min
 - Trend: stable
 
 *Updated after each plan completion*
@@ -76,6 +76,9 @@ Recent decisions affecting current work:
 - App.test.tsx deleted (not migrated) — consistent with useAudioEngine.test.tsx deletion precedent; 336 lines tested wiring that no longer exists (03-01)
 - buildUiRuntime.test.ts deleted — same precedent as useAudioEngine.test.tsx; tested function removed (04-01)
 - buildUiRuntime.ts kept as types-only until 04-03 — DevicePanelModel/UiRuntimeDeviceModel/UiRuntimeClipModel still consumed by TrackZone/DevicePanel (04-01)
+- TrackRow sub-component: per-track useTrackFacade calls require sub-component (React hook rules prohibit hooks in .map()) (04-02)
+- Phase 5 seam props on TrackZone: transport/masterStrip/onTrackMuteSync are thin props from Layout — temporary until Phase 5 puts transport in context (04-02)
+- onTrackMuteSync callback: routes track-1 mute to transport.setTrackMute to preserve sequencer sync — Phase 5 debt (04-02)
 - REMOVE_TRACK no longer returns same object reference — recArmByTrackId cleanup always produces new object (04-01)
 - @testing-library/react installed as devDep — unblocked pre-existing DawProvider.test.tsx build type error (04-01)
 - useTrackFacade: seeds React state from getGain()/isMuted() at mount, syncs on write — per-track engine facade hook pattern (04-01)
@@ -95,6 +98,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-13T21:09:00Z
-Stopped at: Completed 04-01-PLAN.md — ready for Plan 04-02
+Last session: 2026-03-13T21:17:28Z
+Stopped at: Completed 04-02-PLAN.md — ready for Plan 04-03
 Resume file: None
