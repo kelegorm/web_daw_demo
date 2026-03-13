@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-03-12)
 ## Current Position
 
 Phase: 2 of 5 (Reducer + Context) — In progress
-Plan: 1 of 3 in phase 2 (plan 4/15 overall)
-Status: In progress — 02-01 complete, ready for 02-02 (DawStore class)
-Last activity: 2026-03-13 — Completed 02-01-PLAN.md (domain model layer: types, actions, reducers, idService, defaultState)
+Plan: 2 of 3 in phase 2 (plan 5/15 overall)
+Status: In progress — 02-02 complete, ready for 02-03 (DawProvider/context)
+Last activity: 2026-03-13 — Completed 02-02-PLAN.md (DawStore class: BLoC controller, snapshot caching, engine-first coordination)
 
-Progress: [████░░░░░░] 27% (4/15 plans across all phases)
+Progress: [█████░░░░░] 33% (5/15 plans across all phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 4.3 min
-- Total execution time: 17 min
+- Total plans completed: 5
+- Average duration: 4.2 min
+- Total execution time: 21 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-engine-multi-track-foundation | 3 completed / 3 total | 14 min | 4.7 min |
-| 02-reducer-context | 1 completed / 3 total | 3 min | 3 min |
+| 02-reducer-context | 2 completed / 3 total | 7 min | 3.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 4 min, 5 min, 5 min, 3 min
+- Last 5 plans: 5 min, 5 min, 3 min, 4 min
 - Trend: stable/improving
 
 *Updated after each plan completion*
@@ -61,6 +61,9 @@ Recent decisions affecting current work:
 - projectReducer does NOT enforce min-1 track — that business rule belongs in DawStore (reducer is pure data transform only)
 - createIdService() uses incrementing counter with track- prefix (not UUID/nanoid) — sufficient for demo app, seed() handles pre-existing IDs
 - MidiClip/MidiStep re-exported from src/state/types.ts — consumers never import from project-runtime directly
+- EngineApi exported from engineSingleton.ts — DawStore imports it as a type; adding export keyword is non-breaking
+- DawStore snapshot caching uses per-slice Object.is checks — selectTrack does not replace #projectSnapshot (only ui slice changes)
+- DawStore arrow-method class fields for subscribe/getProjectSnapshot/getUiSnapshot — stable references, safe to pass directly to useSyncExternalStore without useCallback
 
 ### Pending Todos
 
@@ -76,6 +79,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-03-13T14:50:05Z
-Stopped at: Completed 02-01-PLAN.md — domain model layer (types, actions, reducers, idService, defaultState)
+Last session: 2026-03-13T14:58:01Z
+Stopped at: Completed 02-02-PLAN.md — DawStore BLoC class (engine-first coordination, snapshot caching, 38 tests)
 Resume file: None
