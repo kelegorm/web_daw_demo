@@ -30,30 +30,30 @@ Requirements for milestone v1.0: State Architecture & Dynamic Tracks.
 
 ### Track CRUD
 
-- [ ] **CRUD-01**: User can add a new empty track via UI button
-- [ ] **CRUD-02**: Added track gets a track strip wired to engine immediately (gain, mute, meters work)
-- [ ] **CRUD-03**: Added track is auto-selected after creation
-- [ ] **CRUD-04**: User can remove any regular track via UI button
-- [ ] **CRUD-05**: Removed track's audio nodes are disposed before state settles
-- [ ] **CRUD-06**: If selected track is removed, selection moves to adjacent track
-- [ ] **CRUD-07**: Minimum 1 regular track enforced — remove button disabled or hidden when only 1 track remains
+- [x] **CRUD-01**: User can add a new empty track via UI button
+- [x] **CRUD-02**: Added track gets a track strip wired to engine immediately (gain, mute, meters work)
+- [x] **CRUD-03**: Added track is auto-selected after creation
+- [x] **CRUD-04**: User can remove any regular track via UI button
+- [x] **CRUD-05**: Removed track's audio nodes are disposed before state settles
+- [x] **CRUD-06**: If selected track is removed, selection moves to adjacent track
+- [x] **CRUD-07**: Minimum 1 regular track enforced — remove button disabled or hidden when only 1 track remains
 
 ### App Cleanup
 
-- [ ] **APP-01**: App.tsx gutted to `<DawProvider><Layout /></DawProvider>` (no state, no module lookups)
-- [ ] **APP-02**: `useAudioEngine` hook deleted (replaced by engine singleton)
-- [ ] **APP-03**: `useTrackSelection` hook deleted (replaced by reducer state)
-- [ ] **APP-04**: `buildUiRuntime` either eliminated or reduced to selected-track device resolution only
+- [x] **APP-01**: App.tsx gutted to `<DawProvider><Layout /></DawProvider>` (no state, no module lookups)
+- [x] **APP-02**: `useAudioEngine` hook deleted (replaced by engine singleton)
+- [x] **APP-03**: `useTrackSelection` hook deleted (replaced by reducer state)
+- [x] **APP-04**: `buildUiRuntime` either eliminated or reduced to selected-track device resolution only
 
 ### Component Migration
 
 - [ ] **COMP-01**: Toolbar reads transport state from hooks, dispatches via context
-- [ ] **COMP-02**: TrackZone reads track list from context, dispatches selection/mute/volume via context
-- [ ] **COMP-03**: DevicePanel reads selected track devices from context or engine facade
-- [ ] **COMP-04**: MidiKeyboard enablement follows selected track rec-arm state from context
-- [ ] **COMP-05**: No prop drilling from App.tsx to any component
-- [ ] **COMP-06**: All new files under 500 lines, no `any` or `unknown` types
-- [ ] **COMP-07**: Layout.tsx track selection reads from DawStore/context (selectedTrackId from reducer, not local useState)
+- [x] **COMP-02**: TrackZone reads track list from context, dispatches selection/mute/volume via context
+- [x] **COMP-03**: DevicePanel reads selected track devices from context or engine facade
+- [x] **COMP-04**: MidiKeyboard enablement follows selected track rec-arm state from context
+- [x] **COMP-05**: No prop drilling from App.tsx to any component
+- [x] **COMP-06**: All new files under 500 lines, no `any` or `unknown` types
+- [x] **COMP-07**: Layout.tsx track selection reads from DawStore/context (selectedTrackId from reducer, not local useState)
 
 ### Backwards Compatibility
 
@@ -117,24 +117,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STATE-06 | Phase 2 | Complete |
 | STATE-07 | Phase 2 | Complete |
 | STATE-08 | Phase 2 | Complete |
-| CRUD-01 | Phase 4 | Pending |
-| CRUD-02 | Phase 4 | Pending |
-| CRUD-03 | Phase 4 | Pending |
-| CRUD-04 | Phase 4 | Pending |
-| CRUD-05 | Phase 4 | Pending |
-| CRUD-06 | Phase 4 | Pending |
-| CRUD-07 | Phase 4 | Pending |
+| CRUD-01 | Phase 4 | Complete |
+| CRUD-02 | Phase 4 | Complete |
+| CRUD-03 | Phase 4 | Complete |
+| CRUD-04 | Phase 4 | Complete |
+| CRUD-05 | Phase 4 | Complete |
+| CRUD-06 | Phase 4 | Complete |
+| CRUD-07 | Phase 4 | Complete |
 | APP-01 | Phase 3 | Complete |
 | APP-02 | Phase 3 | Complete |
 | APP-03 | Phase 3 | Complete |
 | APP-04 | Phase 3 | Complete |
-| COMP-01 | Phase 4 | Pending |
-| COMP-02 | Phase 4 | Pending |
-| COMP-03 | Phase 4 | Pending |
-| COMP-04 | Phase 4 | Pending |
-| COMP-05 | Phase 4 | Pending |
-| COMP-06 | Phase 4 | Pending |
-| COMP-07 | Phase 4 | Pending |
+| COMP-01 | Phase 5 | Pending |
+| COMP-02 | Phase 4 | Complete |
+| COMP-03 | Phase 4 | Complete |
+| COMP-04 | Phase 4 | Complete |
+| COMP-05 | Phase 4 | Complete |
+| COMP-06 | Phase 4 | Complete |
+| COMP-07 | Phase 4 | Complete |
 | COMPAT-01 | Phase 5 | Pending |
 | COMPAT-02 | Phase 5 | Pending |
 | COMPAT-03 | Phase 5 | Pending |
@@ -146,4 +146,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-12*
-*Last updated: 2026-03-13 — Phase 3 requirements complete, COMP-07 added to Phase 4*
+*Last updated: 2026-03-13 — Phase 4 requirements complete, COMP-01 moved to Phase 5*

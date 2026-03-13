@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Engine Multi-Track Foundation** - Establish engine singleton, preLimiterBus, and track subgraph API
 - [x] **Phase 2: Reducer + Context** - Pure state layer with normalized track map and split context
 - [x] **Phase 3: App.tsx Teardown** - Gut App.tsx to DawProvider + Layout, delete deprecated hooks
-- [ ] **Phase 4: Component Migration + Track CRUD** - Migrate all components to context, wire Add/Remove track
+- [x] **Phase 4: Component Migration + Track CRUD** - Migrate all components to context, wire Add/Remove track
 - [ ] **Phase 5: Transport Decoupling + Integration Close-Out** - Isolate transport, sequencer cleanup, full regression gate
 
 ## Phase Details
@@ -100,7 +100,9 @@ Plans:
 
 **Depends on:** Phase 3
 
-**Requirements:** CRUD-01, CRUD-02, CRUD-03, CRUD-04, CRUD-05, CRUD-06, CRUD-07, COMP-01, COMP-02, COMP-03, COMP-04, COMP-05, COMP-06, COMP-07
+**Requirements:** CRUD-01, CRUD-02, CRUD-03, CRUD-04, CRUD-05, CRUD-06, CRUD-07, COMP-02, COMP-03, COMP-04, COMP-05, COMP-06, COMP-07
+
+> **Deferred:** COMP-01 (Toolbar reads transport from hooks) moved to Phase 5 — Toolbar migration requires useTransportController decoupling which is Phase 5 scope.
 
 **Success Criteria** (what must be TRUE):
 1. Clicking "Add Track" creates a new track, immediately wires its strip to the engine (gain, mute, and meters functional), auto-selects the new track, and the DevicePanel updates to show the new track's state
@@ -113,9 +115,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Foundation: remove buildUiRuntime/legacyEngineAdapter, create useTrackFacade, add rec-arm to reducer, wire COMP-07
-- [ ] 04-02-PLAN.md — TrackZone context migration + Add/Remove track CRUD buttons
-- [ ] 04-03-PLAN.md — DevicePanel + MidiKeyboard context migration + Layout cleanup
+- [x] 04-01-PLAN.md — Foundation: remove buildUiRuntime/legacyEngineAdapter, create useTrackFacade, add rec-arm to reducer, wire COMP-07
+- [x] 04-02-PLAN.md — TrackZone context migration + Add/Remove track CRUD buttons
+- [x] 04-03-PLAN.md — DevicePanel + MidiKeyboard context migration + Layout cleanup
 
 ---
 
@@ -125,7 +127,7 @@ Plans:
 
 **Depends on:** Phase 4
 
-**Requirements:** COMPAT-01, COMPAT-02, COMPAT-03
+**Requirements:** COMPAT-01, COMPAT-02, COMPAT-03, COMP-01
 
 **Success Criteria** (what must be TRUE):
 1. `useTransportController` receives no `TrackStripHook` dependency — transport state (playing/paused/stopped, bpm, loop, currentStep) is fully isolated from track-strip state
@@ -150,9 +152,9 @@ Plans:
 | 1. Engine Multi-Track Foundation | 3/3 | ✓ Complete | 2026-03-12 |
 | 2. Reducer + Context | 3/3 | ✓ Complete | 2026-03-13 |
 | 3. App.tsx Teardown | 1/1 | ✓ Complete | 2026-03-13 |
-| 4. Component Migration + Track CRUD | 0/3 | Not started | - |
+| 4. Component Migration + Track CRUD | 3/3 | ✓ Complete | 2026-03-13 |
 | 5. Transport Decoupling + Integration Close-Out | 0/2 | Not started | - |
 
 ---
 *Roadmap created: 2026-03-12 for milestone v1.0 State Architecture & Dynamic Tracks*
-*Last updated: 2026-03-13 — Phase 3 complete (1 plan executed, COMP-07 deferred to Phase 4)*
+*Last updated: 2026-03-13 — Phase 4 complete (3 plans executed, COMP-01 deferred to Phase 5)*
