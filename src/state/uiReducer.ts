@@ -24,14 +24,21 @@ export function uiReducer(
 ): UiState {
   switch (action.type) {
     case 'ADD_TRACK': {
-      // Auto-select the newly added track.
-      return { ...state, selectedTrackId: action.id };
+      // Auto-select the newly added track and auto-arm it for recording.
+      return {
+        ...state,
+        selectedTrackId: action.id,
+        recArmByTrackId: { ...state.recArmByTrackId, [action.id]: true },
+      };
     }
 
     case 'REMOVE_TRACK': {
+      // Always clean up the removed track's rec-arm entry.
+      const { [action.id]: _, ...restRecArm } = state.recArmByTrackId;
+
       if (state.selectedTrackId !== action.id) {
         // Removing a track that is not selected — keep selection unchanged.
-        return state;
+        return { ...state, recArmByTrackId: restRecArm };
       }
 
       // The selected track is being removed. Pick an adjacent track.
@@ -46,11 +53,19 @@ export function uiReducer(
       return {
         ...state,
         selectedTrackId: nextId ?? state.selectedTrackId,
+        recArmByTrackId: restRecArm,
       };
     }
 
     case 'SELECT_TRACK': {
       return { ...state, selectedTrackId: action.id };
+    }
+
+    case 'SET_REC_ARM': {
+      return {
+        ...state,
+        recArmByTrackId: { ...state.recArmByTrackId, [action.trackId]: action.armed },
+      };
     }
 
     default: {

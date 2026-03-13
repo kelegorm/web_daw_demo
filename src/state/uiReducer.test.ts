@@ -6,8 +6,8 @@ import type { UiState, ProjectDocument } from './types';
 // Fixture helpers
 // ---------------------------------------------------------------------------
 
-function makeUi(selectedTrackId = 'track-1'): UiState {
-  return { selectedTrackId };
+function makeUi(selectedTrackId = 'track-1', recArmByTrackId: Record<string, boolean> = {}): UiState {
+  return { selectedTrackId, recArmByTrackId };
 }
 
 function makeProject(ids: string[]): ProjectDocument {
@@ -87,11 +87,13 @@ describe('uiReducer — REMOVE_TRACK (non-selected track removed)', () => {
     expect(next.selectedTrackId).toBe('track-1');
   });
 
-  it('returns the same state reference when selection is unchanged', () => {
-    const ui = makeUi('track-1');
+  it('returns updated state with recArmByTrackId cleaned up when non-selected track removed', () => {
+    const ui = makeUi('track-1', { 'track-1': true, 'track-2': false });
     const project = makeProject(['track-1', 'track-2']);
     const next = uiReducer(ui, { type: 'REMOVE_TRACK', id: 'track-2' }, project);
-    expect(next).toBe(ui); // same reference — no allocation
+    expect(next.selectedTrackId).toBe('track-1');
+    expect('track-2' in next.recArmByTrackId).toBe(false);
+    expect(next.recArmByTrackId['track-1']).toBe(true);
   });
 });
 

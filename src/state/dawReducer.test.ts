@@ -20,7 +20,10 @@ function makeState(trackIds: string[], selectedTrackId: string): DawState {
       clips: {},
       masterTrack: { id: 'master', displayName: 'Master', deviceIds: [] },
     },
-    ui: { selectedTrackId },
+    ui: {
+      selectedTrackId,
+      recArmByTrackId: Object.fromEntries(trackIds.map((id) => [id, false])),
+    },
   };
 }
 

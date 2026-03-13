@@ -32,6 +32,7 @@ export interface DawDispatch {
   addTrack(): string;
   removeTrack(id: string): void;
   selectTrack(id: string): void;
+  setRecArm(trackId: string, armed: boolean): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -78,6 +79,7 @@ export function DawProvider({ store, children }: DawProviderProps) {
       addTrack: () => store.addTrack(),
       removeTrack: (id: string) => store.removeTrack(id),
       selectTrack: (id: string) => store.selectTrack(id),
+      setRecArm: (trackId: string, armed: boolean) => store.setRecArm(trackId, armed),
     }),
     [store],
   );

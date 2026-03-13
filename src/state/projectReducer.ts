@@ -49,6 +49,11 @@ export function projectReducer(
       return state;
     }
 
+    case 'SET_REC_ARM': {
+      // Rec-arm is UI-only; projectReducer does not handle it.
+      return state;
+    }
+
     default: {
       // Exhaustive check — TypeScript will error if a new action type is
       // added to DawAction but not handled here.

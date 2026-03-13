@@ -38,8 +38,9 @@ export const DEFAULT_PROJECT_DOCUMENT: ProjectDocument = {
 
 /**
  * DEFAULT_UI_STATE — initial UI selection state.
- * Selects the default track on startup.
+ * Selects the default track on startup and arms it for recording.
  */
 export const DEFAULT_UI_STATE: UiState = {
   selectedTrackId: DEFAULT_TRACK_ID,
+  recArmByTrackId: { [DEFAULT_TRACK_ID]: true },
 };

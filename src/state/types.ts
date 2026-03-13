@@ -50,6 +50,8 @@ export interface ProjectDocument {
  */
 export interface UiState {
   readonly selectedTrackId: string;
+  /** Per-track record-arm state. True = armed. Managed by ADD_TRACK/REMOVE_TRACK/SET_REC_ARM. */
+  readonly recArmByTrackId: Readonly<Record<string, boolean>>;
 }
 
 /**

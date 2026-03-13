@@ -25,5 +25,12 @@ export interface SelectTrackAction {
   readonly id: string;
 }
 
+/** Toggle record-arm for a track. */
+export interface SetRecArmAction {
+  readonly type: 'SET_REC_ARM';
+  readonly trackId: string;
+  readonly armed: boolean;
+}
+
 /** All actions that can be dispatched to the DAW reducers. */
-export type DawAction = AddTrackAction | RemoveTrackAction | SelectTrackAction;
+export type DawAction = AddTrackAction | RemoveTrackAction | SelectTrackAction | SetRecArmAction;

@@ -118,6 +118,14 @@ export class DawStore {
     this.#dispatch({ type: 'SELECT_TRACK', id });
   }
 
+  /**
+   * Set record-arm state for a track.
+   * UI-only — no engine call required.
+   */
+  setRecArm(trackId: string, armed: boolean): void {
+    this.#dispatch({ type: 'SET_REC_ARM', trackId, armed });
+  }
+
   // ---------------------------------------------------------------------------
   // Internal
   // ---------------------------------------------------------------------------
