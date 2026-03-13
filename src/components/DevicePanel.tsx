@@ -1,13 +1,55 @@
+import { useProjectState } from '../context/useProjectState'
+import { useUiState } from '../context/useUiState'
 import {
   renderDeviceFromRegistry,
 } from '../ui-plan/deviceRegistry'
-import type { DevicePanelModel } from '../ui-plan/buildUiRuntime'
+import type { AnyDeviceModule, DeviceModuleKind } from '../ui-plan/deviceRegistry'
 
-interface Props {
-  model: DevicePanelModel
+// UiRuntimeDeviceModel moved here from buildUiRuntime.ts (04-03).
+interface UiRuntimeDeviceModel {
+  uiDeviceId: string
+  displayName: string
+  moduleId: string
+  moduleKind: DeviceModuleKind
+  module: AnyDeviceModule
 }
 
-export default function DevicePanel({ model }: Props) {
+interface DevicePanelProps {
+  /** Narrow Phase-5 seam: reactive device hook return values keyed by device id. */
+  deviceModules: Record<string, AnyDeviceModule>
+}
+
+export default function DevicePanel({ deviceModules }: DevicePanelProps) {
+  const project = useProjectState()
+  const ui = useUiState()
+
+  // Determine selected track info from context.
+  const isMasterSelected = ui.selectedTrackId === project.masterTrack.id
+  const selectedTrack = isMasterSelected ? null : project.tracks.byId[ui.selectedTrackId]
+  const selectedTrackDisplayName = isMasterSelected
+    ? project.masterTrack.displayName
+    : (selectedTrack?.displayName ?? '')
+  const deviceIds = isMasterSelected
+    ? project.masterTrack.deviceIds
+    : (selectedTrack?.deviceIds ?? [])
+
+  // Resolve devices: look up Device metadata from context, module instance from prop.
+  const devices: UiRuntimeDeviceModel[] = (deviceIds as string[])
+    .map((deviceId) => {
+      const device = project.devices[deviceId]
+      if (!device) return null
+      const module = deviceModules[deviceId]
+      if (!module) return null
+      return {
+        uiDeviceId: device.id,
+        displayName: device.displayName,
+        moduleId: device.id,
+        moduleKind: device.kind as DeviceModuleKind,
+        module,
+      }
+    })
+    .filter((d): d is UiRuntimeDeviceModel => d !== null)
+
   return (
     <div
       className="device-panel"
@@ -61,12 +103,12 @@ export default function DevicePanel({ model }: Props) {
               lineHeight: 1,
             }}
           >
-            {model.selectedTrackDisplayName}
+            {selectedTrackDisplayName}
           </span>
         </div>
 
         <div
-          key={model.selectedTrackId}
+          key={ui.selectedTrackId}
           className="device-panel-content"
           style={{
             display: 'flex',
@@ -82,7 +124,7 @@ export default function DevicePanel({ model }: Props) {
             animation: 'devicePanelFadeIn 120ms ease',
           }}
         >
-          {model.devices.map((device) => (
+          {devices.map((device) => (
             <div key={device.uiDeviceId}>
               {renderDeviceFromRegistry({
                 uiDeviceId: device.uiDeviceId,

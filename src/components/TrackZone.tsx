@@ -11,7 +11,11 @@ import {
 import { getMidiClipLengthBeats } from '../project-runtime/midiClipStore'
 import type { MeterSource } from '../engine/types'
 import type { PlaybackState } from '../hooks/useTransportController'
-import type { UiRuntimeClipModel } from '../ui-plan/buildUiRuntime'
+// UiRuntimeClipModel moved here from buildUiRuntime.ts (04-03).
+interface UiRuntimeClipModel {
+  clipId: string
+  clip: import('../project-runtime/midiClipStore').MidiClip
+}
 import { useProjectState } from '../context/useProjectState'
 import { useUiState } from '../context/useUiState'
 import { useDawDispatch } from '../context/useDawDispatch'
