@@ -135,11 +135,12 @@ Plans:
 3. All existing Vitest unit tests pass without modification (or with only minimal import-path adapter changes)
 4. All existing Playwright E2E tests pass — transport play/stop/BPM change, track/mixer controls, device panel controls, and meter activity all behave identically to pre-refactor
 
-**Plans:** TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 05-01: Decouple useTransportController from TrackStripHook, per-track sequencer Part scoping
-- [ ] 05-02: Full regression pass — run complete Vitest + Playwright suite, fix any remaining adapter issues
+- [ ] 05-01-PLAN.md — Decouple useTransportController from TrackStripHook, add Sequencer.dispose(), remove _legacy from Layout
+- [ ] 05-02-PLAN.md — TransportContext + TransportProvider, migrate Toolbar + TrackZone to context consumers
+- [ ] 05-03-PLAN.md — Full regression pass (Vitest + Playwright), human verification of visual/functional parity
 
 ---
 
@@ -153,8 +154,8 @@ Plans:
 | 2. Reducer + Context | 3/3 | ✓ Complete | 2026-03-13 |
 | 3. App.tsx Teardown | 1/1 | ✓ Complete | 2026-03-13 |
 | 4. Component Migration + Track CRUD | 3/3 | ✓ Complete | 2026-03-13 |
-| 5. Transport Decoupling + Integration Close-Out | 0/2 | Not started | - |
+| 5. Transport Decoupling + Integration Close-Out | 0/3 | Not started | - |
 
 ---
 *Roadmap created: 2026-03-12 for milestone v1.0 State Architecture & Dynamic Tracks*
-*Last updated: 2026-03-13 — Phase 4 complete (3 plans executed, COMP-01 deferred to Phase 5)*
+*Last updated: 2026-03-13 — Phase 5 planned (3 plans in 3 waves)*
