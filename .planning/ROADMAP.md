@@ -110,13 +110,12 @@ Plans:
 5. No component receives props from App.tsx — all data flows from context or engine facades directly into the component that needs it
 6. All new files introduced in this phase are under 500 lines and contain no `any` or `unknown` types
 
-**Plans:** TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 04-01: Toolbar context migration (transport state from hooks, dispatches via context)
-- [ ] 04-02: TrackZone context migration + Add/Remove track buttons wired through useAppActions
-- [ ] 04-03: DevicePanel context migration (selected-track device resolution from context or engine facade)
-- [ ] 04-04: MidiKeyboard rec-arm follows selectedTrackId from context
+- [ ] 04-01-PLAN.md — Foundation: remove buildUiRuntime/legacyEngineAdapter, create useTrackFacade, add rec-arm to reducer, wire COMP-07
+- [ ] 04-02-PLAN.md — TrackZone context migration + Add/Remove track CRUD buttons
+- [ ] 04-03-PLAN.md — DevicePanel + MidiKeyboard context migration + Layout cleanup
 
 ---
 
@@ -151,7 +150,7 @@ Plans:
 | 1. Engine Multi-Track Foundation | 3/3 | ✓ Complete | 2026-03-12 |
 | 2. Reducer + Context | 3/3 | ✓ Complete | 2026-03-13 |
 | 3. App.tsx Teardown | 1/1 | ✓ Complete | 2026-03-13 |
-| 4. Component Migration + Track CRUD | 0/4 | Not started | - |
+| 4. Component Migration + Track CRUD | 0/3 | Not started | - |
 | 5. Transport Decoupling + Integration Close-Out | 0/2 | Not started | - |
 
 ---
