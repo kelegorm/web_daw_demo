@@ -64,12 +64,12 @@ Plans:
 4. Transport playback values (isPlaying, currentStep, bpm) are NOT in DawStateContext — reading them from transport hooks does not cause context re-renders during playback
 5. Audio values (volume dB, meter levels, mute state) are NOT in reducer state — they are read directly from engine facades
 
-**Plans:** TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 02-01: DawState type + DawAction discriminated union + dawReducer pure function
-- [ ] 02-02: DawProvider + DawStateContext + DawDispatchContext + useDawState/useDawDispatch hooks
-- [ ] 02-03: useAppActions wrapper (sequences engine calls alongside dispatch, no engine calls inside reducer)
+- [ ] 02-01-PLAN.md — Domain types + discriminated union actions + pure reducers + ID service + default state
+- [ ] 02-02-PLAN.md — DawStore class (BLoC pattern) with engine coordination and snapshot caching
+- [ ] 02-03-PLAN.md — DawProvider + split contexts + consumer hooks (useProjectState, useUiState, useDawDispatch)
 
 ---
 
@@ -157,4 +157,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-03-12 for milestone v1.0 State Architecture & Dynamic Tracks*
-*Last updated: 2026-03-12 — Phase 1 complete*
+*Last updated: 2026-03-13 — Phase 2 plans finalized*
