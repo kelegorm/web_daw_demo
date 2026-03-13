@@ -53,6 +53,7 @@ Requirements for milestone v1.0: State Architecture & Dynamic Tracks.
 - [ ] **COMP-04**: MidiKeyboard enablement follows selected track rec-arm state from context
 - [ ] **COMP-05**: No prop drilling from App.tsx to any component
 - [ ] **COMP-06**: All new files under 500 lines, no `any` or `unknown` types
+- [ ] **COMP-07**: Layout.tsx track selection reads from DawStore/context (selectedTrackId from reducer, not local useState)
 
 ### Backwards Compatibility
 
@@ -123,25 +124,26 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CRUD-05 | Phase 4 | Pending |
 | CRUD-06 | Phase 4 | Pending |
 | CRUD-07 | Phase 4 | Pending |
-| APP-01 | Phase 3 | Pending |
-| APP-02 | Phase 3 | Pending |
-| APP-03 | Phase 3 | Pending |
-| APP-04 | Phase 3 | Pending |
+| APP-01 | Phase 3 | Complete |
+| APP-02 | Phase 3 | Complete |
+| APP-03 | Phase 3 | Complete |
+| APP-04 | Phase 3 | Complete |
 | COMP-01 | Phase 4 | Pending |
 | COMP-02 | Phase 4 | Pending |
 | COMP-03 | Phase 4 | Pending |
 | COMP-04 | Phase 4 | Pending |
 | COMP-05 | Phase 4 | Pending |
 | COMP-06 | Phase 4 | Pending |
+| COMP-07 | Phase 4 | Pending |
 | COMPAT-01 | Phase 5 | Pending |
 | COMPAT-02 | Phase 5 | Pending |
 | COMPAT-03 | Phase 5 | Pending |
 
 **Coverage:**
-- v1 requirements: 35 total
-- Mapped to phases: 35
+- v1 requirements: 36 total
+- Mapped to phases: 36
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-12*
-*Last updated: 2026-03-13 — Phase 2 requirements complete*
+*Last updated: 2026-03-13 — Phase 3 requirements complete, COMP-07 added to Phase 4*
