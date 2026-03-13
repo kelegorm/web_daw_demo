@@ -5,7 +5,6 @@ import DevicePanel from './DevicePanel'
 import MidiKeyboard from './MidiKeyboard'
 import { useToneSynth, createToneSynth } from '../hooks/useToneSynth'
 import { usePanner, createPanner } from '../hooks/usePanner'
-import { useTrackStrip } from '../hooks/useTrackStrip'
 import { useMasterStrip } from '../hooks/useMasterStrip'
 import type { MasterStripHook } from '../hooks/useMasterStrip'
 import { useLimiter } from '../hooks/useLimiter'
@@ -38,8 +37,7 @@ _pannerGraph.connectSource(_synthGraph.getOutput())
 // Wire: panner output -> singleton's track-1 strip input.
 // Both use Tone.js's AudioContext, so connect() is valid (no cross-context error).
 const _singletonEngine = getAudioEngine()
-const _track1Strip = _singletonEngine._legacy.getTrackStripGraph(DEFAULT_TRACK_ID)
-_pannerGraph.output.connect(_track1Strip.input)
+_singletonEngine.connectToTrackInput(DEFAULT_TRACK_ID, _pannerGraph.output)
 
 const _limiterGraph = _singletonEngine._legacy.limiterGraph
 
@@ -55,10 +53,13 @@ const _masterStripHook: MasterStripHook = {
 export default function Layout() {
   const toneSynth = useToneSynth(_synthGraph)
   const panner = usePanner(_pannerGraph)
-  const trackStrip = useTrackStrip(_track1Strip)
   const masterStrip = useMasterStrip(_masterStripHook)
   const limiter = useLimiter(_limiterGraph)
-  const transport = useTransportController(toneSynth, trackStrip, DEFAULT_MIDI_CLIP_SOURCE)
+  const transport = useTransportController(
+    toneSynth,
+    (muted) => getAudioEngine().getTrackFacade(DEFAULT_TRACK_ID).setMute(muted),
+    DEFAULT_MIDI_CLIP_SOURCE,
+  )
 
   useEffect(() => {
     window.__panicCount = 0

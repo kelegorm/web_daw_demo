@@ -15,6 +15,8 @@ export interface EngineApi {
   getLimiterInputMeter(): MeterSource;
   /** Limiter gain reduction in dB (0 = no reduction) */
   getLimiterReductionDb(): number;
+  /** Connect an AudioNode to the track strip input (for device chains wired before the strip). */
+  connectToTrackInput(trackId: string, sourceNode: AudioNode): void;
   // Legacy accessors for backward compat during migration (Plans 01-03 and Phase 2-3)
   _legacy: {
     readonly audioContext: AudioContext;
@@ -168,6 +170,14 @@ function createEngineInternal(): EngineApi {
 
     createTrackSubgraph(trackId: string): TrackFacade {
       return createTrackSubgraphInternal(trackId);
+    },
+
+    connectToTrackInput(trackId: string, sourceNode: AudioNode): void {
+      const entry = tracks.get(trackId);
+      if (!entry) {
+        throw new Error(`[engine] unknown track: ${trackId}`);
+      }
+      sourceNode.connect(entry.strip.input);
     },
 
     removeTrackSubgraph(trackId: string): void {

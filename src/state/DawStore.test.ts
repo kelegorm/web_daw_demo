@@ -21,6 +21,7 @@ function createMockEngine() {
     getMasterFacade: vi.fn(),
     getLimiterInputMeter: vi.fn(),
     getLimiterReductionDb: vi.fn(() => 0),
+    connectToTrackInput: vi.fn(),
     _legacy: {
       audioContext: {} as unknown as AudioContext,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
