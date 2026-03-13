@@ -87,11 +87,10 @@ Plans:
 3. `useTrackSelection.ts` is deleted from the codebase — selection state lives in the reducer
 4. All existing Playwright E2E tests pass unchanged after this phase — the UI behaves identically to before the teardown from a user's perspective
 
-**Plans:** TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 03-01: Gut App.tsx, wire DawProvider + Layout, delete useAudioEngine + useTrackSelection
-- [ ] 03-02: Reduce buildUiRuntime to selected-track device resolution only (or delete if possible), update all callsites
+- [ ] 03-01-PLAN.md — Create Layout.tsx, gut App.tsx to DawProvider + Layout shell, delete useTrackSelection + App.test.tsx
 
 ---
 
@@ -151,10 +150,10 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Engine Multi-Track Foundation | 3/3 | ✓ Complete | 2026-03-12 |
 | 2. Reducer + Context | 3/3 | ✓ Complete | 2026-03-13 |
-| 3. App.tsx Teardown | 0/2 | Not started | - |
+| 3. App.tsx Teardown | 0/1 | Not started | - |
 | 4. Component Migration + Track CRUD | 0/4 | Not started | - |
 | 5. Transport Decoupling + Integration Close-Out | 0/2 | Not started | - |
 
 ---
 *Roadmap created: 2026-03-12 for milestone v1.0 State Architecture & Dynamic Tracks*
-*Last updated: 2026-03-13 — Phase 2 complete*
+*Last updated: 2026-03-13 — Phase 3 planned (1 plan, 1 wave)*
