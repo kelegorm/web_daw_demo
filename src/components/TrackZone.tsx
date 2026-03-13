@@ -10,7 +10,6 @@ import {
 } from '../audio/parameterDefaults'
 import { getMidiClipLengthBeats } from '../project-runtime/midiClipStore'
 import type { MeterSource } from '../engine/types'
-import type { PlaybackState } from '../hooks/useTransportController'
 // UiRuntimeClipModel moved here from buildUiRuntime.ts (04-03).
 interface UiRuntimeClipModel {
   clipId: string
@@ -20,6 +19,9 @@ import { useProjectState } from '../context/useProjectState'
 import { useUiState } from '../context/useUiState'
 import { useDawDispatch } from '../context/useDawDispatch'
 import { useTrackFacade } from '../hooks/useTrackFacade'
+import { useTransportState } from '../context/TransportContext'
+import { useTransportActions } from '../context/TransportContext'
+import { DEFAULT_TRACK_ID } from '../engine/engineSingleton'
 
 const FADER_MIN_DB = AUDIO_DB_MIN
 const FADER_MAX_DB = AUDIO_DB_MAX
@@ -44,15 +46,8 @@ function formatDB(db: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 5 seam interfaces — temporary until transport and master are in context.
+// MasterStrip prop — still comes from Layout (master not yet in context).
 // ---------------------------------------------------------------------------
-
-interface TransportProps {
-  playbackState: PlaybackState
-  bpm: number
-  loop: boolean
-  getPositionSeconds?: () => number
-}
 
 interface MasterStripProps {
   volumeDb: number
@@ -61,9 +56,7 @@ interface MasterStripProps {
 }
 
 interface TrackZoneProps {
-  transport: TransportProps
   masterStrip: MasterStripProps
-  onTrackMuteSync?: (trackId: string, muted: boolean) => void
 }
 
 // ---------------------------------------------------------------------------
@@ -475,10 +468,12 @@ function TrackRow({
 // TrackZone — context-consuming component. No model/actions props from Layout.
 // ---------------------------------------------------------------------------
 
-export default function TrackZone({ transport, masterStrip, onTrackMuteSync }: TrackZoneProps) {
+export default function TrackZone({ masterStrip }: TrackZoneProps) {
   const project = useProjectState()
   const ui = useUiState()
   const dispatch = useDawDispatch()
+  const transport = useTransportState()
+  const transportActions = useTransportActions()
 
   const [playheadPos, setPlayheadPos] = useState(0)
   const rafRef = useRef<number | null>(null)
@@ -519,7 +514,7 @@ export default function TrackZone({ transport, masterStrip, onTrackMuteSync }: T
         return 0
       }
 
-      const seconds = transport.getPositionSeconds ? transport.getPositionSeconds() : 0
+      const seconds = transportActions.getPositionSeconds ? transportActions.getPositionSeconds() : 0
       let px = seconds * pps
 
       if (transport.loop && primaryClip.clipWidth > 0 && px >= primaryClip.clipStartPx) {
@@ -545,7 +540,7 @@ export default function TrackZone({ transport, masterStrip, onTrackMuteSync }: T
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
     }
-  }, [transport.playbackState, transport.loop, primaryClip.clipStartPx, primaryClip.clipWidth, transport.getPositionSeconds, pps])
+  }, [transport.playbackState, transport.loop, primaryClip.clipStartPx, primaryClip.clipWidth, transportActions.getPositionSeconds, pps])
 
   return (
     <div
@@ -612,7 +607,11 @@ export default function TrackZone({ transport, masterStrip, onTrackMuteSync }: T
               loop={transport.loop}
               playheadPos={playheadPos}
               onSelect={() => dispatch.selectTrack(trackId)}
-              onMuteChanged={(muted) => onTrackMuteSync?.(trackId, muted)}
+              onMuteChanged={(muted) => {
+                if (trackId === DEFAULT_TRACK_ID) {
+                  transportActions.setTrackMute(muted)
+                }
+              }}
               onSetRecEnabled={(armed) => dispatch.setRecArm(trackId, armed)}
             />
           )
