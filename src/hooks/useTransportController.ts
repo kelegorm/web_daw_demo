@@ -3,7 +3,6 @@ import * as Tone from 'tone';
 import { createSequencer, Sequencer } from './useSequencer';
 import type { SequencerClipInput } from './useSequencer';
 import type { ToneSynthHook } from './useToneSynth';
-import type { TrackStripHook } from './useTrackStrip';
 import { createTransportService, type TransportService } from '../engine/transportService';
 import { DEFAULT_MIDI_CLIP_SOURCE } from '../project-runtime/midiClipStore';
 
@@ -128,7 +127,7 @@ export function createTransportCore(
 
 export function useTransportController(
   toneSynth: ToneSynthHook,
-  trackStrip: TrackStripHook,
+  setTrackMuted: (muted: boolean) => void,
   sequencerClip: SequencerClipInput = DEFAULT_MIDI_CLIP_SOURCE,
 ): TransportController {
   const [playbackState, setPlaybackState] = useState<PlaybackState>('stopped');
@@ -139,8 +138,8 @@ export function useTransportController(
 
   const toneSynthRef = useRef(toneSynth);
   toneSynthRef.current = toneSynth;
-  const trackStripRef = useRef(trackStrip);
-  trackStripRef.current = trackStrip;
+  const setTrackMutedRef = useRef(setTrackMuted);
+  setTrackMutedRef.current = setTrackMuted;
 
   const serviceRef = useRef<TransportService | null>(null);
   if (!serviceRef.current) {
@@ -155,7 +154,7 @@ export function useTransportController(
         noteOn: (midi, velocity, time) => toneSynthRef.current.noteOn(midi, velocity, time),
         noteOff: (midi, time) => toneSynthRef.current.noteOff(midi, time),
         synthPanic: () => toneSynthRef.current.panic(),
-        setTrackMuted: (muted) => trackStripRef.current.setTrackMuted(muted),
+        setTrackMuted: (muted) => setTrackMutedRef.current(muted),
         onStepChange: (step) => setCurrentStep(step),
         sequencerClip,
       },

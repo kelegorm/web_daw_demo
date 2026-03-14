@@ -75,6 +75,7 @@ export interface Sequencer {
   pause: () => void;
   stop: () => void;
   setLoop: (loop: boolean) => void;
+  dispose: () => void;
 }
 
 export function createSequencer(
@@ -163,6 +164,17 @@ export function createSequencer(
     onStepChange?.(-1);
   }
 
+  function dispose() {
+    _active = false;
+    _isPlaying = false;
+    _currentStep = -1;
+    _partStarted = false;
+    part.stop(0);
+    part.cancel(0);
+    // Deliberately does NOT call transport.stop() — only the user-facing stop should halt global transport
+    // Deliberately does NOT call panic() — caller decides whether to send note-offs
+  }
+
   return {
     isPlaying: () => _isPlaying,
     currentStep: () => _currentStep,
@@ -170,6 +182,7 @@ export function createSequencer(
     pause,
     stop,
     setLoop,
+    dispose,
   };
 }
 

@@ -1,4 +1,6 @@
 import { type MouseEvent as ReactMouseEvent, useEffect, useRef, useState } from 'react'
+import { useTransportState } from '../context/TransportContext'
+import { useTransportActions } from '../context/TransportContext'
 
 const MIN_BPM = 60
 const MAX_BPM = 200
@@ -7,30 +9,13 @@ function clampBpm(value: number): number {
   return Math.min(MAX_BPM, Math.max(MIN_BPM, Math.round(value)))
 }
 
-interface Props {
-  isPlaying: boolean
-  onPlay: () => void
-  onStop: () => void
-  onPanic: () => void
-  bpm: number
-  onBpmChange: (bpm: number) => void
-  loop: boolean
-  onLoopToggle: () => void
-}
+export default function Toolbar() {
+  const transport = useTransportState()
+  const actions = useTransportActions()
 
-export default function Toolbar({
-  isPlaying,
-  onPlay,
-  onStop,
-  onPanic,
-  bpm,
-  onBpmChange,
-  loop,
-  onLoopToggle,
-}: Props) {
   const [draggingBpm, setDraggingBpm] = useState(false)
   const bpmStartYRef = useRef(0)
-  const bpmStartValueRef = useRef(bpm)
+  const bpmStartValueRef = useRef(transport.bpm)
 
   useEffect(() => {
     if (!draggingBpm) return
@@ -38,7 +23,7 @@ export default function Toolbar({
     const handleMouseMove = (event: MouseEvent) => {
       const dy = bpmStartYRef.current - event.clientY
       const delta = Math.round(dy / 2)
-      onBpmChange(clampBpm(bpmStartValueRef.current + delta))
+      actions.setBpm(clampBpm(bpmStartValueRef.current + delta))
     }
 
     const handleMouseUp = () => {
@@ -52,17 +37,22 @@ export default function Toolbar({
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [draggingBpm, onBpmChange])
+  }, [draggingBpm, actions.setBpm])
 
   const handleBpmMouseDown = (event: ReactMouseEvent<HTMLDivElement>) => {
     event.preventDefault()
     bpmStartYRef.current = event.clientY
-    bpmStartValueRef.current = bpm
+    bpmStartValueRef.current = transport.bpm
     setDraggingBpm(true)
   }
 
   const stepBpm = (delta: number) => {
-    onBpmChange(clampBpm(bpm + delta))
+    actions.setBpm(clampBpm(transport.bpm + delta))
+  }
+
+  const handlePanic = () => {
+    actions.panic()
+    window.__panicCount = (window.__panicCount ?? 0) + 1
   }
 
   const transportButtonStyle = {
@@ -140,19 +130,19 @@ export default function Toolbar({
         <span style={buttonSocketStyle}>
           <button
             className="toolbar-play-pause"
-            onClick={onPlay}
-            aria-pressed={isPlaying}
-            aria-label={isPlaying ? 'Pause' : 'Play'}
-            title={isPlaying ? 'Pause' : 'Play'}
+            onClick={actions.toggle}
+            aria-pressed={transport.isPlaying}
+            aria-label={transport.isPlaying ? 'Pause' : 'Play'}
+            title={transport.isPlaying ? 'Pause' : 'Play'}
             style={{
               ...transportButtonStyle,
-              background: isPlaying
+              background: transport.isPlaying
                 ? 'linear-gradient(180deg, #4f8158 0%, #45734d 52%, #3e6746 100%)'
                 : 'linear-gradient(180deg, #467b52 0%, #3f6f49 52%, #3a6543 100%)',
-              borderColor: isPlaying ? '#a0cea8 #77a780 #33553a #81b489' : '#8fbf98 #6f9f78 #2f4e35 #75a67e',
+              borderColor: transport.isPlaying ? '#a0cea8 #77a780 #33553a #81b489' : '#8fbf98 #6f9f78 #2f4e35 #75a67e',
             }}
           >
-            {isPlaying ? (
+            {transport.isPlaying ? (
               <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" style={{ filter: 'drop-shadow(0 0 3px rgba(181, 255, 198, 0.45)) drop-shadow(0 1px 0 rgba(0,0,0,0.45))' }}>
                 <rect x="1" y="1" width="3" height="8" rx="0.8" fill="#d8ffe1" />
                 <rect x="6" y="1" width="3" height="8" rx="0.8" fill="#d8ffe1" />
@@ -167,7 +157,7 @@ export default function Toolbar({
         <span style={buttonSocketStyle}>
           <button
             className="toolbar-stop"
-            onClick={onStop}
+            onClick={actions.stop}
             aria-label="Stop"
             title="Stop"
             style={{
@@ -182,27 +172,27 @@ export default function Toolbar({
         <span style={buttonSocketStyle}>
           <button
             className="toolbar-loop"
-            onClick={onLoopToggle}
-            aria-pressed={loop}
+            onClick={() => actions.setLoop(!transport.loop)}
+            aria-pressed={transport.loop}
             aria-label="Loop"
             title="Loop"
             style={{
               ...transportButtonStyle,
-              background: loop
+              background: transport.loop
                 ? 'linear-gradient(180deg, #6b5734 0%, #624f2f 52%, #5b492b 100%)'
                 : transportButtonStyle.background,
-              borderColor: loop ? '#b39a6e #896e46 #503f23 #947852' : transportButtonStyle.borderColor,
+              borderColor: transport.loop ? '#b39a6e #896e46 #503f23 #947852' : transportButtonStyle.borderColor,
             }}
           >
-            <svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true" style={{ filter: `drop-shadow(0 0 3px ${loop ? 'rgba(255, 220, 150, 0.5)' : 'rgba(218, 224, 245, 0.35)'}) drop-shadow(0 1px 0 rgba(0,0,0,0.45))` }}>
-              <path d="M11.5 4.2V1.8l-2 2a4.8 4.8 0 1 0 1.5 4.7" fill="none" stroke={loop ? '#ffe1a8' : '#d7dff3'} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            <svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true" style={{ filter: `drop-shadow(0 0 3px ${transport.loop ? 'rgba(255, 220, 150, 0.5)' : 'rgba(218, 224, 245, 0.35)'}) drop-shadow(0 1px 0 rgba(0,0,0,0.45))` }}>
+              <path d="M11.5 4.2V1.8l-2 2a4.8 4.8 0 1 0 1.5 4.7" fill="none" stroke={transport.loop ? '#ffe1a8' : '#d7dff3'} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
         </span>
         <span style={buttonSocketStyle}>
           <button
             className="toolbar-panic"
-            onClick={onPanic}
+            onClick={handlePanic}
             aria-label="Panic"
             title="Panic"
             style={{
@@ -252,7 +242,7 @@ export default function Toolbar({
               aria-label="BPM"
               aria-valuemin={MIN_BPM}
               aria-valuemax={MAX_BPM}
-              aria-valuenow={bpm}
+              aria-valuenow={transport.bpm}
               onMouseDown={handleBpmMouseDown}
               style={{
                 flex: 1,
@@ -269,7 +259,7 @@ export default function Toolbar({
                 userSelect: 'none',
               }}
             >
-              {bpm}
+              {transport.bpm}
             </div>
             <div
               style={{
